@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090f1a">
+  <meta name="description" content="Survival Game Hub — รวม 6 เกมเล่นบนเว็บ: Frostline Survival, Servival 100 Night, Frostline Outpost, SNOWWOOD Wildlands, Frostline Last Light และ City Devourer">
+  <title>SURVIVAL HUB — 6 เกม • Same Folder Edition</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1422'/%3E%3Cpath d='M12 43 26 17 35 33 41 25 54 47H12Z' fill='%2364e4e4'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#090e18;--line:rgba(177,216,236,.15);--text:#f3f7fc;--muted:#9bacbd;
+      --blue:#72e7ee;--orange:#ffae72;--radius:24px;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",Tahoma,sans-serif;min-height:100vh;overflow-x:hidden}
+    body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(ellipse at 18% -10%,rgba(45,115,145,.22),transparent 50%),radial-gradient(ellipse at 90% 25%,rgba(122,66,68,.12),transparent 40%),linear-gradient(160deg,#0d1826 0%,#080d16 52%,#0b0f19 100%)}
+    body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(206,228,245,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(206,228,245,.07) 1px,transparent 1px);background-size:64px 64px;mask-image:linear-gradient(to bottom,#000,transparent 85%)}
+    a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-highlight-color:transparent}
+    button:focus-visible,a:focus-visible{outline:3px solid #a1f9fa;outline-offset:4px}
+    .shell{width:min(1220px,calc(100% - 64px));margin-inline:auto}
+    .topbar{height:90px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(190,216,237,.11)}
+    .brand{display:flex;align-items:center;gap:13px;font-weight:900;letter-spacing:.16em;font-size:17px}
+    .brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,rgba(105,221,231,.18),rgba(98,140,225,.1));border:1px solid rgba(118,232,236,.4);box-shadow:inset 0 0 18px rgba(104,211,239,.09)}
+    .brand-mark svg{width:28px;height:28px}
+    .brand span span{color:#79e2e7}
+    .topright{display:flex;align-items:center;gap:25px;color:#a7bbcb;font-size:12px;letter-spacing:.16em;font-weight:700}
+    .topright .dot{width:7px;height:7px;border-radius:50%;background:#83e2bd;box-shadow:0 0 12px #73d6a2;display:inline-block;margin-right:9px}
+    .topright .line{height:20px;width:1px;background:rgba(190,216,237,.22)}
+    .hero{padding:83px 0 50px;position:relative}
+    .eyebrow{display:flex;align-items:center;gap:12px;font-size:11px;font-weight:800;letter-spacing:.32em;color:#83cad6;text-transform:uppercase}
+    .eyebrow::before{content:"";width:30px;height:1px;background:#83cad6}
+    h1{margin:19px 0 17px;font-weight:900;letter-spacing:-.058em;line-height:1.15;font-size:clamp(44px,6.3vw,80px)}
+    h1 .outline{color:transparent;-webkit-text-stroke:1.2px #81dce5;text-shadow:0 0 70px rgba(83,197,223,.12)}
+    .hero-copy{color:#a8b8c9;line-height:1.85;font-size:15px;margin:0;max-width:620px}
+    .hero-stamp{position:absolute;right:4px;bottom:70px;border:1px solid rgba(167,210,228,.21);padding:13px 18px;border-radius:9px;transform:rotate(-5deg);color:#97bbcc;letter-spacing:.22em;font-size:11px;font-weight:800;display:flex;align-items:center;gap:12px}
+    .hero-stamp svg{width:20px;height:20px}
+    .section-top{display:flex;justify-content:space-between;align-items:flex-end;margin:4px 0 20px}
+    .section-title{font-size:13px;font-weight:900;letter-spacing:.24em}
+    .section-count{font-size:12px;color:#95aabc;letter-spacing:.1em}
+    .section-count strong{color:#f4f8fb;font-weight:800}
+    .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+    .game-card{display:flex;flex-direction:column;--accent:#77e6ed;--accent-rgb:119,230,237;position:relative;min-width:0;overflow:hidden;border:1px solid rgba(157,196,219,.21);border-radius:var(--radius);background:#101b2a;box-shadow:0 24px 45px rgba(0,0,0,.16);transition:transform .35s ease,border-color .3s ease,box-shadow .35s ease;isolation:isolate}
+    .game-card.outpost{--accent:#b9a3ff;--accent-rgb:185,163,255;background:#161e33}
+    .game-card.ember{--accent:#ffb173;--accent-rgb:255,177,115;background:#1d1920}
+    .game-card.snowwood{--accent:#9fdcab;--accent-rgb:159,220,171;background:#162728}
+    .game-card:hover{transform:translateY(-7px);border-color:rgba(var(--accent-rgb),.53);box-shadow:0 25px 60px rgba(0,0,0,.28),0 0 38px rgba(var(--accent-rgb),.08)}
+    .art{height:270px;position:relative;overflow:hidden;background:#142c40}
+    .ember .art{background:#241a25}
+    .outpost .art{background:#182f48}
+    .snowwood .art{background:#153439}
+    .art::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(13,24,36,.92) 0%,rgba(13,24,36,.03) 48%,rgba(9,18,31,.24) 100%)}
+    .outpost .art::after{background:linear-gradient(0deg,rgba(20,27,47,.94),rgba(11,25,46,.02) 57%,rgba(11,25,46,.19))}
+    .ember .art::after{background:linear-gradient(0deg,rgba(30,24,31,.95),rgba(22,17,26,0) 55%,rgba(15,10,20,.18))}
+    .snowwood .art::after{background:linear-gradient(0deg,rgba(15,35,34,.95),rgba(9,28,35,.03) 56%,rgba(8,21,29,.22))}
+    .art svg.scene{width:100%;height:100%;position:absolute;inset:0;display:block;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+    .game-card:hover .scene{transform:scale(1.055)}
+    .art-top{position:absolute;z-index:2;inset:22px 24px auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .genre{font-size:10px;letter-spacing:.2em;font-weight:900;color:#e7f5fa;border:1px solid rgba(233,246,252,.28);background:rgba(6,16,27,.4);backdrop-filter:blur(10px);padding:9px 12px;border-radius:7px}
+    .num{font-size:12px;color:#fff;letter-spacing:.17em;font-weight:800;text-shadow:0 2px 7px #000}
+    .art-bottom{position:absolute;z-index:2;left:25px;bottom:21px;display:flex;align-items:center;gap:9px;color:rgba(234,249,254,.8);font-size:10px;font-weight:800;letter-spacing:.25em}
+    .art-bottom::before{content:"";height:1px;width:23px;background:var(--accent)}
+    .card-body{padding:25px 24px 26px;position:relative;display:flex;flex-direction:column;flex:1}
+    .card-kicker{display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:11px;color:var(--accent);font-weight:900;letter-spacing:.17em}
+    .played{color:#c4c9d2;letter-spacing:0;white-space:nowrap;font-size:11px;font-weight:600;opacity:0;transition:opacity .2s}
+    .played.visible{opacity:1}
+    .played::before{content:"• ";color:var(--accent)}
+    h2{font-size:clamp(25px,2.65vw,36px);line-height:1.25;letter-spacing:-.04em;margin:12px 0 10px;font-weight:900}
+    .description{font-size:13px;line-height:1.9;color:#a8b8c9;margin:0 0 22px;min-height:50px}
+    .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;margin-bottom:25px}
+    .tag{padding:7px 10px;background:rgba(177,209,231,.07);border:1px solid rgba(177,209,231,.11);border-radius:6px;font-size:10px;font-weight:700;color:#b7c7d5;letter-spacing:.04em}
+    .play{display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:0 19px 0 21px;border-radius:11px;color:#07141c;background:var(--accent);font-size:14px;font-weight:900;box-shadow:0 8px 25px rgba(var(--accent-rgb),.14);transition:filter .2s ease,transform .2s ease}
+    .play:hover{filter:brightness(1.13);transform:translateY(-1px)}
+    .play span{display:inline-flex;align-items:center;gap:12px}
+    .play svg{width:18px;height:18px}
+    .play .arrow{width:21px;height:21px}
+    .footer{margin-top:62px;padding:25px 0 35px;border-top:1px solid rgba(190,216,237,.11);display:flex;align-items:center;justify-content:space-between;gap:20px;color:#7c91a4;font-size:11px;letter-spacing:.1em}
+    .footer .note{display:flex;align-items:center;gap:9px;letter-spacing:0;font-size:12px}
+    .footer .note svg{height:16px;width:16px;color:#81d9e2;flex-shrink:0}
+    @media(max-width:1050px){.game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:850px){.hero-stamp{display:none}.art{height:230px}.card-body{padding:23px}.game-grid{gap:17px}.shell{width:min(100% - 40px,1220px)}h2{font-size:26px}}
+    @media(max-width:660px){.topbar{height:74px}.topright .line,.topright .top-text{display:none}.brand{font-size:14px}.brand-mark{height:38px;width:38px}.hero{padding:60px 0 43px}h1{font-size:clamp(42px,10vw,59px)}.hero-copy{font-size:13px}.game-grid{grid-template-columns:1fr}.art{height:260px}.section-top{margin-top:0}.footer{margin-top:43px;flex-direction:column;align-items:flex-start;gap:12px}.shell{width:calc(100% - 34px)}}
+    @media(max-width:380px){.art{height:220px}h2{font-size:25px}.art-top{inset:17px 17px auto}.genre{font-size:9px}.card-body{padding:21px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+    /* Compact, accessible cross-visitor statistics. */
+    .stats-panel{display:flex;align-items:center;gap:20px;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(100deg,rgba(36,79,93,.30),rgba(29,44,63,.64));border:1px solid rgba(144,211,225,.21);border-radius:18px;padding:19px 22px;margin:0 0 30px}
+    .stats-main{display:flex;align-items:center;gap:16px;min-width:0}
+    .stats-symbol{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:rgba(101,228,236,.12);color:#78e6ec;flex-shrink:0}
+    .stats-symbol svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+    .stats-total{font-size:29px;line-height:1;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.04em;color:#fff}
+    .stats-label{margin-top:5px;font-size:11px;font-weight:700;color:#b8c8d6}
+    .stats-right{display:flex;align-items:center;gap:16px;min-width:0}
+    .stats-message{display:flex;flex-direction:column;gap:5px;align-items:flex-end;text-align:right}
+    .stats-status{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:750;color:#a4c9d3}
+    .stats-status::before{content:"";width:7px;height:7px;border-radius:50%;background:#e6b97c;box-shadow:0 0 0 3px rgba(230,185,124,.08)}
+    .stats-status[data-state="ok"]::before{background:#80e6bb;box-shadow:0 0 0 3px rgba(128,230,187,.1)}
+    .stats-status[data-state="offline"]::before{background:#e7a5a5}
+    .stats-hint{font-size:10px;color:#7f9aaa}
+    .refresh{display:grid;place-items:center;border:1px solid rgba(162,211,232,.25);border-radius:10px;width:42px;height:42px;background:rgba(132,182,214,.08);color:#d4eaf4;cursor:pointer;transition:background .2s,border-color .2s}
+    .refresh:hover{background:rgba(130,218,233,.17);border-color:#7dd7e5}.refresh:disabled{opacity:.5;cursor:wait}
+    .refresh svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:2px 0 20px}
+    .metric{display:flex;align-items:center;gap:11px;min-width:0;min-height:75px;padding:12px;border-radius:11px;border:1px solid rgba(163,205,229,.14);background:rgba(4,14,24,.28)}
+    .metric-icon{height:34px;width:34px;flex:0 0 34px;border-radius:10px;display:grid;place-items:center;color:var(--accent);background:rgba(var(--accent-rgb),.09)}
+    .metric-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+    .metric-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .metric-number{font-size:24px;line-height:1.05;letter-spacing:-.04em;font-weight:900;color:#f7fbff;font-variant-numeric:tabular-nums}
+    .metric-label{font-size:10px;font-weight:650;color:#9ab1c2;white-space:nowrap}
+    .popular{position:absolute;z-index:3;right:21px;bottom:17px;display:none;border:1px solid rgba(255,220,157,.28);border-radius:6px;background:rgba(34,25,24,.7);backdrop-filter:blur(7px);color:#ffe3a0;padding:7px 10px;font-size:10px;font-weight:900;letter-spacing:.03em}
+    .popular.visible{display:inline-flex}
+    .metric-detail{display:block;color:#83aab9;font-size:9px;font-weight:600;line-height:1.5;margin-top:3px}
+    .metric-number.is-untracked{font-size:24px;color:#8aa3b5}
+    .status-help{padding:10px 14px;border-radius:12px;margin:-13px 0 25px;border:1px solid rgba(242,175,93,.25);background:rgba(242,175,93,.07);color:#e5c9a0;font-size:12px;line-height:1.7;display:none}
+    .status-help.visible{display:block}
+    .status-help a{color:#dcecff;text-decoration:underline;text-underline-offset:3px}
+    .stats-disclaimer{margin:3px 0 0;padding:0 1px 0;color:#829bad;font-size:11px;line-height:1.85}
+    @media(max-width:850px){.metrics{gap:8px}.metric{padding:10px;gap:8px}.metric-icon{width:30px;height:30px;flex-basis:30px}.metric-number{font-size:22px}.metric-label{font-size:9px}}
+    @media(max-width:660px){.stats-panel{padding:15px 16px;gap:12px;margin-bottom:24px}.stats-main{gap:12px}.stats-symbol{width:41px;height:41px}.stats-total{font-size:25px}.stats-right{margin-left:auto}.stats-message{gap:3px}.stats-hint{display:none}.metric{min-height:72px}.metric-number{font-size:23px}}
+    @media(max-width:380px){.metric-icon{display:none}.metrics{gap:8px}.metric{padding:11px}.stats-panel{gap:8px}.stats-right{gap:8px}.refresh{width:36px;height:36px}}
+    /* Five cards: 3 on row one, 2 centered below; 2-col tablets; 1-col phones. */
+    .game-card.lastlight{--accent:#8edcf1;--accent-rgb:142,220,241;background:#0f2230}
+    .lastlight .art{background:#071824}
+    .lastlight .art::after{background:linear-gradient(0deg,rgba(9,23,35,.93),rgba(5,20,35,.03) 58%,rgba(4,14,24,.44))}
+    .scene-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+    .game-card:hover .scene-image{transform:scale(1.055)}
+    .new-tag{position:absolute;z-index:4;top:68px;left:24px;font-size:10px;font-weight:900;letter-spacing:.08em;padding:6px 10px;color:#08232d;background:#8ee1ed;border-radius:5px;box-shadow:0 4px 16px #0005}
+    @media(min-width:1050px){
+      .game-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:22px}
+      .game-card{grid-column:span 2}
+      .game-card:nth-child(4){grid-column:2/span 2}
+      .game-card:nth-child(5){grid-column:4/span 2}
+      .card-body{padding:22px 20px 23px}
+      .art{height:230px}
+      h2{font-size:clamp(23px,2.2vw,31px)}
+      .metric{padding:9px 8px;gap:8px;min-height:72px}
+      .metric-icon{height:28px;width:28px;flex-basis:28px}
+      .metric-icon svg{width:16px;height:16px}
+      .metric-number{font-size:21px}
+      .metric-label{font-size:9px}
+      .genre{font-size:9px;letter-spacing:.12em}
+    }
+    @media(min-width:661px) and (max-width:1049px){
+      .game-card:last-child{grid-column:1/-1;width:calc((100% - 22px)/2);justify-self:center}
+    }
+    @media(min-width:661px) and (max-width:850px){
+      .game-card:last-child{width:calc((100% - 17px)/2)}
+    }
+    @media(max-width:660px){
+      .game-card:last-child{grid-column:auto;width:auto}
+      .new-tag{left:20px;top:64px}
+    }
+    @media(prefers-reduced-motion:reduce){.game-card,.scene-image{transition:none!important}}
+
+    /* Six-game responsive grid: 3x2 desktops, 2x3 tablets, 1x6 phones. */
+    .game-card.devourer{--accent:#d6a0ff;--accent-rgb:214,160,255;background:#191a2e}
+    .devourer .art{background:#1d2340}
+    .devourer .art::after{background:linear-gradient(0deg,rgba(20,19,42,.93),rgba(8,8,28,.04) 60%,rgba(13,13,32,.36))}
+    .game-card.devourer .new-tag{background:#d6a0ff;color:#25143d}
+    @media(min-width:1050px){
+      .game-card:nth-child(4),.game-card:nth-child(5){grid-column:span 2}
+    }
+    @media(min-width:661px) and (max-width:1049px){
+      .game-card:last-child{grid-column:auto;width:auto;justify-self:stretch}
+    }
+    @media(min-width:661px) and (max-width:850px){
+      .game-card:last-child{width:auto}
+    }
+    @media(max-width:660px){.game-card:last-child{width:auto}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="กลับด้านบน Survival Hub">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M4 25 13 7l6 11 4-6 6 13H4Z" stroke="#83ecf0" stroke-width="2" stroke-linejoin="round"/><path d="m10 13 3 4 3-4" stroke="#83ecf0" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+        <span>SURVIVAL <span>HUB</span></span>
+      </a>
+      <div class="topright"><span class="top-text">BROWSER GAME COLLECTION</span><span class="line" aria-hidden="true"></span><span><i class="dot" aria-hidden="true"></i>6 GAMES</span></div>
+    </header>
+
+    <main id="home">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="eyebrow">THE WEB GAME COLLECTION</div>
+        <h1 id="hero-title">เลือกโลกของคุณ<br><span class="outline">แล้วเริ่มเล่น.</span></h1>
+        <p class="hero-copy">พร้อมออกผจญภัยแล้วหรือยัง? เลือกเกมที่ชอบแล้วเข้าเล่นได้เลย<br>ไม่ต้องติดตั้งเกม เปิดผ่านเบราว์เซอร์ได้ทันที</p>
+        <div class="hero-stamp" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v20M2 12h20M4.5 4.5l15 15m0-15-15 15"/></svg> CHOOSE YOUR WORLD</div>
+      </section>
+      <div class="stats-panel" role="region" aria-label="ภาพรวมสถิติการเข้าเล่น">
+        <div class="stats-main">
+          <span class="stats-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18.5V15m5 3.5V10m5 8.5V6m5 12.5V3.5"/><path d="M3 21h18"/></svg></span>
+          <div><div class="stats-total" data-total-launches>—</div><div class="stats-label">คลิกเข้าเล่นทั้งหมด</div></div>
+        </div>
+        <div class="stats-right">
+          <div class="stats-message"><div class="stats-status" id="stats-status" data-state="loading" role="status" aria-live="polite">กำลังโหลดสถิติ</div><div class="stats-hint" id="stats-hint">ยอดคลิกผ่าน HUB • แยกจากยอดเข้าเกมจริง</div></div>
+          <button type="button" class="refresh" id="refresh-stats" aria-label="รีเฟรชสถิติ" title="รีเฟรชสถิติ"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 18.4 15"/></svg></button>
+        </div>
+      </div>
+
+
+      <section aria-labelledby="games-heading">
+        <div class="status-help" id="stats-help" role="alert" aria-live="polite"></div>
+      <div class="section-top"><div id="games-heading" class="section-title">// เลือกเกม</div><div class="section-count"><strong>06</strong> / 06 เกม · 📁 โฟลเดอร์เดียวกัน</div></div>
+        <div class="game-grid">
+          <article class="game-card frost" data-game="frostline">
+            <div class="art" aria-hidden="true">
+              <svg class="scene" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="iceSky" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#112b4b"/><stop offset=".6" stop-color="#376f91"/><stop offset="1" stop-color="#96b9c5"/></linearGradient>
+                  <linearGradient id="iceHill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9bbecb"/><stop offset="1" stop-color="#244258"/></linearGradient>
+                  <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5ceac9" stop-opacity=".05"/><stop offset=".5" stop-color="#8df6db" stop-opacity=".48"/><stop offset="1" stop-color="#60d7d2" stop-opacity="0"/></linearGradient>
+                  <filter id="iceBlur"><feGaussianBlur stdDeviation="9"/></filter>
+                </defs>
+                <rect width="600" height="300" fill="url(#iceSky)"/>
+                <path d="M-70 90Q110-55 215 64T650 6" stroke="url(#aurora)" stroke-width="58" fill="none" opacity=".88" filter="url(#iceBlur)"/>
+                <circle cx="476" cy="69" r="31" fill="#cbeaf2" opacity=".85"/><circle cx="476" cy="69" r="45" fill="#b3eff8" opacity=".1"/>
+                <path d="M0 203 95 103l51 65 93-113 124 137 79-91 158 109v90H0Z" fill="#436e89"/>
+                <path d="m68 132 27-29 20 25-19-7-12 20ZM194 110l45-55 57 64-55-23-24 26ZM410 141l32-40 37 43-38-18-15 19Z" fill="#d4eaf1" opacity=".9"/>
+                <path d="M0 236 125 172l109 55 137-73 107 56 122-39v129H0Z" fill="url(#iceHill)"/>
+                <path d="M0 252Q84 213 180 243T359 240q98-22 241 2v58H0Z" fill="#365971"/>
+                <path d="M0 278Q137 244 272 276T600 268v32H0Z" fill="#203b50"/>
+                <g fill="#122e43">
+                  <path d="m40 255 19-63 19 63h-10l8 16H43l8-16ZM505 251l20-80 21 80h-13l11 20h-40l11-20ZM550 251l14-55 15 55h-10l8 17h-27l8-17Z"/>
+                </g>
+                <path d="M309 257c9-36 22-56 39-60 18 1 31 15 36 60l-17 25h-41Z" fill="#0c2736"/>
+                <path d="M339 191h27v22h-27Z" fill="#0c2736"/><path d="M338 203q4-13 16-13t16 13l-3 14-26 1Z" fill="#b5e8ed"/>
+                <path d="m345 217-10 32 22 0-4-32Z" fill="#183f52"/>
+                <path d="m381 237 36-34" stroke="#d9faff" stroke-width="7" stroke-linecap="round"/><path d="m413 196 10 10" stroke="#8edff7" stroke-width="4"/>
+                <g fill="#e5f7ff" opacity=".7"><circle cx="90" cy="70" r="2"/><circle cx="155" cy="42" r="1.5"/><circle cx="360" cy="57" r="1.8"/><circle cx="544" cy="117" r="2.4"/><circle cx="452" cy="161" r="1.3"/><circle cx="218" cy="152" r="1.6"/><circle cx="74" cy="169" r="1.4"/><circle cx="580" cy="50" r="1.4"/><circle cx="283" cy="31" r="1.2"/><circle cx="525" cy="199" r="1.7"/></g>
+              </svg>
+              <div class="art-top"><span class="genre">❄ SNOW SURVIVAL</span><span class="num">01 / 06</span></div>
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">THE FROZEN ARENA</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>FROSTLINE • V2</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>Frostline Survival</h2>
+              <p class="description">ฝ่าฝูงหมีในสนามหิมะ เก็บทรัพยากร อัปเกรดอุปกรณ์ และเอาชีวิตรอดจากศัตรูที่ท้าทายขึ้นเรื่อย ๆ</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดปุ่มเข้าเล่นเกมจากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">เอาตัวรอด</span><span class="tag">ต่อสู้</span><span class="tag">อัปเกรด</span></div>
+              <a class="play" href="./Frostline_Survival_v2.html" target="_blank" rel="noopener noreferrer" data-launch="frostline" aria-label="เล่น Frostline Survival เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+
+          <article class="game-card ember" data-game="emberwood">
+            <div class="art" aria-hidden="true">
+              <svg class="scene" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#241b35"/><stop offset=".6" stop-color="#59364a"/><stop offset="1" stop-color="#915248"/></linearGradient>
+                  <radialGradient id="fireGlow"><stop stop-color="#ffe194" stop-opacity=".94"/><stop offset=".3" stop-color="#ff9b4e" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a28" stop-opacity="0"/></radialGradient>
+                  <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff7441"/><stop offset=".6" stop-color="#ffd070"/><stop offset="1" stop-color="#fff7c3"/></linearGradient>
+                </defs>
+                <rect width="600" height="300" fill="url(#nightSky)"/>
+                <circle cx="478" cy="65" r="33" fill="#f8d6b6" opacity=".85"/><circle cx="478" cy="65" r="50" fill="#ffc4a4" opacity=".08"/>
+                <g fill="#ffdec9" opacity=".6"><circle cx="75" cy="32" r="1.3"/><circle cx="179" cy="65" r="1.2"/><circle cx="268" cy="28" r="1.5"/><circle cx="390" cy="72" r="1.3"/><circle cx="552" cy="123" r="1.4"/><circle cx="323" cy="92" r="1.1"/><circle cx="127" cy="117" r="1.5"/></g>
+                <path d="M0 210q64-57 122-18 46-42 105-18 72-48 131-7 54-42 116 7 61-36 126 10v116H0Z" fill="#292534"/>
+                <path d="M0 235q96-45 187-3 74-41 156-9 121-53 257-8v85H0Z" fill="#211f2a"/>
+                <g fill="#171e26">
+                  <path d="m16 248 24-136 23 136h-13l11 26H14l11-26ZM69 245l22-107 21 107H99l11 25H70l10-25ZM477 236l26-145 29 145h-16l12 31h-51l13-31ZM546 244l20-121 21 121h-13l12 28h-43l11-28Z"/>
+                </g>
+                <path d="M0 268q150-36 281 5 116-26 319-10v37H0Z" fill="#161923"/>
+                <ellipse cx="299" cy="262" rx="176" ry="85" fill="url(#fireGlow)" opacity=".8"/>
+                <path d="m251 272 41-42 42 42" fill="none" stroke="#3a2525" stroke-width="9" stroke-linecap="round"/><path d="m260 271 58-35" stroke="#5c3827" stroke-width="9" stroke-linecap="round"/>
+                <path d="M281 257c-12-17-7-30 5-43 0 14 15 16 14 1 16 15 23 24 11 42-5 11-24 15-30 0Z" fill="url(#flame)"/>
+                <path d="M292 257c-5-10 1-18 9-27-1 12 10 16 4 27-3 6-10 7-13 0Z" fill="#fff7bd"/>
+                <g fill="#ffbe70"><circle cx="276" cy="203" r="2.5"/><circle cx="324" cy="197" r="2"/><circle cx="304" cy="177" r="1.5"/><circle cx="263" cy="230" r="1.5"/></g>
+                <path d="M198 270v-38q0-18 11-20 12 2 12 20v38Z" fill="#111822"/><circle cx="209" cy="206" r="13" fill="#161b23"/><path d="m206 224-25 32m30-29 19 28" stroke="#131821" stroke-width="8" stroke-linecap="round"/>
+                <path d="M0 295h600" stroke="#6a4b41" stroke-width="4" opacity=".35"/>
+              </svg>
+              <div class="art-top"><span class="genre">🔥 NIGHT SURVIVAL</span><span class="num">02 / 06</span></div>
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">PROTECT THE LAST FLAME</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>EMBERWOOD • 100 NIGHTS</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>Servival 100 Night</h2>
+              <p class="description">ปกป้องแสงไฟสุดท้าย เตรียมอาวุธ สร้างป้อม และต่อสู้กับฝูงศัตรู เพื่อผ่านความท้าทายให้ครบ 100 คืน</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดปุ่มเข้าเล่นเกมจากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">100 คืน</span><span class="tag">สร้างป้อม</span><span class="tag">ป้องกันฐาน</span></div>
+              <a class="play" href="./Servival_100_Night.html" target="_blank" rel="noopener noreferrer" data-launch="emberwood" aria-label="เล่น Servival 100 Night เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+
+          <article class="game-card outpost" data-game="outpost">
+            <div class="art" aria-hidden="true">
+              <svg class="scene" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="outSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#111b3c"/><stop offset=".52" stop-color="#36516b"/><stop offset="1" stop-color="#9fb8c9"/></linearGradient>
+                  <linearGradient id="outAurora" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#88adfa" stop-opacity="0"/><stop offset=".5" stop-color="#b59ef9" stop-opacity=".58"/><stop offset="1" stop-color="#8bdadb" stop-opacity="0"/></linearGradient>
+                  <linearGradient id="outSnow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b5d5e3"/><stop offset="1" stop-color="#3a6580"/></linearGradient>
+                  <filter id="outBlur"><feGaussianBlur stdDeviation="12"/></filter>
+                </defs>
+                <rect width="600" height="300" fill="url(#outSky)"/>
+                <path d="M-40 107Q120-22 272 69T630 16" stroke="url(#outAurora)" stroke-width="72" fill="none" opacity=".95" filter="url(#outBlur)"/>
+                <circle cx="486" cy="52" r="23" fill="#e5e7fa" opacity=".9"/>
+                <path d="M0 184 105 90l87 95 89-83 104 95 97-106 118 101v108H0Z" fill="#48687e"/>
+                <path d="m77 120 28-30 33 35-34-14-18 20Zm173 11 31-29 31 31-32-15-15 20Zm207-13 25-27 29 30-31-13-14 18Z" fill="#daeff6" opacity=".8"/>
+                <path d="M0 213Q120 179 222 210T443 195Q534 174 600 198v102H0Z" fill="url(#outSnow)"/>
+                <path d="M0 251Q140 222 302 249T600 247v53H0Z" fill="#3b607a"/>
+                <path d="M-10 283Q102 255 223 281T462 276q82-16 158 4v20H0Z" fill="#214156"/>
+                <g fill="#172d43"><path d="m30 243 18-66 17 66h-10l9 17H33l8-17Zm493-11 22-95 21 95h-12l14 27h-46l12-27Zm47 18 13-52 14 52h-8l10 21h-30l8-21Z"/></g>
+                <g>
+                  <path d="M194 216 252 172 348 172 409 219v51H194Z" fill="#192b40"/>
+                  <path d="m186 216 63-53h103l66 53Z" fill="#7289a2"/>
+                  <path d="m191 216 60-46h97l60 46-61-22h-96Z" fill="#d4e3f1"/>
+                  <path d="M212 220h182v50H212Z" fill="#24384f"/>
+                  <path d="M237 228h36v28h-36Z" fill="#f3c68b"/><path d="M319 228h36v28h-36Z" fill="#f3c68b"/>
+                  <path d="M236 227h38v30h-38Zm82 0h38v30h-38Z" stroke="#3f556c" stroke-width="5" fill="none"/>
+                  <path d="M283 231h28v39h-28Z" fill="#101e30"/>
+                  <path d="M295 178v-24h7v24" stroke="#b8cadb" stroke-width="5"/>
+                  <circle cx="299" cy="151" r="7" fill="#ff868e"/><circle cx="299" cy="151" r="20" fill="#fc7182" opacity=".13"/>
+                </g>
+                <path d="M152 260h302" stroke="#d6e9f4" stroke-width="2.5" opacity=".48"/>
+                <path d="M137 270v-42m0 9h30m-30 7h26m-26 7h22" stroke="#8ca6bc" stroke-width="5" stroke-linecap="round"/>
+                <g fill="#f7fbff" opacity=".75"><circle cx="73" cy="68" r="2"/><circle cx="187" cy="51" r="1.4"/><circle cx="340" cy="79" r="1.7"/><circle cx="518" cy="115" r="2.4"/><circle cx="470" cy="175" r="1.6"/><circle cx="130" cy="167" r="2"/><circle cx="566" cy="59" r="1.6"/><circle cx="387" cy="41" r="1.2"/></g>
+              </svg>
+              <div class="art-top"><span class="genre">🏔 FROZEN OUTPOST</span><span class="num">03 / 06</span></div>
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">THE LAST OUTPOST</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>FROSTLINE • STANDALONE</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>Frostline Outpost</h2>
+              <p class="description">ออกเดินทางสู่ด่านหน้าในโลกน้ำแข็งของ Frostline พร้อมเข้าเล่นเวอร์ชัน Standalone ผ่านเว็บได้ทันที</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดปุ่มเข้าเล่นเกมจากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">ด่านหน้าหิมะ</span><span class="tag">เอาตัวรอด</span><span class="tag">Standalone</span></div>
+              <a class="play" href="./Frostline_Outpost_Standalone.html" target="_blank" rel="noopener noreferrer" data-launch="outpost" aria-label="เล่น Frostline Outpost Standalone เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+          <article class="game-card snowwood" data-game="snowwood">
+            <div class="art" aria-hidden="true">
+              <svg class="scene" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="woodSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b2838"/><stop offset=".55" stop-color="#3b6572"/><stop offset="1" stop-color="#a4c7c0"/></linearGradient>
+                  <linearGradient id="woodGround" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dcf0e6"/><stop offset="1" stop-color="#5e928b"/></linearGradient>
+                  <radialGradient id="woodGlow"><stop stop-color="#c6f4b7" stop-opacity=".63"/><stop offset="1" stop-color="#a6e6b6" stop-opacity="0"/></radialGradient>
+                  <linearGradient id="woodPine" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#1d4c4a"/><stop offset="1" stop-color="#102f36"/></linearGradient>
+                </defs>
+                <rect width="600" height="300" fill="url(#woodSky)"/>
+                <circle cx="454" cy="68" r="100" fill="url(#woodGlow)"/><circle cx="451" cy="67" r="27" fill="#d9ead1" opacity=".92"/>
+                <path d="M0 167 84 93l87 78 73-105 102 112 79-91 89 87 86-59v185H0Z" fill="#53777b"/>
+                <path d="M58 117 84 93l29 27-31-9-14 12ZM211 109l33-43 32 38-33-17-21 26ZM405 110l20-23 28 27-30-11-15 13Z" fill="#d8e9e5" opacity=".82"/>
+                <path d="M0 210q92-29 167 1t158-1 142-5 133-12v107H0Z" fill="#6f9c99"/>
+                <g fill="url(#woodPine)">
+                  <path d="m9 239 28-113 27 113H48l19 29H8l16-29Zm50 2 24-99 25 99H94l16 26H57l14-26Zm64-5 22-110 26 110h-13l18 31h-59l15-31Zm343 4 29-123 30 123h-18l19 32h-64l20-32Zm65 2 24-100 24 100h-14l13 27h-51l15-27Z"/>
+                  <path d="m187 224 21-86 23 86h-13l13 29h-47l14-29Zm176 0 22-91 26 91h-15l15 27h-49l15-27Z" opacity=".78"/>
+                </g>
+                <path d="M0 265q103-29 198-7 75 14 159-4 140-34 243 2v44H0Z" fill="url(#woodGround)"/>
+                <path d="M0 284q98-18 183 2 85 13 171-4 140-22 246 7v11H0Z" fill="#356760"/>
+                <path d="M208 300q40-38 87-45 36-4 57-1 46 11 72 46Z" fill="#dcece3" opacity=".45"/>
+                <g>
+                  <ellipse cx="298" cy="250" rx="34" ry="8" fill="#0c2b30" opacity=".4"/>
+                  <path d="M288 208h22l8 38-35 1Z" fill="#354e48"/>
+                  <path d="m292 220-22 18m38-18 22 20" stroke="#41564d" stroke-width="9" stroke-linecap="round"/>
+                  <path d="m292 245-8 21m23-20 9 20" stroke="#203d3d" stroke-width="9" stroke-linecap="round"/>
+                  <circle cx="300" cy="196" r="13" fill="#d5b9a3"/>
+                  <path d="M287 198q0-20 12-20 17 0 15 21l-7-9-17 1Z" fill="#263e3f"/>
+                  <path d="m321 223 29-47" stroke="#95724e" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M344 182q12-11 17 4l-12 9-10-8Z" fill="#b8d2d4"/>
+                </g>
+                <g fill="#eefaf5" opacity=".83"><circle cx="53" cy="54" r="2"/><circle cx="145" cy="79" r="1.5"/><circle cx="211" cy="28" r="1.8"/><circle cx="309" cy="48" r="1.3"/><circle cx="407" cy="122" r="1.9"/><circle cx="528" cy="44" r="1.7"/><circle cx="566" cy="102" r="1.4"/><circle cx="110" cy="197" r="2"/><circle cx="387" cy="164" r="1.5"/></g>
+              </svg>
+              <div class="art-top"><span class="genre">🌲 WILDLANDS SURVIVAL</span><span class="num">04 / 06</span></div>
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">EXPLORE THE WINTER FRONTIER</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>SNOWWOOD • WILDLANDS</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>SNOWWOOD 3.1</h2>
+              <p class="description">ออกสำรวจป่าแดนหิมะ เก็บทรัพยากร สร้างฐาน และเอาตัวรอดในโลก Winter Frontier</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดปุ่มเข้าเล่นเกมจากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">สำรวจป่า</span><span class="tag">สร้างฐาน</span><span class="tag">Winter Frontier</span></div>
+              <a class="play" href="./SNOWWOOD_3_1_Wildlands.html" target="_blank" rel="noopener noreferrer" data-launch="snowwood" aria-label="เล่น SNOWWOOD 3.1 Wildlands เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+          <article class="game-card lastlight" data-game="lastlight">
+            <div class="art" aria-hidden="true">
+              <img class="scene-image" src="data:image/webp;base64,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" width="1000" height="500" loading="lazy" alt="">
+              <div class="art-top"><span class="genre">❄ SINGLE FILE SURVIVAL</span><span class="num">05 / 06</span></div>
+              
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">DEFEND THE LAST LIGHT</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>FROSTLINE • LAST LIGHT</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>Frostline Outpost · Last Light</h2>
+              <p class="description">เอาชีวิตรอดท่ามกลางพายุหิมะ เก็บไม้และเศษเหล็ก เติมพลังฐาน สร้างป้อมปืน และป้องกันฝูงสัตว์ร้ายยามค่ำคืน</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดเข้าเกมนี้จากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">เก็บทรัพยากร</span><span class="tag">สร้างป้อม</span><span class="tag">ป้องกันฐาน</span></div>
+              <a class="play" href="./Frostline_Outpost_Last_Light.html" target="_blank" rel="noopener noreferrer" data-launch="lastlight" aria-label="เล่น Frostline Outpost Last Light เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+          <article class="game-card devourer" data-game="devourer">
+            <div class="art" aria-hidden="true">
+              <svg class="scene" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="devSky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#20214a"/><stop offset=".57" stop-color="#58528d"/><stop offset="1" stop-color="#9c7fb6"/></linearGradient>
+                  <linearGradient id="devRoad" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#5b5873"/><stop offset="1" stop-color="#27283e"/></linearGradient>
+                  <linearGradient id="devBuildings" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#343452"/><stop offset="1" stop-color="#191e39"/></linearGradient>
+                  <radialGradient id="devGlow"><stop offset="0" stop-color="#b590f7" stop-opacity=".9"/><stop offset=".48" stop-color="#ae6fd8" stop-opacity=".44"/><stop offset="1" stop-color="#b68bf2" stop-opacity="0"/></radialGradient>
+                  <radialGradient id="devHole"><stop offset="0" stop-color="#04040e"/><stop offset=".72" stop-color="#080719"/><stop offset=".93" stop-color="#372360"/><stop offset="1" stop-color="#b270ff"/></radialGradient>
+                  <filter id="devBlur"><feGaussianBlur stdDeviation="13"/></filter>
+                </defs>
+                <rect width="600" height="300" fill="url(#devSky)"/>
+                <path d="M0 135h600v75H0Z" fill="#676184" opacity=".4"/>
+                <g fill="url(#devBuildings)" stroke="#9f94bb" stroke-width="1" stroke-opacity=".2">
+                  <path d="M10 171V104h36v-21h41v88Z"/><path d="M99 170V71h49v99Z"/><path d="M156 174V110h40V81h35v93Z"/><path d="M240 170V94h48v76Z"/>
+                  <path d="M306 170V63h58v107Z"/><path d="M377 174V102h41V77h40v97Z"/><path d="M471 170V93h55v77Z"/><path d="M530 170V56h61v114Z"/>
+                </g>
+                <g fill="#d8c3ec" opacity=".5"><path d="M113 90h5v7h-5zm11 0h5v7h-5zm11 0h5v7h-5zm-22 16h5v7h-5zm11 0h5v7h-5zm11 0h5v7h-5zm186-27h6v8h-6zm16 0h6v8h-6zm-16 17h6v8h-6zm16 0h6v8h-6zm-16 17h6v8h-6zm16 0h6v8h-6zm206-40h7v9h-7zm18 0h7v9h-7zm-18 18h7v9h-7zm18 18h7v9h-7z"/></g>
+                <path d="M0 176H600V300H0Z" fill="url(#devRoad)"/>
+                <path d="M293 176 167 300M305 176 430 300" fill="none" stroke="#cdb9c5" stroke-width="3" opacity=".18"/>
+                <path d="M300 176v17m0 12v22m0 23v29" fill="none" stroke="#e4dce2" stroke-width="4" stroke-linecap="round" opacity=".5"/>
+                <path d="M0 216h600" stroke="#beb3cd" stroke-width="3" opacity=".12"/>
+                <g transform="translate(76 199) rotate(-8)"><rect width="62" height="23" rx="7" fill="#edb995"/><rect x="13" y="-9" width="32" height="14" rx="5" fill="#f5ddc7"/><circle cx="13" cy="22" r="5" fill="#15172a"/><circle cx="50" cy="22" r="5" fill="#15172a"/></g>
+                <g transform="translate(456 229) rotate(10)"><rect width="64" height="21" rx="6" fill="#a6d5de"/><rect x="14" y="-9" width="34" height="14" rx="6" fill="#d4eced"/><circle cx="14" cy="21" r="5" fill="#16182b"/><circle cx="50" cy="21" r="5" fill="#16182b"/></g>
+                <ellipse cx="308" cy="226" rx="166" ry="71" fill="url(#devGlow)" filter="url(#devBlur)"/>
+                <ellipse cx="307" cy="225" rx="117" ry="51" fill="none" stroke="#d8a0ff" stroke-opacity=".65" stroke-width="8" transform="rotate(-7 307 225)"/>
+                <ellipse cx="308" cy="228" rx="103" ry="40" fill="url(#devHole)" transform="rotate(-7 308 228)"/>
+                <ellipse cx="311" cy="231" rx="75" ry="26" fill="#04040c" transform="rotate(-7 311 231)"/>
+                <path d="M218 195q-25-25-44-29m275 30q20-25 37-22" stroke="#e4b8ff" stroke-width="3" stroke-linecap="round" opacity=".6" fill="none"/>
+                <g fill="#f5c3ff"><circle cx="182" cy="167" r="3"/><circle cx="454" cy="188" r="2.5"/><circle cx="392" cy="170" r="2"/></g>
+              </svg>
+              <div class="art-top"><span class="genre">◎ ARCADE • OPEN WORLD</span><span class="num">06 / 06</span></div>
+              <span class="new-tag">เกมใหม่</span>
+              <span class="popular" aria-label="เกมยอดนิยม">★ ยอดนิยม</span><div class="art-bottom">SWALLOW THE CITY</div>
+            </div>
+            <div class="card-body">
+              <div class="card-kicker"><span>CITY • DEVOURER</span><span class="played" aria-live="polite">เล่นล่าสุด</span></div>
+              <h2>City Devourer</h2>
+              <p class="description">ควบคุมหลุมดำกลืนรถ บ้าน และตึกให้ใหญ่ขึ้นเรื่อย ๆ เลือกเล่นอิสระหรือแข่งทำคะแนนใน 3 นาที</p>
+              <div class="metrics" aria-label="ยอดเข้าเล่นของเกมนี้">
+                <div class="metric" title="จำนวนเบราว์เซอร์ที่เปิดเว็บไซต์เกมจริง (ต้องติดตั้ง Game Tracker ในเกมนั้น)"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19v-2.3c0-3.6 11-3.6 11 0V19M17 6.5c3.5 0 3.5 5 0 5M17.5 14.5c2.1.4 3 1.4 3 3.5v1"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="browsers">—</strong><span class="metric-label">เข้าเกมไม่ซ้ำ*</span><span class="metric-detail" data-starts>รอติดตั้ง Tracker ที่เกม</span></div></div>
+                <div class="metric" title="จำนวนครั้งที่กดเข้าเกมนี้จากหน้า HUB"><span class="metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5a1.2 1.2 0 0 1 1.8-1L19.5 11a1.2 1.2 0 0 1 0 2l-9.7 6.5A1.2 1.2 0 0 1 8 18.5Z"/></svg></span><div class="metric-text"><strong class="metric-number" data-stat="launches">—</strong><span class="metric-label">ครั้งที่กดเล่น</span></div></div>
+              </div>
+              <div class="tags"><span class="tag">กลืนกินเมือง</span><span class="tag">สำรวจอิสระ</span><span class="tag">ท้าทาย 3 นาที</span></div>
+              <a class="play" href="./City_Devourer.html" target="_blank" rel="noopener noreferrer" data-launch="devourer" aria-label="เล่น City Devourer เปิดในแท็บใหม่"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1.5 1.5 0 0 1 2.3-1.27l11 7.5a1.5 1.5 0 0 1 0 2.54l-11 7.5A1.5 1.5 0 0 1 7 19.5Z"/></svg>เข้าเล่นเกม</span><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <p class="stats-disclaimer">* เข้าเกมไม่ซ้ำ = จำนวนเบราว์เซอร์โดยประมาณที่เปิดหน้าเกมจริง เมื่อใส่ Game Tracker ในเว็บเกมแต่ละเกมแล้ว • ไม่ใช่จำนวนบุคคลที่ยืนยันตัวตนหรือผู้เล่นออนไลน์ • “ครั้งที่กดเล่น” นับเฉพาะคนกดผ่าน HUB</p>
+    <footer class="footer">
+      <span>© <span id="year">2026</span> SURVIVAL HUB. SELECT • SURVIVE • REPEAT.</span>
+      <span class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="15" height="15" rx="2"/><path d="M9 9h12v12H9z"/></svg>เปิดไฟล์เกมในโฟลเดอร์เดียวกันในแท็บใหม่ • แก้ชื่อไฟล์ใน game-paths.js</span>
+    </footer>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+      const API = '/api/stats';
+      const storageKey = 'survival-hub:last-played';
+      const visitorKey = 'survival-hub:browser-v1';
+      const cards = Array.from(document.querySelectorAll('[data-game]'));
+      // Always open a game file relative to this index.html, never a Windows absolute path.
+      // Direct hrefs above are usable even before JavaScript loads.
+      const folderURL = new URL('./', document.baseURI);
+      const configuredPaths = window.SURVIVAL_HUB_PATHS || {};
+      for (const card of cards) {
+        const link = card.querySelector('[data-launch]');
+        const path = String(configuredPaths[card.dataset.game] || link?.getAttribute('href') || '').trim();
+        if (!link || !path) continue;
+        try {
+          // Reject external URLs, absolute paths, drive paths and parent directory traversal.
+          if (/^(?:[a-z][a-z\d+.-]*:|\/|\\)/i.test(path) || path.includes('\\')) throw Error('ABSOLUTE_PATH');
+          const target = new URL(path, folderURL);
+          if (!target.href.startsWith(folderURL.href) || !['file:', 'http:', 'https:'].includes(target.protocol)) throw Error('OUTSIDE_FOLDER');
+          link.href = target.href;
+          link.dataset.file = path;
+          link.title = `เปิดเกมจากโฟลเดอร์เดียวกัน: ${path}`;
+        } catch (err) {
+          // Keep fallback static href: the user may still have the default file.
+          console.warn('[SURVIVAL HUB] Invalid same-folder game path:', card.dataset.game, path);
+        }
+      }
+      const ids = new Set(cards.map(x => x.dataset.game));
+      const total = document.querySelector('[data-total-launches]');
+      const status = document.getElementById('stats-status');
+      const hint = document.getElementById('stats-hint');
+      const help = document.getElementById('stats-help');
+      const refresh = document.getElementById('refresh-stats');
+      const formatter = new Intl.NumberFormat('th-TH');
+      let lastLoadedAt = 0, busy = false, pendingRefresh = false, fallbackId = null;
+      const uuid = () => (crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(1))[0] & 15 : Math.floor(Math.random()*16);
+        return (c === 'x' ? r : ((r & 3) | 8)).toString(16);
+      }));
+      function browserId() {
+        try {
+          let id = localStorage.getItem(visitorKey);
+          if (!id || !/^[0-9a-f-]{36}$/i.test(id)) { id = uuid(); localStorage.setItem(visitorKey,id); }
+          return id;
+        } catch { return fallbackId ||= uuid(); }
+      }
+      function updateLast(id) {
+        for (const card of cards) card.querySelector('.played')?.classList.toggle('visible', card.dataset.game === id);
+      }
+      function setStatus(message, state) { status.textContent = message; status.dataset.state = state; }
+      function showHelp(message) { help.innerHTML = message; help.classList.toggle('visible', Boolean(message)); }
+      async function refreshStats() {
+        if (busy) { pendingRefresh = true; return; }
+        busy = true; refresh.disabled = true;
+        if (lastLoadedAt === 0) setStatus('กำลังเชื่อมต่อสถิติ', 'loading');
+        try {
+          if (location.protocol === 'file:') throw new Error('LOCAL_FILE');
+          const res = await fetch(API, {cache:'no-store', headers:{Accept:'application/json'}});
+          if (!res.ok) throw new Error('HTTP_'+res.status);
+          const data = await res.json();
+          if (!data || !data.games || !Number.isSafeInteger(data.totalLaunches)) throw new Error('BAD_RESPONSE');
+          // Validate all stats before painting, so partial/stale data never appears as a success.
+          for (const card of cards) {
+            const g = data.games[card.dataset.game];
+            if (!g || !['launches','browsers','visits','visitors','plays','players'].every(k=>Number.isSafeInteger(g[k])&&g[k]>=0)) throw new Error('BAD_RESPONSE');
+          }
+          total.textContent = formatter.format(data.totalLaunches);
+          let bestId = null, best = 0, tie = false, trackers = 0;
+          for (const card of cards) {
+            const id = card.dataset.game, g = data.games[id];
+            if (g.trackingActive) trackers++;
+            const real = card.querySelector('[data-stat="browsers"]');
+            const starts = card.querySelector('[data-starts]');
+            real.textContent = g.trackingActive ? formatter.format(g.visitors) : '—';
+            real.classList.toggle('is-untracked', !g.trackingActive);
+            card.querySelector('[data-stat="launches"]').textContent = formatter.format(g.launches);
+            starts.textContent = !g.trackingActive ? 'รอติดตั้ง Tracker ในเกม' :
+              (g.plays ? `เริ่มเล่นจริง ${formatter.format(g.plays)} ครั้ง` : 'ยังไม่ได้เชื่อมปุ่มเริ่มเล่น');
+            if (g.launches > best) { bestId=id; best=g.launches; tie=false; }
+            else if (g.launches === best) tie=true;
+          }
+          cards.forEach(card=>card.querySelector('.popular')?.classList.toggle('visible',best>=3&&!tie&&card.dataset.game===bestId));
+          lastLoadedAt=Date.now();
+          setStatus('ระบบนับคลิกพร้อมใช้งาน', 'ok');
+          hint.textContent = `ระบบเข้าเกมจริง: เชื่อมแล้ว ${trackers}/6 เกม`;
+          if (trackers<cards.length) showHelp('ยอดคลิกผ่าน HUB ทำงานแล้ว แต่ยอด <strong>เข้าเกมจริง</strong> ยังต้องเพิ่มสคริปต์ <code>game-tracker.js</code> ลงในเว็บไซต์แต่ละเกม ตาม README ที่อยู่ในไฟล์ ZIP');
+          else showHelp('');
+        } catch(err) {
+          const e=String(err?.message||'');
+          setStatus(e==='LOCAL_FILE'?'ไฟล์ทดลอง • ไม่เชื่อมฐานข้อมูล': 'เชื่อมต่อสถิติไม่ได้', 'offline');
+          hint.textContent = 'เกมยังเปิดเล่นได้ตามปกติ';
+          if(e==='LOCAL_FILE') showHelp('กำลังเปิดเมนูผ่านไฟล์บนเครื่อง: เกมยังเล่นได้จากโฟลเดอร์เดียวกัน แต่สถิติรวมทุกคนต้องมี Netlify Functions (หรือ Backend) จึงจะใช้งานได้');
+          else if(e==='HTTP_404' || e==='BAD_RESPONSE') showHelp('ไม่พบ Netlify Function ที่ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a> หรือได้คำตอบผิดรูปแบบ โปรด Deploy <strong>ทั้งโปรเจกต์ผ่าน GitHub หรือ Netlify CLI</strong> ไม่ใช่อัปโหลด HTML/ZIP แบบ static เท่านั้น');
+          else if(e==='HTTP_503'||e==='HTTP_500'||e==='HTTP_502') showHelp('ฟังก์ชันเซิร์ฟเวอร์มีข้อผิดพลาด โปรดดู Netlify → Logs → Functions → stats และตรวจสอบการติดตั้ง @netlify/blobs');
+          else showHelp('ถ้าใช้เซิร์ฟเวอร์ไฟล์อย่างเดียว (เช่น Python http.server) ระบบนับรวมจะไม่ทำงาน ต้อง Deploy Netlify Functions ด้วย ตรวจสอบ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a>');
+        } finally { busy=false; refresh.disabled=false; if(pendingRefresh) { pendingRefresh=false; void refreshStats(); } }
+      }
+      async function recordLaunch(id) {
+        if (!ids.has(id) || location.protocol === 'file:') return;
+        try {
+          const res=await fetch(API,{method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({game:id,browserId:browserId(),launchId:uuid(),event:'launch'}),keepalive:true});
+          if (!res.ok || !(await res.json()).ok) throw new Error('POST_FAILED');
+          // Loading after confirmed server write, not guessing that a click was recorded.
+          await refreshStats();
+        } catch(err) {
+          setStatus('กดเข้าเกมได้ แต่บันทึกคลิกไม่สำเร็จ','offline');
+          showHelp('ระบบเก็บสถิติไม่พร้อม โปรดตรวจสอบ Netlify Function และ Deploy ผ่าน GitHub หรือ Netlify CLI');
+        }
+      }
+      try { updateLast(localStorage.getItem(storageKey)); } catch {}
+      document.querySelectorAll('[data-launch]').forEach(link=>link.addEventListener('click',()=>{
+        const game=link.dataset.launch;
+        updateLast(game);
+        try { localStorage.setItem(storageKey,game); } catch {}
+        void recordLaunch(game);
+      }));
+      refresh.addEventListener('click',refreshStats);
+      window.addEventListener('focus',()=>{if(Date.now()-lastLoadedAt>20000) void refreshStats();});
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden && Date.now()-lastLoadedAt>20000) void refreshStats();});
+      document.getElementById('year').textContent=String(new Date().getFullYear());
+      void refreshStats();
+    })();
+  </script>
+</body>
+</html>
