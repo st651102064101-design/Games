@@ -938,8 +938,29 @@ function reconcileBots(){
   bots.splice(choice,1);
  }
 }
+// A small spatial grid keeps target searches inexpensive with 49 bots.
+const HUNTER_CELL=500;
+function buildBotTargetGrid(){
+ const grid=new Map();
+ for(const b of game.bots||[]){if(b.dead>0||b.hp<=0)continue;const x=Math.floor(b.x/HUNTER_CELL),y=Math.floor(b.y/HUNTER_CELL),key=x+','+y;if(!grid.has(key))grid.set(key,[]);grid.get(key).push(b)}
+ game.botTargetGrid=grid;
+}
+function nearestHunter(x,y){
+ const p=game.p;let target=p,best=(p.x-x)**2+(p.y-y)**2;
+ const gx=Math.floor(x/HUNTER_CELL),gy=Math.floor(y/HUNTER_CELL),grid=game.botTargetGrid;
+ if(!grid)return target;
+ for(let ix=gx-1;ix<=gx+1;ix++)for(let iy=gy-1;iy<=gy+1;iy++)for(const b of grid.get(ix+','+iy)||[]){if(b.dead>0||b.hp<=0)continue;const d=(b.x-x)**2+(b.y-y)**2;if(d<best&&d<=HUNTER_CELL**2){best=d;target=b}}
+ return target;
+}
+function damageBotFromMonster(bot,damage){
+ if(!bot||bot.dead>0||bot.hp<=0||(bot.inv||0)>0)return false;
+ const hit=Math.max(1,Math.round(damage));bot.hp=Math.max(0,bot.hp-hit);bot.inv=.24;
+ playSound('hurt',bot.x,bot.y);sparks(bot.x,bot.y,'#ffe8ed',6);addFloat(bot.x,bot.y-44,'-'+hit,'#ff9b9b');
+ if(bot.hp<=0){const count=Math.max(0,Math.min(4,bot.blades||0));bot.dead=6;bot.blades=4;bot.hits=0;for(let i=0;i<count;i++)spawnDrop(bot.x,bot.y,'weapon',1,randWeapon(false))}
+ return true;
+}
 function updateBots(dt){const g=game,p=g.p;if(performance.now()>=(g.nextBotBalance||0)){g.nextBotBalance=performance.now()+1000;reconcileBots()}for(const b of g.bots||[]){
- if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp;b.hits=0}continue}
+ b.inv=Math.max(0,(b.inv||0)-dt);if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp;b.hits=0;b.dead=0;b.inv=0}continue}
  b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if((g.weapons.length>b.items||b.blades<2)&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}else if(fear<380){b.tx=p.x;b.ty=p.y;b.retarget=.3}
  b.retarget-=dt;if(!b.fleeing&&(b.retarget<=0||Math.hypot(b.tx-b.x,b.ty-b.y)<12)){b.retarget=rand(2.5,5);const a=rand(0,TAU),d=rand(120,700);b.tx=clamp(b.x+Math.cos(a)*d,-half+80,half-80);b.ty=clamp(b.y+Math.sin(a)*d,-half+80,half-80)}
  const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy)||1,sp=b.fleeing?118:(fear<380?125:105);const ox=b.x,oy=b.y;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
@@ -1062,10 +1083,23 @@ function drawDayNight(){
 function drawObsidian(x,y,sc){ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);poly([[-14,6],[-6,-18],[4,-10],[14,6]],'#2a1d1d');poly([[-6,-18],[4,-10],[0,6]],'#4a3030');ctx.restore()}
 // Bears can strike from range: a claw wave travels toward the hero and hits on contact
 let bearShots=[];
-function updateBearShots(dt){const g=game,p=g.p;for(const m of g.mobs){if(m.shotCd===undefined)m.shotCd=rand(1,3);m.shotCd-=dt;const d=Math.hypot(p.x-m.x,p.y-m.y);
- if(m.shotCd<=0&&d>130&&d<230){m.shotCd=3;const a=Math.atan2(p.y-m.y,p.x-m.x);bearShots.push({x:m.x,y:m.y,a,t0:now,dmg:Math.max(4,Math.round(m.damage*.5))})}}
- for(let i=bearShots.length-1;i>=0;i--){const q=bearShots[i],el=now-q.t0;q.x+=Math.cos(q.a)*260*dt;q.y+=Math.sin(q.a)*260*dt;if(el>1.6){bearShots.splice(i,1);continue}
-  if(Math.hypot(q.x-p.x,q.y-p.y)<32&&p.inv<=0){p.hp-=q.dmg;p.inv=.4;g.hitFlash=.4;g.shake=Math.max(g.shake,6);addFloat(p.x,p.y-44,`-${q.dmg}`,'#ffc1bf');playSound('hurt');if(p.hp<=0){p.hp=0;endGame('หมี')}bearShots.splice(i,1)}}}
+function updateBearShots(dt){
+ const g=game,p=g.p;
+ for(const m of g.mobs){
+  if(m.shotCd===undefined)m.shotCd=rand(1,3);m.shotCd-=dt;
+  const target=nearestHunter(m.x,m.y),d=Math.hypot(target.x-m.x,target.y-m.y);
+  if(m.shotCd<=0&&d>130&&d<230){m.shotCd=3;const a=Math.atan2(target.y-m.y,target.x-m.x);bearShots.push({x:m.x,y:m.y,a,t0:now,dmg:Math.max(4,Math.round(m.damage*.5))})}
+ }
+ for(let i=bearShots.length-1;i>=0;i--){
+  const q=bearShots[i],el=now-q.t0;q.x+=Math.cos(q.a)*260*dt;q.y+=Math.sin(q.a)*260*dt;
+  if(el>1.6){bearShots.splice(i,1);continue}
+  const target=nearestHunter(q.x,q.y);
+  if(Math.hypot(q.x-target.x,q.y-target.y)<32){
+   if(target!==p){if(damageBotFromMonster(target,q.dmg))bearShots.splice(i,1)}
+   else if(p.inv<=0){p.hp-=q.dmg;p.inv=.4;g.hitFlash=.4;g.shake=Math.max(g.shake,6);addFloat(p.x,p.y-44,`-${q.dmg}`,'#ffc1bf');playSound('hurt');if(p.hp<=0){p.hp=0;endGame('หมี')}bearShots.splice(i,1)}
+  }
+ }
+}
 function drawBearShots(){for(const q of bearShots){if(!isVisible(q.x,q.y,80))continue;ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.a);ctx.strokeStyle='#eef7ff';ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,0,22,-.9,.9);ctx.stroke();ctx.strokeStyle='#8fb4cc';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,16,-.8,.8);ctx.stroke();ctx.restore()}}
 // Speed pickup: a yellow bolt appears near the hero about every 40s; collecting it gives 5s of sprint speed
 function updateSpeedPickup(dt){const g=game,p=g.p;g.speedT=(g.speedT??40)-dt;if(g.speedT<=0){g.speedT=40;const a=rand(0,TAU),d=rand(220,480);spawnDrop(clamp(p.x+Math.cos(a)*d,-half+60,half-60),clamp(p.y+Math.sin(a)*d,-half+60,half-60),'speed',1)}}
@@ -1159,7 +1193,7 @@ function update(dt){if(mode==='dying'&&game){updateDying(dt);return}if(mode!=='p
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){const newStage=stage!==g.stage;const badge=$('pictureStage');badge.classList.remove('changed');void badge.offsetWidth;badge.classList.add('changed');g.stage=stage;g.phase=phase;if(stage===3||newStage&&STAGE_DESIGNS[stage])g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${STAGE_DESIGNS[stage]?.thai||beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,STAGE_DESIGNS[stage]?.color||'#e5ffff',22);if(phase===3&&STAGE_DESIGNS[stage])spawnThemedBoss(stage);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}if(pinchPts.size>=2){dx=0;dy=0}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);if(g.dash){const D=g.dash,el=now-D.t0;p.x=el<D.out?D.x0:D.x1;p.y=el<D.out?D.y0:D.y1;p.inv=Math.max(p.inv,.1);if(el>=D.out+D.inDur){g.dash=null;resolveObs(p,16);sparks(p.x,p.y,'#e5ffff',12)}}p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateSnowDog(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
+ updateSnowDog(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();buildBotTargetGrid();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -1168,11 +1202,12 @@ function update(dt){if(mode==='dying'&&game){updateDying(dt);return}if(mode!=='p
  audioTick(dt);const spinStep=dt*spinSpeed();g.swordAngle=(g.swordAngle+spinStep)%TAU;g.swordPhase+=spinStep;if(g.perks.regen)g.p.hp=Math.min(g.p.maxHp,g.p.hp+(g.perks.regen||0)*.7*dt);
  const meleeArmed=ownBlades().some(b=>!combatSpec({type:b.type}).gun);
  const _segs=ownBlades().filter(q=>!combatSpec({type:q.type}).gun).map(q=>bladeSeg(p.x,p.y,g.swordPhase+q.o,q.reach,q.type,g.growS||1));
- for(let i=g.mobs.length-1;i>=0;i--){let m=g.mobs[i];if(m.baseR===undefined)m.baseR=m.r;m.r=m.baseR*(g.growS||1);if(m.beast==='bear'&&m.leaper){m.jumpCooldown=(m.jumpCooldown??(2+Math.random()*3))-dt;if(m.jump){const j=m.jump;j.t+=dt;const f=Math.min(1,j.t/j.duration),e=f*f*(3-2*f);m.x=j.x+(j.tx-j.x)*e;m.y=j.y+(j.ty-j.y)*e;m.jumpHeight=Math.sin(Math.PI*f)*135;if(f>=1){m.jump=null;m.jumpHeight=0;m.jumpCooldown=4+Math.random()*2;if(Math.hypot(m.x-p.x,m.y-p.y)<m.r+28*(g.growS||1)){const hit=Math.max(1,Math.ceil(p.maxHp*.125));p.hp=Math.max(0,p.hp-hit);p.inv=Math.max(p.inv,.35);m.contact=Math.max(m.contact,.72);g.hitFlash=.6;g.shake=10;playSound('hurt');sparks(p.x,p.y,'#fff0cb',12);addFloat(p.x,p.y-50,`-${hit}`,'#ff8b80');if(p.hp<=0){endGame();break}}}else continue}else if(m.jumpCooldown<=0&&Math.hypot(m.x-p.x,m.y-p.y)<420){m.jump={x:m.x,y:m.y,tx:p.x,ty:p.y,t:0,duration:.8};m.jumpHeight=0;continue}}let vx=p.x-m.x,vy=p.y-m.y,dist=Math.max(1,Math.hypot(vx,vy)),reach=m.r+(m.boss?31:m.elite?23:18),near=dist<=reach;
+ for(let i=g.mobs.length-1;i>=0;i--){let m=g.mobs[i];const target=nearestHunter(m.x,m.y);if(m.baseR===undefined)m.baseR=m.r;m.r=m.baseR*(g.growS||1);if(m.beast==='bear'&&m.leaper){m.jumpCooldown=(m.jumpCooldown??(2+Math.random()*3))-dt;if(m.jump){const j=m.jump;j.t+=dt;const f=Math.min(1,j.t/j.duration),e=f*f*(3-2*f);m.x=j.x+(j.tx-j.x)*e;m.y=j.y+(j.ty-j.y)*e;m.jumpHeight=Math.sin(Math.PI*f)*135;if(f>=1){m.jump=null;m.jumpHeight=0;m.jumpCooldown=4+Math.random()*2;if(j.target&&j.target!==p&&!j.target.dead&&Math.hypot(m.x-j.target.x,m.y-j.target.y)<m.r+28){damageBotFromMonster(j.target,Math.ceil(j.target.maxHp*.125));m.contact=Math.max(m.contact,.72)}else if(j.target===p&&Math.hypot(m.x-p.x,m.y-p.y)<m.r+28*(g.growS||1)){const hit=Math.max(1,Math.ceil(p.maxHp*.125));p.hp=Math.max(0,p.hp-hit);p.inv=Math.max(p.inv,.35);m.contact=Math.max(m.contact,.72);g.hitFlash=.6;g.shake=10;playSound('hurt');sparks(p.x,p.y,'#fff0cb',12);addFloat(p.x,p.y-50,`-${hit}`,'#ff8b80');if(p.hp<=0){endGame();break}}}else continue}else if(m.jumpCooldown<=0&&Math.hypot(m.x-target.x,m.y-target.y)<420){m.jump={x:m.x,y:m.y,tx:target.x,ty:target.y,target,t:0,duration:.8};m.jumpHeight=0;continue}}let vx=target.x-m.x,vy=target.y-m.y,dist=Math.max(1,Math.hypot(vx,vy)),reach=m.r+(m.boss?31:m.elite?23:18),near=dist<=reach;
  if(dist>reach){let scale=m.stun>0?.14:1;m.x+=vx/dist*m.speed*dt*scale;m.y+=vy/dist*m.speed*dt*scale}if(meleeArmed){const bar=m.r+swordRange()-6,ex=m.x-p.x,ey=m.y-p.y,ed=Math.hypot(ex,ey)||1;if(ed<bar){m.x=p.x+ex/ed*bar;m.y=p.y+ey/ed*bar}}
  if(_segs.length){let bd=Infinity,bnx=0,bny=0;for(const sg of _segs){const dx=sg[2]-sg[0],dy=sg[3]-sg[1],L2=dx*dx+dy*dy||1,t=clamp(((m.x-sg[0])*dx+(m.y-sg[1])*dy)/L2,0,1),qx=sg[0]+dx*t,qy=sg[1]+dy*t,ox=m.x-qx,oy=m.y-qy,d=Math.hypot(ox,oy);if(d<bd){bd=d;const nd=d||1;bnx=ox/nd;bny=oy/nd}}if(bd<40){const k=(40-bd)/40;m.x+=bnx*m.speed*25*k*dt;m.y+=bny*m.speed*25*k*dt}}
  m.dir=vx<0?-1:1;m.walk+=dt*m.speed*.14;m.hitTime=Math.max(0,m.hitTime-dt);m.stun=Math.max(0,m.stun-dt);m.flash=Math.max(0,m.flash-dt*3);m.contact-=dt;if(m.bleed>0){m.bleed-=dt;m.hp-=(m.bleedPower||3)*dt;if(frame%18===0)sparks(m.x,m.y,'#e7687d',2)}
- if(near&&m.contact<=0&&p.inv<=0){playSound('beast',m.x,m.y,m.beast||'bear');playSound('beastHurt',m.x,m.y);playSound('hurt');let hit=Math.max(1,Math.round(m.damage*(1-(g.upd.armor-1)*.07-(g.perks.guard||0)*.08-(g.craft.furArmor?.13:0))));p.hp-=hit;p.inv=.24;m.contact=.72;g.hitFlash=.5;g.shake=7;addFloat(p.x,p.y-45,`-${hit}`,'#ff9b9b');sparks(p.x,p.y,'#ffe8ed',9);if(p.hp<=0){p.hp=0;endGame();break}}
+ if(near&&m.contact<=0&&target!==p){if(damageBotFromMonster(target,m.damage)){m.contact=.72;playSound('beast',m.x,m.y,m.beast||'bear')}}
+  if(near&&m.contact<=0&&target===p&&p.inv<=0){playSound('beast',m.x,m.y,m.beast||'bear');playSound('beastHurt',m.x,m.y);playSound('hurt');let hit=Math.max(1,Math.round(m.damage*(1-(g.upd.armor-1)*.07-(g.perks.guard||0)*.08-(g.craft.furArmor?.13:0))));p.hp-=hit;p.inv=.24;m.contact=.72;g.hitFlash=.5;g.shake=7;addFloat(p.x,p.y-45,`-${hit}`,'#ff9b9b');sparks(p.x,p.y,'#ffe8ed',9);if(p.hp<=0){p.hp=0;endGame();break}}
  for(let k=0;k<swordCount();k++){let a=orbitAngle(k),sx=p.x+Math.cos(a)*swordRange(),sy=p.y+Math.sin(a)*swordRange();if(m.hitTime<=0&&segmentDistanceSquared(m.x,m.y,p.x+Math.cos(a)*22,p.y+Math.sin(a)*22,sx,sy)<(m.r+14)**2){m.hp-=swingDamage();m.hits=(m.hits||0)+1;if(m.hits>=(m.needHits||10))m.hp=0;m.x+=Math.cos(a)*16;m.y+=Math.sin(a)*16;addSlash(m.x,m.y,a);m.hitTime=.29;m.flash=.35;m.stun=g.weapon==='ice'?.55:.14;m.x+=Math.cos(a)*7;m.y+=Math.sin(a)*7;g.shake=Math.max(g.shake,2.5);sparks(m.x,m.y,g.weapon==='ice'?'#7befff':g.weapon==='blood'?'#ff9bb3':'#efffff',7);addFloat(m.x,m.y-20,Math.round(swingDamage())+'','#f8ffff');g.hitCounter++;
  if(g.weapon==='blood'){m.bleed=Math.max(m.bleed||0,3);m.bleedPower=3.2}
  if(g.perks.wave&&g.hitCounter%5===0){sparks(p.x,p.y,'#b3ecff',25);g.fx.push({x:p.x,y:p.y,vx:0,vy:0,life:.4,max:.4,color:'#9eeeff',r:65,ring:true});for(let other of g.mobs)if(other!==m&&d2(other.x-p.x,other.y-p.y)<120*120){other.hp-=swingDamage()*.45;other.flash=.2}}
