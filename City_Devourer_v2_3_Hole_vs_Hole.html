@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#101925">
-<title>CITY DEVOURER — เมืองนี้เป็นของหลุม</title>
+<title>CITY DEVOURER v2.3 — HOLE VS HOLE · 3D ONLINE</title>
 <style>
 :root{--gold:#ffcf75;--cyan:#9edbf7;--panel:rgba(13,23,35,.85);--border:rgba(230,240,255,.14)}
 *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#142b39;color:#edf5fa;font-family:Inter,"Noto Sans Thai",Tahoma,Arial,sans-serif;user-select:none;-webkit-user-select:none}button{font:inherit;cursor:pointer}canvas{display:block}#game{position:fixed;inset:0;width:100vw;height:100vh;touch-action:none}#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 85% at 50% 43%,transparent 44%,rgba(8,20,31,.38) 100%)}.hidden{display:none!important}
@@ -23,6 +23,28 @@
 #worldSettingsBtn{font-size:12px;width:35px}#worldSettings{position:fixed;z-index:14;right:20px;top:83px;width:min(300px,calc(100vw - 40px));background:#102333f5;border:1px solid #ffffff35;border-radius:15px;padding:16px;box-shadow:0 16px 40px #0008;pointer-events:auto}
 #worldSettings h3{font-size:13px;margin:0 0 10px;color:var(--gold)}.config-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;font-size:12px}.config-row select,.config-row input,.menu-config select,.menu-config input{color:#f5f7fc;border:1px solid #ffffff32;border-radius:9px;background:#23384b;padding:9px 10px;font:inherit;min-width:70px;max-width:155px}.menu-config{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 15px}.menu-config label{font-size:11px;color:#c3d8e4;display:flex;flex-direction:column;gap:6px}.menu-config select,.menu-config input{width:100%;max-width:none;font-size:13px}.net-options{display:flex;gap:9px;margin:0 0 11px}.net-option{flex:1;min-width:0;border:1px solid #ffffff35;border-radius:10px;padding:10px 5px;background:#ffffff0a;color:#dbeaf5;font-weight:800;font-size:12px}.net-option.selected{border-color:#ffc873;background:#ffc87322;color:#ffdea5}#connectionHint{font-size:10px;line-height:1.5;margin:0 0 12px;color:#b5cbd5}.leaderboard{position:absolute;left:21px;top:231px;border-radius:13px;padding:9px 12px;background:#0d1f30bf;border:1px solid #ffffff23;min-width:145px;pointer-events:none}.leaderboard h4{margin:0 0 6px;font-size:10px;letter-spacing:1px;color:#f7d28b}.lb-line{display:flex;gap:10px;justify-content:space-between;font-size:10px;color:#d9e7f1;padding:2px 0}.lb-line span{max-width:96px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}.lb-line b{color:#e9c47b}
 @media(max-width:720px){#worldStatus{top:111px;left:9px;gap:4px;max-width:72vw}.world-chip{font-size:8px;padding:5px 6px}.leaderboard{left:9px;top:167px;min-width:106px;padding:6px 8px}.lb-line{font-size:8px}.leaderboard h4{font-size:9px}#worldSettings{top:55px;right:9px;width:min(290px,calc(100vw - 18px))}.menu-config{gap:7px}.menu-config label{font-size:10px}}
+/* v2.2 death / invulnerability UI */
+#shieldState{border-color:#ffe1a38a;color:#ffe4a9;background:#815d314f}
+.menu-card.defeated{border-color:#ff90935a;box-shadow:0 25px 100px #16030dc4,0 0 80px #f34d4a1b}
+.menu-card.defeated .menu-eyebrow{color:#ff989b}
+.menu-card.defeated h1 span{color:#ff848b}
+.menu-card.defeated .features,.menu-card.defeated .section-label,.menu-card.defeated .net-options,.menu-card.defeated #connectionHint,.menu-card.defeated .menu-config,.menu-card.defeated .mode-row,.menu-card.defeated .help{display:none}
+.menu-card.defeated{padding:28px 30px 23px;max-width:480px}
+.menu-card.defeated h1{font-size:clamp(40px,8vw,54px);margin:12px 0 5px}
+.menu-card.defeated .subtitle{margin:6px 0 15px}
+.menu-card.defeated #menuExtra{display:flex;flex-direction:column}
+.menu-card.defeated .death-stats{order:0}
+.menu-card.defeated .death-killer{order:1}
+.menu-card.defeated .result{order:2}
+.menu-card.defeated .menu-actions{order:3}
+@media(max-width:720px){.menu-card.defeated{padding:22px 19px}}
+.death-killer{padding:13px 16px;border-radius:13px;border:1px solid #f98b8a50;background:#d8404830;color:#ffe3e3;text-align:center;font-size:14px;font-weight:850;overflow-wrap:anywhere}
+.death-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
+.death-stat{padding:12px 6px;background:#ffffff0d;border:1px solid #ffffff14;border-radius:12px;text-align:center}
+.death-stat strong{display:block;font-size:22px;color:#ffdc91}
+.death-stat small{display:block;font-size:10px;color:#bed0df;letter-spacing:1px;margin-top:3px}
+.death-flash{position:fixed;inset:0;pointer-events:none;z-index:9;background:radial-gradient(ellipse at center,transparent 10%,#f1465944 100%);animation:deadflash .75s ease-out both}
+@keyframes deadflash{from{opacity:0}25%{opacity:1}to{opacity:0}}
 </style>
 </head>
 <body>
@@ -41,13 +63,13 @@
    <div class="top-controls"><button class="icon-button" id="cameraBtn" title="สลับมุมกล้อง 3D (V)" aria-label="สลับเป็นมุมกล้อง 3D" aria-pressed="false">3D</button><button class="icon-button" id="worldSettingsBtn" title="ตั้งค่าโลก / Bot" aria-label="ตั้งค่าโลก">⚙</button><button class="icon-button" id="soundBtn" title="เปิด/ปิดเสียง" aria-label="เปิดหรือปิดเสียง">♪</button><button class="icon-button" id="pauseBtn" title="พักเกม (ESC)" aria-label="พักเกม">Ⅱ</button></div>
   </div>
  </div>
- <div id="worldStatus"><span class="world-chip" id="netState">● SOLO</span><span class="world-chip" id="botState">BOT 8</span><span class="world-chip" id="towerState">★ MEGA T1</span></div>
+ <div id="worldStatus"><span class="world-chip" id="netState">● SOLO</span><span class="world-chip" id="botState">BOT 8</span><span class="world-chip" id="towerState">★ MEGA T1</span><span class="world-chip" id="killState">◎ KO 0</span><span class="world-chip hidden" id="shieldState">✧ SAFE 3s</span></div>
  <div class="leaderboard" id="leaderboard"><h4>TOP HOLES</h4><div id="leaderLines"></div></div>
  <div id="worldSettings" class="hidden"><h3>⚙ ตั้งค่าเมือง</h3><div class="config-row"><span>Bot ขั้นต่ำ</span><select id="botMinLive"><option>2</option><option>4</option><option selected>8</option><option>12</option><option>16</option><option>20</option></select></div><div class="config-row"><span>ความฉลาด Bot</span><select id="botDifficultyLive"><option value="easy">ง่าย</option><option value="normal" selected>ปกติ</option><option value="hard">ยาก</option></select></div><div class="config-row"><span>ความหนาแน่นคน</span><select id="pedDensityLive"><option value="low">น้อย</option><option value="normal" selected>ปกติ</option><option value="high">มาก</option></select></div><div class="config-row"><span>ห้องออนไลน์</span><span id="roomLive">SOLO</span></div><button class="secondary-button" id="closeWorldSettings" style="width:100%">ปิด</button></div>
  <div id="comboBanner" class="combo-banner hidden"><small>DEVOUR COMBO</small><b id="comboNumber">×2</b></div>
  <div id="milestone" class="milestone hidden">LEVEL UP!</div>
  <div class="mini-panel"><div class="mini-title"><span>แผนที่เมือง</span><span>12 KM</span></div><canvas id="minimap" width="322" height="322"></canvas></div>
- <div class="hint-bar"><span><span class="kbd">W A S D</span> เคลื่อนที่</span><span><span class="kbd">Q</span> พลังดูด</span><span><span class="kbd">V</span> เปลี่ยนมุมกล้อง</span><span><span class="kbd">ESC</span> พักเกม</span></div>
+ <div class="hint-bar"><span><span class="kbd">W A S D</span> เคลื่อนที่</span><span><span class="kbd">Q</span> พลังดูด</span><span><span class="kbd">V</span> 2D / 3D หลุมติดพื้น</span><span><span class="kbd">ESC</span> พักเกม</span></div>
  <button class="pulse-button" id="pulseBtn" aria-label="ใช้พลังดูดพิเศษ"><strong>◎</strong><small id="pulseLabel">PULSE • Q</small></button>
  <div id="joyBase" aria-label="จอยสติ๊กสำหรับเคลื่อนที่"><div id="joyKnob"></div></div>
  <div id="toast" class="toast hidden"></div>
@@ -64,10 +86,10 @@
  <div class="section-label">เลือกโหมดเกม</div>
  <div class="mode-row"><button class="mode-option selected" data-mode="endless"><b>∞ สำรวจอิสระ</b><small>เล่นไม่จำกัดเวลา</small></button><button class="mode-option" data-mode="timed"><b>◷ ท้าทาย 3 นาที</b><small>ทำคะแนนให้สูงสุด</small></button></div>
  <button class="start-button" id="startBtn">▶ เริ่มกลืนเมือง</button>
- <p class="help">คอมพิวเตอร์: WASD / ลูกศร หรือกดเมาส์ค้างเพื่อเดิน • Q ใช้พลังดูด<br>มือถือ: จอยสติ๊กด้านซ้าย • ปุ่ม PULSE ด้านขวา • กด 3D เพื่อเปลี่ยนมุมกล้อง</p>
+ <p class="help">คอมพิวเตอร์: WASD / ลูกศร หรือกดเมาส์ค้างเพื่อเดิน • Q ใช้พลังดูด<br>มือถือ: จอยสติ๊กด้านซ้าย • ปุ่ม PULSE ด้านขวา • เปิดเป็น 3D ทันที กด 2D เพื่อสลับ</p>
  <div id="menuExtra"></div>
 </div></div>
-<div class="footer-brand">PROCEDURAL WORLD · ZERO ASSETS · V2.0 BETA · LIVING CITY</div>
+<div class="footer-brand">PROCEDURAL WORLD · ZERO ASSETS · V2.3 · HOLE VS HOLE</div>
 <script>
 (()=>{'use strict';
 const cvs=document.getElementById('game'), ctx=cvs.getContext('2d',{alpha:false});
@@ -78,10 +100,11 @@ let W=0,H=0,DPR=1,simTime=0,frameCount=0,lastFrame=0,mapLast=0,uiLast=0;
 let mode='endless',state='menu',score=0,mass=0,radius=18,targetRadius=18,level=1,combo=0,comboTime=0,timeLeft=180,elapsed=0,highScore=0,toastUntil=0,milestoneUntil=0;
 const startX=1920,startY=1920,player={x:startX,y:startY,camX:startX,camY:startY,zoom:.79,dirX:0,dirY:0};
 const keys=new Set(),chunks=new Map(),particles=[],suckers=[],ripples=[];
-const bots=[],remotePlayers=new Map(),removedOnline=new Set();
+const bots=[],remotePlayers=new Map(),removedOnline=new Set(),holeEatFx=[];let knockouts=0;
 let botMinimum=8,botDifficulty='normal',pedDensity='normal',networkMode='solo',networkConnected=false,ws=null,serverId='',roomId='public',networkLast=0,networkAttempt=0,worldEpoch=0;
 let playerName='Player',megaTier=1,megaTower=null,lastBotBrain=0,lastLeader=0;let pulseTimer=0,pulseCooldown=0,soundOn=false,audioCtx=null;
-let cameraMode='top';try{if(localStorage.getItem('cityDevourerCam')==='perspective')cameraMode='perspective';}catch(_){}
+let spawnShield=0,deathInfo=null,deathAge=0;const DEATH_DURATION=.78; // v2.2
+let cameraMode='perspective'; // 3D is always the default; V/2D temporarily switches view.
 let mouseDown=false,mouseX=0,mouseY=0,mousePointerId=null,joyPointerId=null,joyX=0,joyY=0,dragDownX=0,dragDownY=0;
 const colors={house:['#a7c9cb','#d9c1ab','#a8bed8','#c6c3d5','#c7d6b2','#efcfac','#b8d4c6'],mid:['#719aac','#91adbb','#a0abb5','#86afac','#bdad9d','#8196ab'],tower:['#6b94af','#8aafbf','#7e90a7','#799bb1','#acc0c9','#718e9f'],industrial:['#b4a99a','#82979f','#b6b5a8','#929a9e']};
 const types=[{name:'ของเล็ก',req:0},{name:'ต้นไม้',req:15},{name:'รถยนต์',req:23},{name:'บ้าน',req:36},{name:'อาคาร',req:56},{name:'ตึกระฟ้า',req:124}];
@@ -173,7 +196,7 @@ function makeBot(i){
  return{id:'bot-'+i,name:['NOVA','VOID','BITE','DARK','ORB','EATER','NIBBLE','GULP','ECLIPSE','COMET'][i%10]+(i>=10?i:''),color:['#fd797d','#ab8cfc','#70daca','#ffc566','#6eb8ff','#f1a4db'][i%6],x:clamp(player.x+Math.cos(angle)*d,35,WORLD-35),y:clamp(player.y+Math.sin(angle)*d,35,WORLD-35),radius:r,targetRadius:r,mass:(r-18)**2/.9,score:0,level:1,goalX:player.x,goalY:player.y,think:0,brain:i*.09,respawn:0};
 }
 function resizeBots(){if(networkConnected)return;while(bots.length<botMinimum)bots.push(makeBot(bots.length));if(bots.length>botMinimum)bots.length=botMinimum;}
-function botRespawn(bot){const replacement=makeBot(parseInt(String(bot.id).replace(/\D/g,''),10)||0);replacement.id=bot.id;Object.assign(bot,replacement);bot.respawn=1.5;}
+function botRespawn(bot){const replacement=makeBot(parseInt(String(bot.id).replace(/\D/g,''),10)||0);replacement.id=bot.id;Object.assign(bot,replacement);bot.respawn=1.25;}
 function botEatThing(bot,o){if(o.removed||o.sucking||o.need>bot.radius*.91)return;pickup(o,bot);}
 function botBrain(bot,dt){
  if(bot.respawn>0){bot.respawn-=dt;return;}
@@ -185,13 +208,21 @@ function botBrain(bot,dt){
    const c=createChunk(ix,iy);for(const o of c.items){if(o.removed||o.sucking||o.need>bot.radius*.94)continue;const d2=(o.x-bot.x)**2+(o.y-bot.y)**2;
    if(d2<scoreBest){target=o;scoreBest=d2;}}
   }
-  let flee=null,fd=Infinity;for(const rival of [player,...bots]){if(rival===bot)continue;const dd=Math.hypot(rival.x-bot.x,rival.y-bot.y);if(rival.radius>bot.radius*1.28&&dd<310&&dd<fd){flee=rival;fd=dd;}}
-  if(flee){const a=Math.atan2(bot.y-flee.y,bot.x-flee.x);bot.goalX=bot.x+Math.cos(a)*430;bot.goalY=bot.y+Math.sin(a)*430;}
-  else if(botDifficulty==='hard'){
-   const prey=[player,...bots].find(h=>h!==bot&&bot.radius>h.radius*1.32&&Math.hypot(h.x-bot.x,h.y-bot.y)<420);
-   if(prey){bot.goalX=prey.x;bot.goalY=prey.y;}else if(target){bot.goalX=target.x;bot.goalY=target.y;}
+  // Every Bot can chase smaller holes or flee bigger ones, including the player.
+  // The former v2.2 player object had no `radius` property here: use the live radius.
+  const rivals=[{id:'local',x:player.x,y:player.y,radius,shield:spawnShield>0},...bots.filter(h=>h!==bot&&h.respawn<=0)];
+  let flee=null,fd=Infinity,prey=null,pd=Infinity;
+  for(const rival of rivals){
+   if(rival.id===bot.id)continue;
+   const dd=Math.hypot(rival.x-bot.x,rival.y-bot.y);
+   if(rival.radius>bot.radius*1.15&&dd<Math.max(330,rival.radius*2.6)&&dd<fd){flee=rival;fd=dd;}
+   if(!rival.shield&&bot.radius>rival.radius*1.15&&dd<Math.max(470,bot.radius*3)&&dd<pd){prey=rival;pd=dd;}
+  }
+  if(flee){const a=Math.atan2(bot.y-flee.y,bot.x-flee.x);bot.goalX=bot.x+Math.cos(a)*460;bot.goalY=bot.y+Math.sin(a)*460;}
+  else if(prey&&(botDifficulty!=='easy'||Math.random()<.30)){
+   bot.goalX=prey.x;bot.goalY=prey.y;
   }else if(target){bot.goalX=target.x;bot.goalY=target.y;}
-  if(!target&&!flee){const a=Math.random()*TAU;bot.goalX=bot.x+Math.cos(a)*350;bot.goalY=bot.y+Math.sin(a)*350;}
+  else{const a=Math.random()*TAU;bot.goalX=bot.x+Math.cos(a)*350;bot.goalY=bot.y+Math.sin(a)*350;}
  }
  const dx=bot.goalX-bot.x,dy=bot.goalY-bot.y,d=Math.hypot(dx,dy);
  if(d>4){const speed=(botDifficulty==='hard'?222:botDifficulty==='normal'?184:133)+Math.min(100,bot.radius*.28);bot.x=clamp(bot.x+dx/d*speed*dt,20,WORLD-20);bot.y=clamp(bot.y+dy/d*speed*dt,20,WORLD-20);}
@@ -206,17 +237,38 @@ function botBrain(bot,dt){
  }
  if(megaTower&&!megaTower.sucking&&!megaTower.removed&&megaTower.need<=bot.radius*.91&&Math.hypot(bot.x-megaTower.x,bot.y-megaTower.y)<bot.radius*.72+megaTower.need*.28)pickup(megaTower,bot);
 }
+// Hole combat uses the *ground positions* of both holes. Any larger hole
+// (at least 15% larger) may devour any smaller hole, including other Bots.
+const HOLE_SIZE_RATIO=1.15;
+function holeEatDistance(big,small){return Math.max(12,big.radius*.72+small.radius*.20);}
+function addHoleEatFx(victim,killer){
+ holeEatFx.push({x:victim.x,y:victim.y,toX:killer.x,toY:killer.y,radius:victim.radius,
+  name:victim.name||'',color:victim.color||'#8edaf4',age:0,ttl:.58});
+ if(holeEatFx.length>30)holeEatFx.splice(0,holeEatFx.length-30);
+ ripples.push({x:victim.x,y:victim.y,r:victim.radius,age:0,ttl:.55,color:victim.color||'#ff8795'});
+}
+function stepHoleEatFx(dt){for(let i=holeEatFx.length-1;i>=0;i--){holeEatFx[i].age+=dt;if(holeEatFx[i].age>=holeEatFx[i].ttl)holeEatFx.splice(i,1);}}
 function resolveHoleCombat(){
- if(networkConnected)return;
- const all=[player,...bots];for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
-  const a=all[i],b=all[j],d=Math.hypot(a.x-b.x,a.y-b.y);
-  if(d>Math.max(a.radius,b.radius)*.67)continue;
-  const big=a.radius>b.radius*1.32?a:b.radius>a.radius*1.32?b:null;
-  if(!big)continue;const small=big===a?b:a;if(small!==player&&small.respawn>0)continue;
-  big.mass+=Math.max(90,small.mass*.46);big.score+=Math.max(400,Math.round(small.mass*5));big.targetRadius=Math.min(350,18+Math.sqrt(Math.max(0,big.mass))*1.25);
-  ripples.push({x:small.x,y:small.y,r:small.radius,age:0,ttl:.7,color:'#ff818a'});
-  if(small===player){mass*=.65;score=Math.round(score*.85);targetRadius=Math.min(350,18+Math.sqrt(mass)*1.25);player.x=clamp(player.x+300,50,WORLD-50);player.y=clamp(player.y+300,50,WORLD-50);showToast('โดนหลุมใหญ่กลืน! เสียมวลบางส่วน');}
-  else botRespawn(small);
+ if(networkConnected||state!=='running')return;
+ const all=[{id:'local',name:playerName,x:player.x,y:player.y,radius,mass,local:true},...bots.filter(h=>h.respawn<=0)];
+ // Never count a Bot twice in the same frame after it has respawned.
+ const swallowed=new Set();
+ for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
+  const a=all[i],b=all[j];if(swallowed.has(a.id)||swallowed.has(b.id))continue;
+  const big=a.radius>b.radius*HOLE_SIZE_RATIO?a:b.radius>a.radius*HOLE_SIZE_RATIO?b:null;
+  if(!big)continue;const small=big===a?b:a;
+  if((small.local||big.local)&&spawnShield>0)continue;
+  if(Math.hypot(a.x-b.x,a.y-b.y)>holeEatDistance(big,small))continue;
+  const gainedMass=Math.max(90,Math.max(0,small.mass)*.46);
+  const gainedScore=Math.max(400,Math.round(Math.max(0,small.mass)*5));
+  if(big.local){mass+=gainedMass;score+=gainedScore;knockouts++;targetRadius=Math.min(350,18+Math.sqrt(mass)*1.25);}
+  else{big.mass+=gainedMass;big.score+=gainedScore;big.targetRadius=Math.min(350,18+Math.sqrt(Math.max(0,big.mass))*1.25);}
+  swallowed.add(small.id);
+  if(small.local){beginDefeat(big.name||'BOT',big.x,big.y);return;}
+  addHoleEatFx(small,big);
+  if(big.local){showToast('◎ กลืน '+small.name+' สำเร็จ! +'+gainedScore.toLocaleString('en-US')+' คะแนน');try{beep(600,.14,.055);}catch(_){}}
+  else if(Math.hypot(big.x-player.x,big.y-player.y)<700)showToast('◎ '+big.name+' กลืน '+small.name+'!');
+  botRespawn(small);
  }
 }
 function spawnParticipants(){bots.length=0;remotePlayers.clear();resizeBots();}
@@ -231,19 +283,102 @@ const preferredOnline=(location.protocol==='https:'||location.protocol==='http:'
 networkMode=preferredOnline?'online':'solo';
 function selectNetwork(n){networkMode=n;document.querySelectorAll('[data-network]').forEach(b=>b.classList.toggle('selected',b.dataset.network===n));$('connectionHint').textContent=n==='online'?'ออนไลน์: ต้องเปิดผ่าน game-server.js • คนเข้าลิงก์/ห้องเดียวกันจะเจอกัน':'Solo: เล่นแบบออฟไลน์พร้อม Bot อัตโนมัติ ไม่ต้องใช้เซิร์ฟเวอร์';}
 document.querySelectorAll('[data-network]').forEach(b=>b.onclick=()=>selectNetwork(b.dataset.network));selectNetwork(networkMode);
-function refreshWorldHud(){ $('botState').textContent='BOT '+bots.length+(networkConnected?' · SERVER':'');$('towerState').textContent='★ MEGA T'+megaTier;const el=$('netState');el.className='world-chip '+(networkConnected?'connected':networkMode==='online'?'connecting':'offline');el.textContent=networkConnected?'● ONLINE / '+roomId:networkMode==='online'?'◌ CONNECTING':'● SOLO';$('roomLive').textContent=networkConnected?roomId:'SOLO'; }
-function startGame(){disconnectNet();syncConfig();playerName=$('playerName').value.trim().slice(0,16)||'Player';removedOnline.clear();worldEpoch++;chunks.clear();particles.length=0;suckers.length=0;ripples.length=0;simTime=0;score=0;mass=0;radius=18;targetRadius=18;level=1;combo=0;comboTime=0;timeLeft=180;elapsed=0;player.x=startX;player.y=startY;player.camX=startX;player.camY=startY;player.zoom=.79;placeMega(1);spawnParticipants();keys.clear();joyX=joyY=0;mouseDown=false;pulseTimer=0;pulseCooldown=0;state='running';$('overlay').classList.add('hidden');$('hud').classList.remove('hidden');$('modeLabel').textContent=mode==='timed'?'เหลือเวลา':'โหมดไร้ขีดจำกัด';$('pulseLabel').textContent='PULSE • Q';$('toast').classList.add('hidden');updateUI(true);refreshWorldHud();if(networkMode==='online')connectNet();try{initAudio();}catch(_){} }
-function setMenu(kind){if(kind==='menu'||kind==='over')disconnectNet();state=kind;$('overlay').classList.remove('hidden');$('hud').classList.add('hidden');const m=$('menuCard'),extra=$('menuExtra');if(kind==='menu'){m.querySelector('h1').innerHTML='CITY<br><span>DEVOURER</span>';m.querySelector('.subtitle').textContent='เริ่มจากหลุมเล็ก ๆ บนถนน กลืนรถ บ้าน และตึกสูงให้หมดเมือง ยิ่งกินมาก ยิ่งขยายใหญ่ขึ้น!';$('startBtn').textContent='▶ เริ่มกลืนเมือง';extra.innerHTML='';}
- else if(kind==='paused'){$('hud').classList.remove('hidden');m.querySelector('h1').innerHTML='GAME<br><span>PAUSED</span>';m.querySelector('.subtitle').textContent='เมืองยังรอให้คุณกลับไปกลืนต่อ';$('startBtn').textContent='▶ เล่นต่อ';extra.innerHTML='<div class="menu-actions"><button class="secondary-button" id="restartMenu">↻ เริ่มใหม่</button><button class="secondary-button" id="quitMenu">⌂ เมนูหลัก</button></div>';extra.querySelector('#restartMenu').onclick=startGame;extra.querySelector('#quitMenu').onclick=()=>setMenu('menu');}
- else if(kind==='over'){const record=score>highScore;if(record){highScore=score;try{localStorage.setItem('cityDevourerHigh',String(highScore))}catch(_){}}m.querySelector('h1').innerHTML='TIME<br><span>IS UP!</span>';m.querySelector('.subtitle').textContent=record?'ทำคะแนนสูงสุดใหม่! เยี่ยมมาก':'หมดเวลาแล้ว! ลองใหม่เพื่อทำลายสถิติ';$('startBtn').textContent='↻ เล่นใหม่';extra.innerHTML='<div class="result"><span>คะแนนรอบนี้</span><b>'+score.toLocaleString('th-TH')+'</b></div><div class="result"><span>สถิติสูงสุด</span><b>'+highScore.toLocaleString('th-TH')+'</b></div><div class="result"><span>เลเวล / ขนาดหลุม</span><b>LV '+level+' / '+Math.round(radius*2)+' ม.</b></div>';}
+function refreshWorldHud(){ $('botState').textContent='BOT '+bots.length+(networkConnected?' · SERVER':'');$('towerState').textContent='★ MEGA T'+megaTier;$('killState').textContent='◎ KO '+knockouts;const el=$('netState');el.className='world-chip '+(networkConnected?'connected':networkMode==='online'?'connecting':'offline');el.textContent=networkConnected?'● ONLINE / '+roomId:networkMode==='online'?'◌ CONNECTING':'● SOLO';$('roomLive').textContent=networkConnected?roomId:'SOLO';$('shieldState').classList.toggle('hidden',spawnShield<=0||state!=='running');$('shieldState').textContent='✧ SAFE '+Math.ceil(spawnShield)+'s'; }
+function safeSpawn(){
+ let best={x:startX,y:startY,clear:-Infinity};
+ for(let i=0;i<90;i++){
+  const a=Math.random()*TAU,d=180+Math.random()*1200;
+  const x=clamp(startX+Math.cos(a)*d,60,WORLD-60),y=clamp(startY+Math.sin(a)*d,60,WORLD-60);
+  const clear=bots.reduce((v,b)=>b.respawn>0?v:Math.min(v,Math.hypot(b.x-x,b.y-y)-b.radius),Infinity);
+  if(clear>best.clear)best={x,y,clear};if(clear>430)break;
+ }
+ return best;
+}
+function resetPlayerRound(pos){
+ score=0;mass=0;radius=18;targetRadius=18;level=1;combo=0;comboTime=0;timeLeft=180;elapsed=0;
+ pulseTimer=0;pulseCooldown=0;deathInfo=null;deathAge=0;spawnShield=3;knockouts=0;holeEatFx.length=0;
+ for(const item of suckers){if(!item.removed){item.sucking=false;item.suckOwner=null;}}
+ particles.length=0;suckers.length=0;ripples.length=0;keys.clear();mouseDown=false;joyX=joyY=0;
+ const p=pos||safeSpawn();player.x=p.x;player.y=p.y;player.camX=p.x;player.camY=p.y;player.zoom=.79;
+ cameraMode='perspective';refreshCameraButton();
+ $('overlay').classList.add('hidden');$('hud').classList.remove('hidden');$('menuCard').classList.remove('defeated');
+ $('modeLabel').textContent=mode==='timed'?'เหลือเวลา':'โหมดไร้ขีดจำกัด';$('toast').classList.add('hidden');state='running';
+ updateUI(true);refreshWorldHud();
+}
+function startGame(){
+ disconnectNet();syncConfig();playerName=$('playerName').value.trim().slice(0,16)||'Player';
+ removedOnline.clear();worldEpoch++;chunks.clear();simTime=0;player.x=startX;player.y=startY;placeMega(1);spawnParticipants();
+ resetPlayerRound({x:startX,y:startY});
+ if(networkMode==='online')connectNet();try{initAudio();}catch(_){}
+}
+function restartRound(){
+ if(networkConnected&&ws&&ws.readyState===WebSocket.OPEN){
+  state='respawning';$('startBtn').disabled=true;$('startBtn').textContent='กำลังเกิดใหม่...';
+  sendNet({type:'respawn'});
+ }else{resetPlayerRound();}
+}
+function beginDefeat(killerName,killerX,killerY){
+ if(state!=='running')return;
+ deathInfo={killer:String(killerName||'หลุมปริศนา').slice(0,22),killerX:Number.isFinite(killerX)?killerX:player.x,killerY:Number.isFinite(killerY)?killerY:player.y,
+  startX:player.x,startY:player.y,startRadius:radius,score,level,elapsed};
+ deathAge=0;state='dying';keys.clear();mouseDown=false;joyX=joyY=0;
+ ripples.push({x:player.x,y:player.y,r:radius,age:0,ttl:.6,color:'#ff666f'});
+ $('worldSettings').classList.add('hidden');
+ try{beep(150,.48,.10);}catch(_){}
+}
+function updateDeath(dt){
+ if(state!=='dying'||!deathInfo)return;
+ deathAge+=dt;simTime+=dt;
+ const t=clamp(deathAge/DEATH_DURATION,0,1),ease=t*t*(3-2*t);
+ player.x=lerp(deathInfo.startX,deathInfo.killerX,ease);
+ player.y=lerp(deathInfo.startY,deathInfo.killerY,ease);
+ radius=Math.max(.4,deathInfo.startRadius*Math.pow(1-t,1.75));
+ player.camX=lerp(player.camX,player.x,Math.min(1,dt*5));player.camY=lerp(player.camY,player.y,Math.min(1,dt*5));
+ if(t>=1)setMenu('defeated');
+}
+function setMenu(kind){
+ if(kind==='menu'||kind==='over')disconnectNet();
+ state=kind;$('overlay').classList.remove('hidden');$('hud').classList.add('hidden');
+ const m=$('menuCard'),extra=$('menuExtra');m.classList.toggle('defeated',kind==='defeated');$('startBtn').disabled=false;
+ if(kind==='menu'){
+  m.querySelector('h1').innerHTML='CITY<br><span>DEVOURER</span>';
+  m.querySelector('.subtitle').textContent='เริ่มจากหลุมเล็ก ๆ บนถนน กลืนรถ บ้าน และตึกสูงให้หมดเมือง ยิ่งกินมาก ยิ่งขยายใหญ่ขึ้น!';
+  $('startBtn').textContent='▶ เริ่มกลืนเมือง';extra.innerHTML='';
+ }else if(kind==='paused'){
+  $('hud').classList.remove('hidden');m.querySelector('h1').innerHTML='GAME<br><span>PAUSED</span>';
+  m.querySelector('.subtitle').textContent='เมืองยังรอให้คุณกลับไปกลืนต่อ';$('startBtn').textContent='▶ เล่นต่อ';
+  extra.innerHTML='<div class="menu-actions"><button class="secondary-button" id="restartMenu">↻ เริ่มใหม่</button><button class="secondary-button" id="quitMenu">⌂ เมนูหลัก</button></div>';
+  extra.querySelector('#restartMenu').onclick=()=>{if(networkConnected)startGame();else restartRound();};
+  extra.querySelector('#quitMenu').onclick=()=>setMenu('menu');
+ }else if(kind==='over'){
+  const record=score>highScore;if(record){highScore=score;try{localStorage.setItem('cityDevourerHigh',String(highScore))}catch(_){}}
+  m.querySelector('h1').innerHTML='TIME<br><span>IS UP!</span>';
+  m.querySelector('.subtitle').textContent=record?'ทำคะแนนสูงสุดใหม่!':'หมดเวลาแล้ว! ลองใหม่เพื่อทำลายสถิติ';
+  $('startBtn').textContent='↻ เล่นใหม่';
+  extra.innerHTML='<div class="result"><span>คะแนนรอบนี้</span><b>'+score.toLocaleString('th-TH')+'</b></div><div class="result"><span>สถิติสูงสุด</span><b>'+highScore.toLocaleString('th-TH')+'</b></div><div class="result"><span>เลเวล / ขนาดหลุม</span><b>LV '+level+' / '+Math.round(radius*2)+' ม.</b></div>';
+ }else if(kind==='defeated'){
+  const d=deathInfo||{killer:'หลุมปริศนา',score,level,elapsed};
+  if(d.score>highScore){highScore=d.score;try{localStorage.setItem('cityDevourerHigh',String(highScore))}catch(_){}}
+  m.querySelector('h1').innerHTML='GAME<br><span>OVER</span>';
+  m.querySelector('.subtitle').textContent='คุณถูกหลุมที่ใหญ่กว่ากลืน! หลบให้ไวและเติบโตเพื่อเอาคืน';
+  $('startBtn').textContent='↻ PLAY AGAIN';
+  extra.innerHTML='<div class="death-killer">ถูกกลืนโดย: <span id="defeatedBy"></span></div>'+
+   '<div class="death-stats"><div class="death-stat"><strong id="defeatLevel"></strong><small>LEVEL</small></div><div class="death-stat"><strong id="defeatScore"></strong><small>SCORE</small></div><div class="death-stat"><strong id="defeatTime"></strong><small>TIME</small></div></div>'+
+   '<div class="result"><span>สถิติสูงสุด</span><b>'+highScore.toLocaleString('th-TH')+'</b></div>'+
+   '<div class="menu-actions"><button class="secondary-button" id="quitMenu">⌂ MAIN MENU</button></div>';
+  $('defeatedBy').textContent=d.killer;$('defeatLevel').textContent=d.level;
+  $('defeatScore').textContent=d.score.toLocaleString('en-US');
+  const seconds=Math.floor(d.elapsed);$('defeatTime').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+  extra.querySelector('#quitMenu').onclick=()=>setMenu('menu');
+ }
 }
 function togglePause(){if(state==='running')setMenu('paused');else if(state==='paused'){$('overlay').classList.add('hidden');state='running';}}
-$('startBtn').addEventListener('click',()=>state==='paused'?togglePause():startGame());$('pauseBtn').addEventListener('click',togglePause);
+$('startBtn').addEventListener('click',()=>state==='paused'?togglePause():state==='defeated'?restartRound():startGame());$('pauseBtn').addEventListener('click',togglePause);
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('selected',x===b));}));
 $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♫':'♪';if(soundOn)initAudio();});
 $('pulseBtn').addEventListener('click',usePulse);
 function refreshCameraButton(){const btn=$('cameraBtn'),three=cameraMode==='perspective';btn.textContent=three?'2D':'3D';btn.classList.toggle('camera-active',three);btn.setAttribute('aria-pressed',String(three));btn.title=three?'กลับมุมมองจากด้านบน (V)':'เปลี่ยนเป็นมุมกล้องใกล้แบบ 3D (V)';btn.setAttribute('aria-label',btn.title);}
-function toggleCamera(){cameraMode=cameraMode==='top'?'perspective':'top';refreshCameraButton();try{localStorage.setItem('cityDevourerCam',cameraMode);}catch(_){}if(state==='running')showToast(cameraMode==='perspective'?'◈ มุมกล้องใกล้ 3D':'▣ มุมกล้องจากด้านบน');drawMinimap();}
+function toggleCamera(){cameraMode=cameraMode==='top'?'perspective':'top';refreshCameraButton();/* Temporary per-session toggle; every new game starts in 3D. */if(state==='running')showToast(cameraMode==='perspective'?'◈ มุมกล้องใกล้ 3D':'▣ มุมกล้องจากด้านบน');drawMinimap();}
 $('cameraBtn').addEventListener('click',toggleCamera);refreshCameraButton();
 function initAudio(){if(!soundOn)return;if(!audioCtx){const A=window.AudioContext||window.webkitAudioContext;if(A)audioCtx=new A();}if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}
 function beep(freq=410,dur=.08,volume=.028){if(!soundOn||!audioCtx)return;try{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(freq,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(55,freq*.55),audioCtx.currentTime+dur);g.gain.setValueAtTime(volume,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur+.02);}catch(_){}}
@@ -264,7 +399,7 @@ function onMegaEaten(o,owner){
  $('milestone').textContent='★ MEGA T'+o.megaTier+' GONE → T'+megaTier;$('milestone').classList.remove('hidden');milestoneUntil=simTime+2.6;
 }
 function levelInfo(){const raw=(radius-18)/10, lv=1+Math.floor(Math.max(0,raw)), p=clamp(raw-Math.floor(raw),0,1);return{lv,p};}
-function update(dt){simTime+=dt;elapsed+=dt;if(mode==='timed'){timeLeft=Math.max(0,timeLeft-dt);if(timeLeft<=0){setMenu('over');return;}}
+function update(dt){simTime+=dt;elapsed+=dt;spawnShield=Math.max(0,spawnShield-dt);if(mode==='timed'){timeLeft=Math.max(0,timeLeft-dt);if(timeLeft<=0){setMenu('over');return;}}
  if(pulseCooldown>0)pulseCooldown=Math.max(0,pulseCooldown-dt);if(pulseTimer>0)pulseTimer=Math.max(0,pulseTimer-dt);
  let dx=0,dy=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))dx--;if(keys.has('KeyD')||keys.has('ArrowRight'))dx++;if(keys.has('KeyW')||keys.has('ArrowUp'))dy--;if(keys.has('KeyS')||keys.has('ArrowDown'))dy++;
  if(joyPointerId!==null){dx=joyX;dy=joyY;}else if(!dx&&!dy&&mouseDown){const dist=Math.hypot(mouseX-W/2,mouseY-H/2);if(dist>15){dx=(mouseX-W/2)/dist;dy=(mouseY-H/2)/dist;}}
@@ -284,11 +419,12 @@ function update(dt){simTime+=dt;elapsed+=dt;if(mode==='timed'){timeLeft=Math.max
   if(cx<0||cy<0||cx>=WORLD/CHUNK||cy>=WORLD/CHUNK)continue;
   const c=createChunk(cx,cy);for(const o of c.items)if(o.type==='pedestrian'&&!o.removed&&!o.sucking&&Math.abs(o.x-player.x)<visR&&Math.abs(o.y-player.y)<visR)updatePed(o,dt);
  }
- if(!networkConnected){for(const bot of bots)botBrain(bot,dt);resolveHoleCombat();}
+ if(!networkConnected){for(const bot of bots)botBrain(bot,dt);resolveHoleCombat();if(state!=='running')return;}
  else{for(const h of [...bots,...remotePlayers.values()]){h.x=lerp(h.x,h.tx??h.x,Math.min(1,dt*10));h.y=lerp(h.y,h.ty??h.y,Math.min(1,dt*10));}}
  if(megaTower&&!megaTower.removed&&!megaTower.sucking&&megaTower.need<=radius*.91&&Math.hypot(megaTower.x-player.x,megaTower.y-player.y)<radius*.72+megaTower.need*.28)pickup(megaTower,player);
  for(let i=suckers.length-1;i>=0;i--){const o=suckers[i];o.suckAge+=dt;const t=clamp(o.suckAge/o.suckDuration,0,1),ease=t*t*(3-2*t),receiver=o.suckOwner||player;o.drawX=lerp(o.oldX,receiver.x,ease);o.drawY=lerp(o.oldY,receiver.y,ease);if(t>=1){o.removed=true;suckers.splice(i,1);gain(o);}}
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.86,dt*60);p.vy*=Math.pow(.86,dt*60);if(p.life>p.ttl)particles.splice(i,1);}
+ stepHoleEatFx(dt);
  for(let i=ripples.length-1;i>=0;i--){ripples[i].age+=dt;if(ripples[i].age>ripples[i].ttl)ripples.splice(i,1);}
  if(comboTime>0){comboTime-=dt;if(comboTime<=0)combo=0;}
  if(simTime>milestoneUntil)$('milestone').classList.add('hidden');if(simTime>toastUntil)$('toast').classList.add('hidden');
@@ -325,9 +461,9 @@ function drawBuilding(o,scale=1){const x=o.x,y=o.y,w=o.w,d=o.d,h=o.height,c=o.co
   if(o.roofDetail>.35){ctx.fillStyle=colorShade(c,1.2);ctx.fillRect(x-w*.15,roofY+d*.35,w*.3,d*.26);}
  }
  if(player.zoom>.38){
-  const cols=o.kind==='house'?2:o.kind==='tower'?4:3,rows=Math.min(10,Math.max(1,Math.floor(h/14))),ww=w/(cols+1),rh=h/(rows+1);ctx.fillStyle=o.windows>.28?'#d1e1e6':'#abc9d2';ctx.globalAlpha=.72;
+  const cols=o.kind==='house'?2:o.kind==='tower'?4:3,rows=Math.min(10,Math.max(1,Math.floor(h/14))),ww=w/(cols+1),rh=h/(rows+1);ctx.fillStyle=o.windows>.28?'#d1e1e6':'#abc9d2';const priorAlpha=ctx.globalAlpha;ctx.globalAlpha=priorAlpha*.72;
   for(let row=1;row<=rows;row++){const yy=baseY-row*rh;for(let col=1;col<=cols;col++){if(((row*7+col*3+o.id)%11)===0)continue;ctx.fillRect(x-w/2+col*ww-3,yy,Math.min(7,ww*.44),Math.min(7,rh*.39));}}
-  ctx.globalAlpha=1;
+  ctx.globalAlpha=priorAlpha;
  }
 }
 function drawCar(o){const x=o.x,y=o.y,hor=o.axis==='x';ctx.save();ctx.translate(x,y);if(!hor)ctx.rotate(Math.PI/2);const w=o.w,d=o.d;ctx.fillStyle='#15232b4a';ctx.fillRect(-w/2+3,-d/2+4,w,d);ctx.fillStyle='#273643';ctx.fillRect(-w/2-2,-d/2+1,5,d-2);ctx.fillRect(w/2-3,-d/2+1,5,d-2);ctx.fillStyle=o.color;roundRect(-w/2,-d/2,w,d,3);ctx.fillStyle='#477285';roundRect(-w*.19,-d*.39,w*.42,d*.78,2);ctx.fillStyle='#fce6ad';ctx.fillRect(w/2-2,-d*.32,2,2);ctx.fillRect(w/2-2,d*.18,2,2);ctx.restore();}
@@ -336,17 +472,33 @@ function drawTree(o){const x=o.x,y=o.y,h=o.height,r=o.w*.68;ctx.fillStyle='#1834
 function drawProp(o){const x=o.x,y=o.y;ctx.fillStyle='#1e343c33';ctx.beginPath();ctx.ellipse(x+3,y+3,o.w*.55,o.d*.35,0,0,TAU);ctx.fill();switch(o.kind){case'lamp':ctx.fillStyle='#536672';ctx.fillRect(x-1.5,y-o.height,3,o.height);ctx.fillStyle='#f9e7b4';ctx.beginPath();ctx.arc(x,y-o.height,4,0,TAU);ctx.fill();break;case'bench':ctx.fillStyle='#6d544a';ctx.fillRect(x-o.w/2,y-4,o.w,7);ctx.fillStyle='#bf9470';ctx.fillRect(x-o.w/2,y-7,o.w,5);break;case'cone':ctx.fillStyle='#db7e4d';poly([x-4,y,x,y-9,x+4,y], '#e99b59');ctx.fillStyle='#fff2d0';ctx.fillRect(x-3,y-3,6,2);break;case'hydrant':ctx.fillStyle='#d47560';ctx.fillRect(x-3,y-10,6,11);ctx.fillRect(x-6,y-6,12,3);ctx.fillStyle='#f1a986';ctx.fillRect(x-2,y-12,4,4);break;default:ctx.fillStyle='#678c8a';ctx.fillRect(x-5,y-10,10,11);ctx.fillStyle='#9bc2b4';ctx.fillRect(x-6,y-11,12,3);}}
 function drawOne(o){if(o.type==='pedestrian')return drawPerson(o);if(o.type==='building')drawBuilding(o);else if(o.type==='tree')drawTree(o);else if(o.type==='car')drawCar(o);else drawProp(o);}
 function drawPerson(o){const x=o.x,y=o.y,step=Math.sin(o.phase)*2.6,shadow=Math.max(1,o.height*.27);ctx.fillStyle='#152c3440';ctx.beginPath();ctx.ellipse(x+2,y+2,shadow,2,0,0,TAU);ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#344357';ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x-2-step*.45,y+1);ctx.moveTo(x,y-4);ctx.lineTo(x+2+step*.45,y+1);ctx.stroke();ctx.fillStyle=o.color;ctx.fillRect(x-2.7,y-8,5.4,5);ctx.strokeStyle=o.skin;ctx.beginPath();ctx.moveTo(x-3,y-7);ctx.lineTo(x-4-step*.25,y-4);ctx.moveTo(x+3,y-7);ctx.lineTo(x+4+step*.25,y-4);ctx.stroke();ctx.fillStyle=o.skin;ctx.beginPath();ctx.arc(x,y-10,2.5,0,TAU);ctx.fill();}
-function renderOtherHole(h,topView=true){if(h.respawn>0)return;const x=h.x,y=h.y,r=h.radius;if(topView){ctx.fillStyle=h.color||'#c6a4ff';ctx.beginPath();ctx.arc(x,y,r*1.13,0,TAU);ctx.fill();ctx.fillStyle='#060912';ctx.beginPath();ctx.arc(x,y,r*.91,0,TAU);ctx.fill();ctx.lineWidth=Math.max(2,r*.07);ctx.strokeStyle=h.color||'#e4c6ff';ctx.stroke();if(player.zoom>.3){ctx.textAlign='center';ctx.font='bold '+Math.max(12,Math.min(20,r*.35))+'px Arial';ctx.fillStyle='#fff';ctx.fillText(h.name||'BOT',x,y-r-12);}}
- else {circleGround3(x,y,r*1.15,h.color||'#aa9fea');circleGround3(x,y,r*.90,'#161327');circleGround3(x,y,r*.7,'#05040d');const p=proj3(x,y,3);if(p&&p.x>-100&&p.x<W+100&&p.y>-100&&p.y<H+100){ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(h.name||'BOT',p.x,p.y-r*p.sc*.92-8);}}
+// Every hole is a flat decal at ground elevation (z=0). Never render it
+// as an overlay on top of the city: nearer structures must occlude the rim.
+function renderOtherHole(h,topView=true){
+ if(h.respawn>0)return;
+ const x=h.x,y=h.y,r=h.radius;if(!Number.isFinite(r)||r<=0)return;
+ if(topView){
+  ctx.fillStyle=h.color||'#c6a4ff';ctx.beginPath();ctx.arc(x,y,r*1.055,0,TAU);ctx.fill();
+  ctx.fillStyle='#1b2233';ctx.beginPath();ctx.arc(x,y,r*.965,0,TAU);ctx.fill();
+  const pit=ctx.createRadialGradient(x,y,0,x,y,r*.96);pit.addColorStop(0,'#02050a');pit.addColorStop(.75,'#040910');pit.addColorStop(1,'#202136');
+  ctx.fillStyle=pit;ctx.beginPath();ctx.arc(x,y,r*.945,0,TAU);ctx.fill();
+  if(!h.isFx&&player.zoom>.3){ctx.textAlign='center';ctx.font='bold '+Math.max(12,Math.min(20,r*.35))+'px Arial';ctx.fillStyle='#fff';ctx.fillText(h.name||'BOT',x,y-r-12);}
+ }else{
+  circleGround3(x,y,r*1.055,h.color||'#aa9fea');circleGround3(x,y,r*.965,'#272638');circleGround3(x,y,r*.84,'#080812');circleGround3(x,y,r*.64,'#010308');
+  const p=proj3(x,y,1);if(!h.isFx&&p&&p.x>-100&&p.x<W+100&&p.y>-100&&p.y<H+100){ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(h.name||'BOT',p.x,p.y-r*p.sc*.93-8);}
+ }
 }
 function drawHole(){const x=player.x,y=player.y,r=radius,t=simTime;
- ctx.fillStyle='#15262f50';ctx.beginPath();ctx.ellipse(x+7,y+8,r*1.09,r*.94,0,0,TAU);ctx.fill();
- const glow=ctx.createRadialGradient(x,y,r*.65,x,y,r*1.31);glow.addColorStop(0,'#f5c8791c');glow.addColorStop(.64,pulseTimer>0?'#ffd27791':'#eab85a70');glow.addColorStop(1,'#f7bd5800');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,r*1.31,0,TAU);ctx.fill();
- ctx.fillStyle='#192c3a';ctx.beginPath();ctx.arc(x,y,r*1.055,0,TAU);ctx.fill();ctx.lineWidth=Math.max(2,r*.065);ctx.strokeStyle=pulseTimer>0?'#ffe3a5':'#f1bc64';ctx.stroke();
- ctx.fillStyle='#050b14';ctx.beginPath();ctx.arc(x,y,r*.91,0,TAU);ctx.fill();
- const core=ctx.createRadialGradient(x-r*.25,y-r*.3,0,x,y,r*.93);core.addColorStop(0,'#0a1320');core.addColorStop(.55,'#03070e');core.addColorStop(1,'#000409');ctx.fillStyle=core;ctx.beginPath();ctx.arc(x,y,r*.9,0,TAU);ctx.fill();
- ctx.lineWidth=Math.max(1.2,r*.026);for(let i=0;i<3;i++){ctx.strokeStyle=i===0?'#ffd5919f':i===1?'#adc9d3a0':'#f0e7dc66';ctx.beginPath();const a=t*(.88+i*.36)+(i*TAU/3);ctx.arc(x,y,r*(.74-i*.105),a,a+1.2+i*.15);ctx.stroke();}
- if(pulseTimer>0){ctx.strokeStyle='#f4e3afaa';ctx.lineWidth=Math.max(2,r*.04);ctx.setLineDash([Math.max(5,r*.2),Math.max(8,r*.2)]);ctx.beginPath();ctx.arc(x,y,r*1.18+Math.sin(t*8)*3,0,TAU);ctx.stroke();ctx.setLineDash([]);}
+ // No displaced shadow, floating halo or vertical geometry. The lip is flush
+ // with the street and every subsequent foreground object may cover it.
+ ctx.fillStyle=pulseTimer>0?'#ffe3a5':'#f3bd63';ctx.beginPath();ctx.arc(x,y,r*1.055,0,TAU);ctx.fill();
+ ctx.fillStyle='#8a3b2b';ctx.beginPath();ctx.arc(x,y,r*.977,0,TAU);ctx.fill();
+ const pit=ctx.createRadialGradient(x-r*.15,y-r*.14,0,x,y,r*.97);
+ pit.addColorStop(0,'#01040a');pit.addColorStop(.66,'#030711');pit.addColorStop(.85,'#260c1a');pit.addColorStop(1,'#631e25');
+ ctx.fillStyle=pit;ctx.beginPath();ctx.arc(x,y,r*.945,0,TAU);ctx.fill();
+ ctx.lineWidth=Math.max(.8,r*.014);for(let i=0;i<3;i++){ctx.strokeStyle=i===0?'#ffd591a0':i===1?'#b15d4b80':'#aec0c56b';ctx.beginPath();const a=t*(.88+i*.36)+(i*TAU/3);ctx.arc(x,y,r*(.75-i*.11),a,a+1.05+i*.15);ctx.stroke();}
+ if(spawnShield>0){ctx.strokeStyle='#93f1ffff';ctx.lineWidth=Math.max(2,r*.08);ctx.setLineDash([6,8]);ctx.beginPath();ctx.arc(x,y,r*1.22,0,TAU);ctx.stroke();ctx.setLineDash([]);}
+ if(pulseTimer>0){ctx.strokeStyle='#ffe9aeaa';ctx.lineWidth=Math.max(1.5,r*.025);ctx.setLineDash([Math.max(5,r*.2),Math.max(8,r*.2)]);ctx.beginPath();ctx.arc(x,y,r*1.08+Math.sin(t*8)*2,0,TAU);ctx.stroke();ctx.setLineDash([]);}
 }
 function drawFx(){for(const p of ripples){const t=p.age/p.ttl;ctx.strokeStyle=p.color;ctx.globalAlpha=(1-t)*.8;ctx.lineWidth=Math.max(1.5,4*(1-t));ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1+t*1.1),0,TAU);ctx.stroke();ctx.globalAlpha=1;}for(const p of particles){ctx.globalAlpha=clamp(1-p.life/p.ttl,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*(1-p.life/p.ttl*.4),0,TAU);ctx.fill();}ctx.globalAlpha=1;}
 
@@ -405,9 +557,9 @@ function ground3(b){
  }
 }
 function boxShadow3(x,y,w,d,height){
- ctx.globalAlpha=.22;
+ const priorAlpha=ctx.globalAlpha;ctx.globalAlpha=priorAlpha*.22;
  shape3([[x-w/2,y-d/2],[x+w/2,y-d/2],[x+w/2+height*.28,y+d/2-height*.19],[x-w/2+height*.28,y+d/2-height*.19]],'#152d33');
- ctx.globalAlpha=1;
+ ctx.globalAlpha=priorAlpha;
 }
 function building3(o,s){
  const x=o.sucking?o.drawX:o.x,y=o.sucking?o.drawY:o.y,w=o.w*s,d=o.d*s,h=o.height*s,c=o.color;
@@ -488,19 +640,21 @@ function circleGround3(x,y,r,color,segments=36){
 }
 function hole3(){
  const x=player.x,y=player.y,r=radius;
- // Layered projected discs keep a round hole anchored to the road plane.
- circleGround3(x,y,r*1.34,pulseTimer>0?'#ffdb78':'#e3a338');
- circleGround3(x,y,r*1.24,'#ffb928');
- circleGround3(x,y,r*1.12,'#e45e23');
- circleGround3(x,y,r*.96,'#7c0b23');
- circleGround3(x,y,r*.73,'#340711');
- circleGround3(x,y,r*.40,'#08020b');
+ // All discs lie on the very same ground polygon, z=0. A narrow, flat rim
+ // keeps perspective correct; occluding buildings are painted after the hole.
+ circleGround3(x,y,r*1.055,pulseTimer>0?'#ffdf8d':'#f3bd63');
+ circleGround3(x,y,r*.984,'#a43f2b');
+ circleGround3(x,y,r*.934,'#5e1425');
+ circleGround3(x,y,r*.83,'#270916');
+ circleGround3(x,y,r*.68,'#07050e');
+ circleGround3(x,y,r*.42,'#010308');
  for(let i=0;i<8;i++){
   const angle=simTime*(i%2?-.55:.65)+i*TAU/8,rr=r*(.55+.25*(i%3)/2);
   const p=proj3(x+Math.cos(angle)*rr,y+Math.sin(angle)*rr,1);
   if(!p)continue;const sr=clamp((i%3+1)*.85*p.sc,1,9);
   ctx.fillStyle=i%3===0?'#f5bb84':i%3===1?'#c23c37':'#e68756';ctx.beginPath();ctx.arc(p.x,p.y,sr,0,TAU);ctx.fill();
  }
+ if(spawnShield>0)circleRing3(x,y,r*1.25,'#8ef0fa',3);
  if(pulseTimer>0){
   const a=(2.4-pulseTimer)/2.4;
   ctx.globalAlpha=.63*(1-a);circleRing3(x,y,r*(1.25+a*.9),'#ffeeb9',3);ctx.globalAlpha=1;
@@ -513,6 +667,51 @@ function fx3(){
  for(const ripple of ripples){const t=ripple.age/ripple.ttl;ctx.globalAlpha=(1-t)*.7;circleRing3(ripple.x,ripple.y,ripple.r*(1+t*1.2),ripple.color,Math.max(1,3*(1-t)));}
  for(const p of particles){const q=proj3(p.x,p.y,8+Math.max(0,p.ttl-p.life)*7);if(!q)continue;ctx.globalAlpha=clamp(1-p.life/p.ttl,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(q.x,q.y,clamp(p.size*q.sc,1,15),0,TAU);ctx.fill();}
  ctx.globalAlpha=1;
+}
+// A single ground-level depth queue for 2D and perspective views.
+// Buildings have a real footprint (x +/- w/2, y +/- d/2), not an image
+// bounding rectangle that also contains their roof. If a hole intersects a
+// building footprint, the building MUST be drawn after that hole; otherwise
+// its roof could be covered by a seemingly floating hole.
+function footprintTouchesHole(o,h){
+ if(o.type!=='building')return false;
+ const px=clamp(h.x,o.x-o.w*.5,o.x+o.w*.5),py=clamp(h.y,o.y-o.d*.5,o.y+o.d*.5);
+ const dx=h.x-px,dy=h.y-py;
+ return dx*dx+dy*dy<(h.radius*1.055)*(h.radius*1.055);
+}
+function groundDepthQueue(visible){
+ const holes=[{kind:'player',x:player.x,y:player.y,radius},
+  ...bots.filter(h=>!h.respawn).map(h=>({kind:'bot',x:h.x,y:h.y,radius:h.radius,h})),
+  ...[...remotePlayers.values()].filter(h=>!h.respawn).map(h=>({kind:'remote',x:h.x,y:h.y,radius:h.radius,h})),
+  ...holeEatFx.map(e=>{const t=clamp(e.age/e.ttl,0,1),ease=t*t*(3-2*t);const h={x:lerp(e.x,e.toX,ease),y:lerp(e.y,e.toY,ease),radius:Math.max(.3,e.radius*Math.pow(1-t,1.6)),color:e.color,name:e.name,isFx:true};return{kind:'effect',x:h.x,y:h.y,radius:h.radius,h};})]
+  .filter(h=>h.radius>0&&Math.abs(h.x-player.x)<2200&&Math.abs(h.y-player.y)<2200);
+ const queue=holes.map(h=>({depth:h.y,kind:'hole',h}));
+ for(const o of visible){
+  let depth=o.y;
+  if(o.type==='building')for(const h of holes)if(footprintTouchesHole(o,h))depth=Math.max(depth,h.y+.001);
+  queue.push({depth,kind:'object',o});
+ }
+ queue.sort((a,b)=>a.depth-b.depth||(a.kind==='hole'?-1:b.kind==='hole'?1:0));
+ return queue;
+}
+function drawDepthQueue(visible,perspective){
+ for(const item of groundDepthQueue(visible)){
+  if(item.kind==='hole'){
+   if(item.h.kind==='player'){if(perspective)hole3();else drawHole();}
+   else renderOtherHole(item.h.h,!perspective);
+  }else{
+   const o=item.o;
+   // Occlusion assist: a building physically above the player's hole
+   // becomes translucent, never removed or drawn below the hole. The
+   // opening remains on z=0 while the real roof stays visibly in front.
+   if(o.type==='building'&&footprintTouchesHole(o,{x:player.x,y:player.y,radius})){
+    const inside=Math.abs(player.x-o.x)<=o.w*.5&&Math.abs(player.y-o.y)<=o.d*.5;
+    ctx.save();ctx.globalAlpha=inside?.46:.73;
+    if(perspective)one3(o);else drawOne(o);
+    ctx.restore();
+   }else if(perspective)one3(o);else drawOne(o);
+  }
+ }
 }
 function renderPerspective(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -529,13 +728,8 @@ function renderPerspective(){
   }
  }
  if(megaTower&&!megaTower.removed&&!megaTower.sucking&&megaTower.x>=b.l-180&&megaTower.x<=b.r+180&&megaTower.y>=b.t-420&&megaTower.y<=b.b+180)visible.push(megaTower);
- visible.sort((a,b)=>a.y-b.y);
- // The hole remains visible in dense high-rise neighborhoods instead of
- // disappearing behind a tall building directly in front of the player.
- for(const o of visible)one3(o);
- for(const h of bots)if(Math.abs(h.x-player.x)<2200&&Math.abs(h.y-player.y)<2200)renderOtherHole(h,false);
- for(const h of remotePlayers.values())if(Math.abs(h.x-player.x)<2200&&Math.abs(h.y-player.y)<2200)renderOtherHole(h,false);
- hole3();
+ // One depth-sorted pass: ground holes can be occluded by near façades.
+ drawDepthQueue(visible,true);
  for(const o of suckers){const t=clamp(o.suckAge/o.suckDuration,0,1);one3(o,Math.max(.012,1-t*.985));}
  fx3();
 }
@@ -544,12 +738,8 @@ function render(){if(cameraMode==='perspective'){renderPerspective();return;}ctx
  const x0=Math.max(0,Math.floor(b.l/CHUNK)),y0=Math.max(0,Math.floor(b.t/CHUNK)),x1=Math.min(24,Math.floor(b.r/CHUNK)),y1=Math.min(24,Math.floor(b.b/CHUNK));const visible=[];
  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const c=createChunk(cx,cy);for(const o of c.items){if(o.removed||o.sucking)continue;if(o.type==='car')updateCar(o);if(o.x<b.l-120||o.x>b.r+120||o.y<b.t-240||o.y>b.b+120)continue;if(z<.28&&o.type==='prop')continue;if(z<.22&&o.type==='tree')continue;visible.push(o);}}
  if(megaTower&&!megaTower.removed&&!megaTower.sucking&&megaTower.x>=b.l-170&&megaTower.x<=b.r+170&&megaTower.y>=b.t-2500&&megaTower.y<=b.b+200)visible.push(megaTower);
- visible.sort((a,b)=>a.y-b.y);
- for(const o of visible)drawOne(o);
- for(const h of bots)if(Math.abs(h.x-player.x)<2200&&Math.abs(h.y-player.y)<2200)renderOtherHole(h,true);
- for(const h of remotePlayers.values())if(Math.abs(h.x-player.x)<2200&&Math.abs(h.y-player.y)<2200)renderOtherHole(h,true);
- // Keep the player hole clearly visible even among tall downtown buildings.
- drawHole();
+ // Painter depth order follows the bases of buildings, not their roofs.
+ drawDepthQueue(visible,false);
  for(const o of suckers){const t=clamp(o.suckAge/o.suckDuration,0,1);const s=Math.max(.02,1-t*.97);ctx.save();ctx.translate(o.drawX,o.drawY);ctx.rotate(o.spin*t*2.5);ctx.scale(s,s);ctx.translate(-o.drawX,-o.drawY);const ox=o.x,oy=o.y;o.x=o.drawX;o.y=o.drawY;drawOne(o);o.x=ox;o.y=oy;ctx.restore();}
  drawFx();ctx.restore();
  // Small unobtrusive destination marker, visible only when downtown is not onscreen.
@@ -578,25 +768,32 @@ function connectNet(){
 function handleNet(d){
  if(d.type==='welcome'){networkConnected=true;serverId=d.id;roomId=d.room||roomId;bots.length=0;removedOnline.clear();chunks.clear();suckers.length=0;pedDensity='normal';$('pedDensity').value='normal';$('pedDensityLive').value='normal';$('pedDensityLive').disabled=true;
   if(Array.isArray(d.removed))for(const id of d.removed)if(typeof id==='string')removedOnline.add(id);
-  if(d.self){player.x=d.self.x;player.y=d.self.y;player.camX=player.x;player.camY=player.y;mass=d.self.mass;score=d.self.score;targetRadius=d.self.radius;radius=targetRadius;}
+  if(d.self){player.x=d.self.x;player.y=d.self.y;player.camX=player.x;player.camY=player.y;mass=d.self.mass;score=d.self.score;targetRadius=d.self.radius;radius=targetRadius;spawnShield=Number(d.self.shield)||0;}
   if(d.mega){megaTier=d.mega.tier;megaTower=makeMega(d.mega.tier,d.mega.x,d.mega.y);}
   refreshWorldHud();showToast('ONLINE • ROOM '+roomId);return;
  }
  if(d.type==='snapshot'){
-  if(Array.isArray(d.players)){const seen=new Set();for(const p of d.players){if(p.id===serverId){if(Math.abs((p.x||0)-player.x)>420){player.x=p.x;player.y=p.y;}mass=p.mass;score=p.score;targetRadius=p.radius;continue;}seen.add(p.id);const prev=remotePlayers.get(p.id);
+  if(Array.isArray(d.players)){const seen=new Set();for(const p of d.players){if(p.id===serverId){if(state==='running'){if(Math.abs((p.x||0)-player.x)>420){player.x=p.x;player.y=p.y;}mass=p.mass;score=p.score;targetRadius=p.radius;}continue;}seen.add(p.id);const prev=remotePlayers.get(p.id);
     if(prev){prev.tx=p.x;prev.ty=p.y;prev.score=p.score;prev.radius=p.radius;prev.name=p.name;}
     else remotePlayers.set(p.id,{...p,tx:p.x,ty:p.y});}for(const id of remotePlayers.keys())if(!seen.has(id))remotePlayers.delete(id);}
-  if(Array.isArray(d.bots)){const prev=new Map(bots.map(b=>[b.id,b]));bots.length=0;for(const b of d.bots){const old=prev.get(b.id);if(old){old.tx=b.x;old.ty=b.y;old.score=b.score;old.radius=b.radius;old.mass=b.mass;bots.push(old);}else bots.push({...b,tx:b.x,ty:b.y});}}
+  if(Array.isArray(d.bots)){const prev=new Map(bots.map(b=>[b.id,b]));bots.length=0;for(const b of d.bots){const old=prev.get(b.id);if(old){old.tx=b.x;old.ty=b.y;old.score=b.score;old.radius=b.radius;old.mass=b.mass;old.respawn=b.respawn||0;bots.push(old);}else bots.push({...b,tx:b.x,ty:b.y});}}
   if(d.mega&&(!megaTower||megaTier!==d.mega.tier)){megaTier=d.mega.tier;megaTower=makeMega(d.mega.tier,d.mega.x,d.mega.y);}return;
  }
  if(d.type==='eaten'){removedOnline.add(d.uid);const [ch]=String(d.uid).split(':');if(chunks.has(ch)){const c=chunks.get(ch);for(const o of c.items)if(o.uid===d.uid){o.removed=true;o.sucking=false;}}if(megaTower&&megaTower.uid===d.uid){megaTower.removed=true;megaTower.sucking=false;}return;}
  if(d.type==='mega'){megaTier=d.mega.tier;megaTower=makeMega(d.mega.tier,d.mega.x,d.mega.y);showToast('★ ตึกยักษ์ใหม่: T'+megaTier);return;}
- if(d.type==='defeated'){mass=d.mass;score=d.score;targetRadius=d.radius;player.x=d.x;player.y=d.y;showToast('หลุมใหญ่กลืนคุณ!');return;}
+ if(d.type==='holeEaten'){
+  if(d.victimId!==serverId){addHoleEatFx({x:Number(d.x),y:Number(d.y),radius:Number(d.radius)||18,color:d.color||'#b5c8f2',name:d.victimName||''},{x:Number(d.killerX),y:Number(d.killerY)});}
+  if(d.killerId===serverId){knockouts++;refreshWorldHud();showToast('◎ กลืน '+String(d.victimName||'HOLE').slice(0,18)+' สำเร็จ!');}
+  else if(Math.hypot(Number(d.x)-player.x,Number(d.y)-player.y)<740)showToast('◎ '+String(d.killerName||'HOLE').slice(0,18)+' กลืน '+String(d.victimName||'HOLE').slice(0,18));
+  return;
+ }
+ if(d.type==='defeated'){beginDefeat(d.by||'BOT',Number(d.x),Number(d.y));return;}
+ if(d.type==='respawned'){resetPlayerRound({x:d.x,y:d.y});spawnShield=Number(d.shield)||3;mass=Number(d.mass)||0;score=Number(d.score)||0;radius=targetRadius=Number(d.radius)||18;updateUI(true);refreshWorldHud();return;}
  if(d.type==='notice')showToast(String(d.message).slice(0,90));
 }
-function frame(ms){if(!lastFrame)lastFrame=ms;const dt=Math.min(.05,Math.max(0,(ms-lastFrame)/1000));lastFrame=ms;frameCount++;if(state==='running')update(dt);else if(state==='menu')simTime+=dt*.12;render();if(ms-mapLast>170&&state==='running'){drawMinimap();mapLast=ms;}requestAnimationFrame(frame);}
+function frame(ms){if(!lastFrame)lastFrame=ms;const dt=Math.min(.05,Math.max(0,(ms-lastFrame)/1000));lastFrame=ms;frameCount++;if(state==='running')update(dt);else if(state==='dying')updateDeath(dt);else if(state==='menu')simTime+=dt*.12;render();if(ms-mapLast>170&&state==='running'){drawMinimap();mapLast=ms;}requestAnimationFrame(frame);}
 // Sanity checks facilitate debugging in a browser without any dependencies.
-window.CityDevourer={version:'2.0-beta',worldSize:WORLD,getState:()=>({state,score,level,radius,position:{x:Math.round(player.x),y:Math.round(player.y)},chunks:chunks.size,objects:suckers.length,camera:cameraMode,bots:bots.length,pedestrians:[...chunks.values()].reduce((n,c)=>n+c.items.filter(o=>o.type==='pedestrian'&&!o.removed).length,0),megaTier,online:networkConnected,room:roomId}),start:startGame,pause:togglePause,toggleCamera};
+window.CityDevourer={version:'2.3-hole-vs-hole',worldSize:WORLD,getState:()=>({state,score,level,radius,position:{x:Math.round(player.x),y:Math.round(player.y)},chunks:chunks.size,objects:suckers.length,camera:cameraMode,bots:bots.length,pedestrians:[...chunks.values()].reduce((n,c)=>n+c.items.filter(o=>o.type==='pedestrian'&&!o.removed).length,0),megaTier,online:networkConnected,room:roomId,spawnShield,knockouts,holeEatFx:holeEatFx.length,death:deathInfo?{killer:deathInfo.killer,score:deathInfo.score}:null}),start:startGame,pause:togglePause,toggleCamera,restart:restartRound,debugDefeat:(name='TEST BOT')=>beginDefeat(name,player.x+10,player.y+10),debugCombat:(scenario='playerEatsBot')=>{if(state!=='running'||networkConnected||bots.length<2)return false;spawnShield=0;const a=bots[0],b=bots[1];for(let i=0;i<bots.length;i++){const h=bots[i];h.x=5000+i*490;h.y=5000+(i%2)*460;h.goalX=h.x;h.goalY=h.y;}a.respawn=0;b.respawn=0;if(scenario==='playerEatsBot'){radius=targetRadius=90;a.radius=a.targetRadius=30;a.x=player.x+20;a.y=player.y;}else if(scenario==='botEatsPlayer'){radius=targetRadius=18;a.radius=a.targetRadius=95;a.x=player.x+15;a.y=player.y;}else{a.radius=a.targetRadius=90;b.radius=b.targetRadius=30;a.x=player.x+90;a.y=player.y;b.x=a.x+15;b.y=a.y;}resolveHoleCombat();return true;}};
 requestAnimationFrame(frame);
 })();
 </script>
