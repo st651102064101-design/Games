@@ -213,7 +213,7 @@ function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
  for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
- cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);for(let i=0;i<12;i++)spawnAbility(true,i);announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
+ cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
 function spawnGroundWeapon(near=false,forcedType=null){if(!game||!game._bossDropContext)return;let p=game.p,x,y;if(near){let a=rand(0,TAU),d=rand(100,380);x=clamp(p.x+Math.cos(a)*d,-half+90,half-90);y=clamp(p.y+Math.sin(a)*d,-half+90,half-90)}else{x=rand(-half+80,half-80);y=rand(-half+80,half-80)}spawnDrop(x,y,'weapon',1,randWeapon(game.stage>2,forcedType));}
@@ -237,7 +237,7 @@ function kill(m){playSound('hit',m.x,m.y);const g=game;g.kills++;g.stageKills=(g
  // Reward distribution is intentionally varied, with XP guaranteed.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
  if(Math.random()<(m.elite?.55:.16))spawnDrop(m.x,m.y,'ability',1,{id:choose(FIELD_ITEMS).id});
- const cap=clamp(Math.round(4+g.elapsed/20),4,40),roll=(c=cap)=>1+Math.floor(Math.pow(Math.random(),1.6)*c);
+ const cap=clamp(Math.round(10+g.elapsed/10),10,40),roll=(c=cap)=>1+Math.floor(Math.pow(Math.random(),0.8)*c);
  if(Math.random()<.28)spawnDrop(m.x,m.y,'meat',roll(Math.ceil(cap/2)));
  if(Math.random()<(m.elite?.66:.29))spawnDrop(m.x,m.y,'hide',roll());
  if(Math.random()<(m.elite?.62:.30))spawnDrop(m.x,m.y,'bone',roll());
@@ -315,7 +315,7 @@ function drawWeaponCount(p){const n=game.weapons.length,t=String(n);ctx.save();c
 function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.length>=3)g.racks.shift();
  const p=g.p,a=rand(0,TAU),d=rand(420,1300),cx=clamp(p.x+Math.cos(a)*d,-half+420,half-420),cy=clamp(p.y+Math.sin(a)*d,-half+260,half-260),grid=Math.random()<.6,gx=86,gy=84;
  const nonGun=ARSENAL.filter(t=>!t.gun&&t.tier<=Math.min(6,2+Math.floor(((g.stage||1)-1)/2)));
- const items=[];for(let i=0;i<12;i++){const r=Math.random();if(r<.4)items.push(['weapon',1,randWeapon(false,choose(nonGun).id)]);else if(r<.65)items.push(['ability',1,{id:choose(FIELD_ITEMS).id}]);else{const type=choose(['meat','hide','bone','bone','hide','frost','claw']),cap=clamp(Math.round(4+g.elapsed/20),4,40);items.push([type,1+Math.floor(Math.pow(Math.random(),1.6)*(type==='frost'||type==='claw'?Math.ceil(cap/4):cap)),null])}}
+ const items=[];for(let i=0;i<12;i++){const r=Math.random();if(r<.4)items.push(['weapon',1,randWeapon(false,choose(nonGun).id)]);else if(r<.65)items.push(['ability',1,{id:choose(FIELD_ITEMS).id}]);else{const type=choose(['meat','hide','bone','bone','hide','frost','claw']),cap=clamp(Math.round(10+g.elapsed/10),10,40);items.push([type,1+Math.floor(Math.pow(Math.random(),0.8)*(type==='frost'||type==='claw'?Math.ceil(cap/4):cap)),null])}}
  g.racks.push({x:cx,y:cy,grid,age:0});
  items.forEach((it,i)=>{let x,y;if(grid){x=cx+(i%6-2.5)*gx;y=cy+(Math.floor(i/6)-.5)*gy}else{x=clamp(cx+rand(-230,230),-half+90,half-90);y=clamp(cy+rand(-130,130),-half+90,half-90)}
   spawnDrop(x,y,it[0],it[1],it[2]);const dr=g.drops[g.drops.length-1];if(dr){dr.vx=0;dr.vy=0;dr.age=-1}});
