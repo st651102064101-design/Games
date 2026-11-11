@@ -277,7 +277,10 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
 #howToNext{color:white;border:1px solid #176788;background:linear-gradient(125deg,#2285a4,#126384);box-shadow:0 5px 0 #114c61}
 .howToProgress{display:flex;gap:7px;justify-content:center;align-items:center;margin:14px 0 2px}
 .howToDot{display:block;height:7px;width:9px;border:0;border-radius:20px;background:#b4d3df;transition:width .28s,background .28s;cursor:pointer;padding:0;touch-action:manipulation}
-.howToDot.active{width:32px;background:#258eab}
+.howToDot.active{width:32px;background:#258eab}.howToDot[hidden]{display:none!important}
+.howToDeviceRow{display:flex;justify-content:center;align-items:center;gap:8px;margin:-3px 0 11px;flex-wrap:wrap}
+#howToDeviceMode{border-radius:10px;padding:5px 9px;background:#d7f3ee;color:#24677c;font:800 11px system-ui}
+#howToSwitchDevice{border-radius:11px;padding:5px 9px;border:1px solid #b9dfe9;background:white;color:#41758a;font:800 11px system-ui;cursor:pointer;touch-action:manipulation}
 @media(max-height:650px){.howToCard{padding:12px;max-height:97dvh}.howToTitle{font-size:22px;margin-top:2px}.howToSubtitle{margin-bottom:7px;font-size:11px}.howToSteps{gap:5px;margin-top:7px}.howToStep{padding:6px 9px}.howToBottom{margin-top:7px}.howToBottom button{min-height:42px}.howToProgress{margin:8px 0 0}#howToScene{max-height:175px;object-fit:contain}}
 @media(max-width:380px){.howToCard{border-radius:21px}.howToStepText span{font-size:11px}.howToBottom{grid-template-columns:86px 1fr}}
 @media(prefers-reduced-motion:reduce){.howToPagePane.howToEnterNext,.howToPagePane.howToEnterPrev{animation:none!important}.howToDot{transition:none!important}}
@@ -317,13 +320,14 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
   <div id="howToPagePane" class="howToPagePane">
    <h2 id="howToTitle" class="howToTitle">ออกเดินทางกัน!</h2>
    <p id="howToSubtitle" class="howToSubtitle">ควบคุมนักสำรวจและออกเดินทางบนหิมะ</p>
+   <div class="howToDeviceRow"><span id="howToDeviceMode">กำลังตรวจอุปกรณ์</span><button id="howToSwitchDevice" type="button">เปลี่ยนอุปกรณ์</button></div>
    <div class="howToStage"><canvas id="howToScene" width="960" height="460" role="img" aria-label="ภาพการ์ตูนเคลื่อนไหวสาธิตวิธีเล่น"></canvas><span id="howToSceneLabel" class="howToSceneLabel">ลองเดินตามเส้นทาง</span></div>
    <div id="howToSteps" class="howToSteps"></div>
   </div>
-  <div class="howToProgress" aria-label="หน้าคู่มือ">
+  <div class="howToProgress" id="howToProgress" aria-label="หน้าคู่มือ">
    <button class="howToDot active" data-guide-page="0" aria-label="หน้า 1 การเดิน"></button>
    <button class="howToDot" data-guide-page="1" aria-label="หน้า 2 เป้าหมาย"></button>
-   <button class="howToDot" data-guide-page="2" aria-label="หน้า 3 สำรวจโลก"></button>
+   <button class="howToDot" data-guide-page="2" aria-label="หน้า 3 บทเรียน"></button><button class="howToDot" data-guide-page="3" aria-label="หน้า 4 สำรวจโลก" hidden></button>
   </div>
   <div class="howToBottom"><button id="howToPrev" type="button">← ย้อนกลับ</button><button id="howToNext" type="button">ถัดไป ▶</button></div>
  </div>
@@ -2528,15 +2532,39 @@ window.addEventListener('keyup',e=>{const move=movementCode(e);if(move){movement
 
 // Three illustrated, animated lessons after the existing warp demonstration.
 // Images are drawn by Canvas paths or use the current real character skin image.
-const HOWTO_KEY='frostline_howto_illustrated_v1';
-const HOWTO_PAGES=[
- {title:'ออกเดินทางกัน!',sub:'ลองขยับตัวละครและสำรวจแผนที่หิมะ',label:'การเดินและมุมกล้อง',
-  steps:[['มือถือ','กดค้างแล้วลากนิ้วเพื่อเดินตามทิศทางที่ต้องการ'],['คอมพิวเตอร์','ใช้ W A S D หรือปุ่มลูกศรเพื่อเดิน'],['ท่าทางสองนิ้ว','ลากขึ้น–ลงพร้อมกันเพื่อเอียงกล้อง · ถ่าง–หุบเพื่อซูม']]},
+const HOWTO_KEY='frostline_howto_illustrated_v2';
+// Adaptive controls: coarse primary pointers get finger lessons, desktop
+// users get keyboard/mouse lessons. A visible switch supports hybrid laptops.
+const HOWTO_DESKTOP_PAGES=[
+ {title:'เดินด้วยคีย์บอร์ด!',sub:'รู้จักการเดินและวาร์ปด้วยเมาส์บนคอมพิวเตอร์',label:'คีย์บอร์ด + เมาส์',
+  steps:[['เดิน 8 ทิศทาง','กด W A S D หรือปุ่มลูกศรเพื่อเคลื่อนที่'],['วาร์ปไปจุดหมาย','ดับเบิลคลิกบนแผนที่ด้วยเมาส์ (รอคูลดาวน์ 60 วินาที)'],['หยุดชั่วคราว','กด P หรือ Esc เพื่อเปิดเมนูพักเกม']]},
  {title:'พิชิตภารกิจ!',sub:'ต่อสู้ เก็บของ และผจญภัยไปยังด่านใหม่',label:'การต่อสู้และรางวัล',
   steps:[['โจมตี','เข้าใกล้ศัตรู ให้อาวุธของเราช่วยโจมตี'],['รับรางวัล','เก็บไอเทม เพิ่มเลเวล และสะสมเหรียญ'],['เป้าหมาย','เอาชีวิตรอด สำรวจด่าน และเอาชนะบอส']]},
  {title:'โลกมหัศจรรย์รออยู่!',sub:'มีเพื่อนสัตว์และความลับรอให้ออกสำรวจ',label:'สัตว์เลี้ยงและการสำรวจ',
-  steps:[['เพื่อนนักสำรวจ','โมจิจะเดินตามเรา และมีสัตว์ให้สะสม 50 ชนิด'],['กลางคืน','คบเพลิงจะช่วยส่องทาง · ระวังหลุมบนแผนที่'],['ร้านตัวละคร','เก็บเหรียญแล้วเลือกซื้อสกินตัวโปรด']]}
+  steps:[['เพื่อนนักสำรวจ','โมจิจะเดินตามเรา และมีสัตว์ให้สะสม 50 ชนิด'],['กลางคืน','คบเพลิงช่วยส่องทาง · ระวังหลุมบนแผนที่'],['ร้านตัวละคร','เก็บเหรียญแล้วเลือกซื้อสกินตัวโปรด']]}
 ];
+const HOWTO_TOUCH_PAGES=[
+ {title:'นิ้วเดียวก็ผจญภัยได้!',sub:'ลากนิ้วเพื่อเดิน และแตะสองครั้งเพื่อวาร์ป',label:'1 นิ้ว · เดินและวาร์ป',
+  steps:[['ลาก 1 นิ้ว','แตะค้างแล้วลากไปทิศที่อยากเดิน'],['แตะ 1 นิ้ว × 2','แตะจุดหมายเร็ว ๆ สองครั้งเพื่อวาร์ป'],['พักใช้วาร์ป','ต้องรอคูลดาวน์ 60 วินาทีจึงใช้วาร์ปใหม่ได้']]},
+ {title:'เวทมนตร์สองนิ้ว!',sub:'เรียนรู้ทุกท่าทางสองนิ้วก่อนออกผจญภัย',label:'2 นิ้ว · เอียง / ซูม / จบเกม',
+  steps:[['ลาก 2 นิ้วพร้อมกัน ↑ ↓','เลื่อนขึ้นหรือลงไปทิศเดียวกันเพื่อเอียงมุมกล้อง'],['ถ่าง–หุบ 2 นิ้ว','แยกนิ้วเพื่อซูมเข้า หรือหุบนิ้วเพื่อซูมออก'],['แตะ 2 นิ้ว × 2','แตะสองนิ้วพร้อมกัน 2 ครั้งเร็ว ๆ เพื่อจบตัวละครและเริ่มเกมใหม่ทันที · ระวังกดพลาด!']]},
+ ...HOWTO_DESKTOP_PAGES.slice(1)
+];
+let howToDeviceOverride=null;
+function howToUsesTouch(){
+ if(howToDeviceOverride!==null)return howToDeviceOverride;
+ const coarse=window.matchMedia?.('(pointer: coarse)').matches??false;
+ const mobile=/(Android|iPhone|iPad|iPod)/i.test(navigator.userAgent||'');
+ return mobile||(navigator.maxTouchPoints>0&&coarse);
+}
+let HOWTO_PAGES=HOWTO_DESKTOP_PAGES;
+function configureHowToDevice(){
+ const touch=howToUsesTouch();
+ HOWTO_PAGES=touch?HOWTO_TOUCH_PAGES:HOWTO_DESKTOP_PAGES;
+ $('howToDeviceMode').textContent=touch?'ระบบสัมผัส · มือถือ/แท็บเล็ต':'คีย์บอร์ด + เมาส์ · คอมพิวเตอร์';
+ $('howToSwitchDevice').textContent=touch?'ดูวิธีใช้คอมพิวเตอร์':'ดูวิธีใช้มือถือ';
+ document.querySelectorAll('[data-guide-page]').forEach((btn,i)=>{btn.hidden=i>=HOWTO_PAGES.length});
+}
 let howToOpen=false,howToPage=0,howToFromPause=false,howToPageAt=0,howToLastPaint=0;
 let howToHero=null,howToBot=null;
 function howToSkinArt(){
@@ -2549,7 +2577,7 @@ function howToSkinArt(){
 function showHowTo(page=0,fromPause=false,once=false){
  if(!game||mode!=='playing')return false;
  if(once){try{if(localStorage.getItem(HOWTO_KEY)==='1')return false}catch{}}
- howToFromPause=!!fromPause;howToOpen=true;paused=true;clearInput();
+ configureHowToDevice();howToFromPause=!!fromPause;howToOpen=true;paused=true;clearInput();
  $('pauseMenu').hidden=true;$('howToGuide').hidden=false;
  howToSkinArt();howToSetPage(page,true);$('howToNext').focus();
  return true;
@@ -2585,6 +2613,10 @@ $('howToPrev').onclick=()=>{if(howToPage>0)howToSetPage(howToPage-1)};
 $('howToSkip').onclick=finishHowTo;
 document.querySelectorAll('[data-guide-page]').forEach(btn=>btn.onclick=()=>howToSetPage(+btn.dataset.guidePage));
 $('howToReplay').onclick=()=>showHowTo(0,true,false);
+$('howToSwitchDevice').onclick=()=>{
+ howToDeviceOverride=!howToUsesTouch();
+ configureHowToDevice();howToSetPage(0,true);
+};
 document.addEventListener('keydown',e=>{
  if(!howToOpen)return;
  if(['Escape','ArrowRight','ArrowLeft'].includes(e.key))e.preventDefault();
@@ -2744,7 +2776,7 @@ function renderHowToScene(t){
 }
 
 let warpFx=[];
-function showWarpGuideOnce(){let done=false;try{done=localStorage.getItem('frostline_warp_guide_v2')==='1'}catch{}if(done)return;const en=lang==='en';$('warpGuideTitle').textContent=en?'Quick warp!':'พุ่งวาร์ป!';$('warpGuideInstruction').textContent=en?'Double-tap or double-click the destination':'แตะหรือคลิกจุดหมาย 2 ครั้งเร็ว ๆ';$('warpGuideCooldown').textContent=en?'⏳ Ready again in 1 minute':'⏳ รอ 1 นาที แล้วใช้ใหม่ได้';$('warpGuideDone').textContent=en?'Got it ▶':'เข้าใจแล้ว ▶';$('warpCharacter').src=skinImage(game.p.skin);clearInput();paused=true;$('warpGuide').hidden=false;$('warpGuideDone').focus()}
+function showWarpGuideOnce(){let done=false;try{done=localStorage.getItem('frostline_warp_guide_v2')==='1'}catch{}if(done)return;const en=lang==='en';$('warpGuideTitle').textContent=en?'Quick warp!':'พุ่งวาร์ป!';$('warpGuideInstruction').textContent=en?'Double-tap or double-click the destination':(howToUsesTouch()?'แตะจุดหมายด้วย 1 นิ้ว 2 ครั้งเร็ว ๆ':'ดับเบิลคลิกจุดหมายด้วยเมาส์');$('warpGuideCooldown').textContent=en?'⏳ Ready again in 1 minute':'⏳ รอ 1 นาที แล้วใช้ใหม่ได้';$('warpGuideDone').textContent=en?'Got it ▶':'เข้าใจแล้ว ▶';$('warpCharacter').src=skinImage(game.p.skin);clearInput();paused=true;$('warpGuide').hidden=false;$('warpGuideDone').focus()}
 $('warpGuideDone').addEventListener('click',()=>{try{localStorage.setItem('frostline_warp_guide_v2','1')}catch{}$('warpGuide').hidden=true;clearInput();if(!showHowToOnce()){paused=false;last=performance.now()}});
 function teleportHero(sx,sy){const g=game,p=g.p;const wx=clamp(cam.x+(sx-w/2)/screenScale,-half+50,half-50),wy=clamp(cam.y+(sy-h/2)/(screenScale*cameraPitchScale()),-half+50,half-50),safe=worldSpot(wx,wy,110);sparks(p.x,p.y,'#c8f5ff',16);g.dash={x0:p.x,y0:p.y,x1:safe.x,y1:safe.y,t0:now,out:.2,inDur:.25};showEmotion(p,'warp',true);playSound('ui',p.x,p.y)}
 // Google Maps-style pitch in a 2D Canvas world: flatten only ground plane,
