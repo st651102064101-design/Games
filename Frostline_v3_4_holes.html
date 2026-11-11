@@ -1384,6 +1384,7 @@ function drawObstacle(o){
  const stage=game?.stage||1,kind=cutePropType(o,stage);
  ctx.save();
  ctx.translate(o.x,o.y);uprightCameraSprite();
+ {const sh=decorShake.get(o);if(sh&&now-sh.t0<1.2){const t=now-sh.t0;ctx.transform(1,0,sh.dir*.42*Math.sin(t*26)*Math.exp(-t*3.2),1,0,0)}}
  const size=o.size||1;
  ctx.scale((o.flip?-1:1)*size,size);
  ctx.save();ctx.globalAlpha=.28;ellipse(0,20,26,8,'#1e526d');ctx.restore();
@@ -1662,6 +1663,7 @@ function updateDecorHits(){const g=game,p=g.p;if(!g)return;const segs=[];for(con
  for(const q of bladeSegments()){segs.push([q[0]+Math.cos(q[2])*20,q[1]+Math.sin(q[2])*20,q[0]+Math.cos(q[2])*q[3],q[1]+Math.sin(q[2])*q[3]])}
  if(!segs.length)return;const R=swordRange()+120;
  for(let cx=Math.floor((p.x-R)/DECOR_CELL);cx<=Math.floor((p.x+R)/DECOR_CELL);cx++)for(let cy=Math.floor((p.y-R)/DECOR_CELL);cy<=Math.floor((p.y+R)/DECOR_CELL);cy++){const bucket=decorGrid.get(cx+','+cy);if(!bucket)continue;for(const d of bucket){if(Math.abs(d.x-p.x)>R||Math.abs(d.y-p.y)>R)continue;const sh=decorShake.get(d);if(sh&&now-sh.t0<.35)continue;const rad=(d.kind==='tree'?32:26)*(d.scale||1);for(const sg of segs){if(segmentDistanceSquared(d.x,d.y-10,sg[0],sg[1],sg[2],sg[3])<rad*rad){const dir=(sg[2]-sg[0])*0+(d.x>=(sg[0]+sg[2])/2?1:-1);decorShake.set(d,{t0:now,dir});sparks(d.x,d.y-24*(d.scale||1),'#eaffff',5);break}}}}
+ if(g.obstacles){for(const o of obsNear(p.x,p.y)){if(Math.abs(o.x-p.x)>R||Math.abs(o.y-p.y)>R)continue;const sh=decorShake.get(o);if(sh&&now-sh.t0<.35)continue;const rad=Math.max(o.r||22,22)*(o.size||1)+6;for(const sg of segs){if(segmentDistanceSquared(o.x,o.y-8,sg[0],sg[1],sg[2],sg[3])<rad*rad){decorShake.set(o,{t0:now,dir:o.x>=(sg[0]+sg[2])/2?1:-1});sparks(o.x,o.y-18,'#ffffff',5);break}}}}
  if(decorShake.size>60)for(const [d,sh] of decorShake)if(now-sh.t0>1)decorShake.delete(d)}
 function updateSlashes(dt){for(const q of slashFx)q.life-=dt;slashFx=slashFx.filter(q=>q.life>0)}
 function drawSlashes(){for(const q of slashFx){const k=q.life/.28;ctx.save();ctx.lineCap='round';ctx.globalAlpha=k;ctx.strokeStyle='#ffffff';ctx.lineWidth=5*k+1;ctx.beginPath();ctx.arc(q.x,q.y,28+(1-k)*18,q.a-.9,q.a+.9);ctx.stroke();ctx.strokeStyle='#ff6b8a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.x,q.y,22+(1-k)*16,q.a-.8,q.a+.8);ctx.stroke();ctx.restore()}}
