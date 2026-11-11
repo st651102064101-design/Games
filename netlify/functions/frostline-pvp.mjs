@@ -38,14 +38,21 @@ export default async function handler(request) {
     if (body.kind !== 'state' || !body.alive) return respond({error:'Expected player state'},400);
     const now = Date.now();
     const blades = Array.isArray(body.blades) ? body.blades.slice(0,24).map(b=>({
-      a:num(b.a,0,-100000,100000),reach:num(b.reach,80,35,220),damage:num(b.damage,12,3,120)
+      a:num(b.a,0,-100000,100000),reach:num(b.reach,80,35,220),damage:num(b.damage,12,3,120),
+      type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b.type)?b.type:'main',
+      rarity:['common','rare','epic','legendary'].includes(b.rarity)?b.rarity:'common'
     })) : [];
     const me = {
       id:body.id,kind:'state',alive:true,name:cleanText(body.name),
-      x:num(body.x,0,-1800,1800),y:num(body.y,0,-1800,1800),
+      seq:num(body.seq,0,0,1e12),x:num(body.x,0,-1800,1800),y:num(body.y,0,-1800,1800),
+      vx:num(body.vx,0,-480,480),vy:num(body.vy,0,-480,480),
       hp:num(body.hp,100,0,10000),maxHp:num(body.maxHp,125,1,10000),
       angle:num(body.angle,0,-100000,100000),count:num(body.count,1,1,24),
       reach:num(body.reach,80,40,220),damage:num(body.damage,15,3,120),blades,
+      look:{boots:num(body.look?.boots,1,1,8),bag:num(body.look?.bag,1,1,8),
+        armor:num(body.look?.armor,1,1,8),furArmor:body.look?.furArmor===true,
+        leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
+        weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel'},
       updatedAt:now
     };
     await store.setJSON(key, me);
