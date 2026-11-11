@@ -1821,7 +1821,7 @@ function drawArsenalModel(x,y,a,w,t,r){ctx.save();ctx.translate(x,y);ctx.rotate(
 const shotPool=[],shots=[],recentShots=[],clashes=[],seenCombat=new Map();let combatSeq=0;
 function combatSpec(w){return WEAPON_TYPES.find(t=>t.id===w.type)||WEAPON_TYPES[0]}
 function emitShot(w,spec,x,y,a,owner=CLIENT_ID,id=null){
- const b=shotPool.pop()||{};Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,vx:Math.cos(a)*(spec.shape==='rpg'?430:1000),vy:Math.sin(a)*(spec.shape==='rpg'?430:1000),life:spec.range/(spec.shape==='rpg'?430:1000),damage:(w.damage||spec.base)*PLAYER_DAMAGE_MULTIPLIER,shape:spec.shape,blast:spec.shape==='rpg'?100:0});
+ const b=shotPool.pop()||{};Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,vx:Math.cos(a)*(spec.shape==='rpg'?430:1000),vy:Math.sin(a)*(spec.shape==='rpg'?430:1000),life:spec.range/(spec.shape==='rpg'?430:1000),damage:(w.damage||spec.base)*PLAYER_DAMAGE_MULTIPLIER,shape:spec.shape,blast:spec.shape==='rpg'?100:0,hitRadius:spec.shape==='rpg'?19:5});
  if(shots.length>=160){shotPool.push(shots.shift())}shots.push(b);return b;
 }
 function emitRotatingVolley(w,spec,x,y,a){playSound('gun',x,y,spec.shape);const count=spec.shape==='shotgun'?8:1;for(let k=0;k<count;k++){const angle=a+(k-(count-1)/2)*.065,b=emitShot(w,spec,x,y,angle);recentShots.push({id:b.id,type:w.type,x,y,a:angle,damage:b.damage,t:Date.now(),rays:1})}while(recentShots.length>18)recentShots.shift()}
@@ -1832,11 +1832,27 @@ function updateArsenal(dt){
  const reloadBefore=w.fire.reload||0;if(stepGun(w.fire,spec,dt,true)){w.fire.flash=.09;if(spec.shape==='burst'){w.fire.burstLeft=Math.min(2,w.fire.ammo);w.fire.burstTimer=.07;}emitRotatingVolley(w,spec,x,y,a)}
  if(!reloadBefore&&w.fire.reload>0)playSound('reload',game.p.x,game.p.y,spec.shape);w.fire.flash=Math.max(0,(w.fire.flash||0)-dt);
  }
- for(let i=shots.length-1;i>=0;i--){const b=shots[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;let hit=null;if(b.owner===CLIENT_ID){for(const m of game.mobs)if(m.hp>0&&segmentDistanceSquared(m.x,m.y,b.px,b.py,b.x,b.y)<(m.r+5)**2){hit=m;break}if(hit){if(b.blast){for(const m of game.mobs)if(m.hp>0&&d2(m.x-hit.x,m.y-hit.y)<b.blast*b.blast)weaponImpact(m,b);game.fx.push({x:hit.x,y:hit.y,vx:0,vy:0,life:.3,max:.3,r:b.blast,color:'#ffc16c',ring:true})}else weaponImpact(hit,b)}}else if(game.p.inv<=0&&segmentDistanceSquared(game.p.x,game.p.y,b.px,b.py,b.x,b.y)<26**2){hit=game.p;const damage=Math.min(65,b.damage*.5);game.p.hp-=damage;game.p.inv=.4;game.hitFlash=.3;sparks(game.p.x,game.p.y,'#ffa0a0',5);if(game.p.hp<=0){game.p.hp=0;endGame(peers.get(b.owner)?.name,b.owner)}}if(hit||b.life<=0){shots.splice(i,1);if(shotPool.length<160)shotPool.push(b)}}
+ for(let i=shots.length-1;i>=0;i--){const b=shots[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;const rocket=b.shape==='rpg',speed=Math.hypot(b.vx,b.vy)||1,ux=b.vx/speed,uy=b.vy/speed,ax=b.px-(rocket?ux*44:0),ay=b.py-(rocket?uy*44:0),bx=b.x+(rocket?ux*60:0),by=b.y+(rocket?uy*60:0);let hit=null;if(b.owner===CLIENT_ID){for(const m of game.mobs)if(m.hp>0&&segmentDistanceSquared(m.x,m.y,ax,ay,bx,by)<(m.r+b.hitRadius)**2){hit=m;break}if(hit){if(b.blast){for(const m of game.mobs)if(m.hp>0&&d2(m.x-hit.x,m.y-hit.y)<b.blast*b.blast)weaponImpact(m,b);game.fx.push({x:hit.x,y:hit.y,vx:0,vy:0,life:.3,max:.3,r:b.blast,color:'#ffc16c',ring:true})}else weaponImpact(hit,b)}}else if(game.p.inv<=0&&segmentDistanceSquared(game.p.x,game.p.y,ax,ay,bx,by)<(21+b.hitRadius)**2){hit=game.p;const damage=Math.min(65,b.damage*.5);game.p.hp-=damage;game.p.inv=.4;game.hitFlash=.3;sparks(game.p.x,game.p.y,'#ffa0a0',5);if(game.p.hp<=0){game.p.hp=0;endGame(peers.get(b.owner)?.name,b.owner)}}if(hit||b.life<=0){shots.splice(i,1);if(shotPool.length<160)shotPool.push(b)}}
  for(let i=game.mobs.length-1;i>=0;i--)if(game.mobs[i].hp<=0){kill(game.mobs[i]);game.mobs.splice(i,1)}
  for(const [id,ts] of seenCombat)if(Date.now()-ts>10000)seenCombat.delete(id);
 }
-function drawProjectiles(){for(const b of shots){if(!isVisible(b.x,b.y,100))continue;line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,b.shape==='rpg'?9:5,'rgba(255,255,255,.55)');line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,b.shape==='rpg'?6:3,b.shape==='rpg'?'#2a1a10':'#0d141a')}}
+// RPG rounds are deliberately larger than a character; ordinary bullets stay small.
+function drawProjectiles(){
+ for(const b of shots){
+  if(!isVisible(b.x,b.y,b.shape==='rpg'?180:100))continue;
+  if(b.shape!=='rpg'){line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,5,'rgba(255,255,255,.55)');line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,3,'#0d141a');continue}
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+  poly([[-42,-12],[-58,-24],[-37,-21],[-26,-13]],'#345264');
+  poly([[-42,12],[-58,24],[-37,21],[-26,13]],'#345264');
+  poly([[-49,-12],[29,-12],[49,-9],[69,0],[49,9],[29,12],[-49,12]],'#718b57');
+  poly([[29,-12],[49,-9],[69,0],[49,9],[29,12]],'#b1bc85');
+  poly([[-45,-12],[-32,-12],[-32,12],[-45,12]],'#d9b75c');
+  line(-25,-7,27,-7,2,'#c4d7a4');line(-25,7,26,7,2,'#405944');
+  poly([[-49,-9],[-72,0],[-49,9]],'#ff9d47');
+  poly([[-49,-5],[-63,0],[-49,5]],'#fff1a3');
+  ctx.restore();
+ }
+}
 function receiveShots(event){if(!Array.isArray(event.shots))return;for(const b of event.shots.slice(-18)){if(!b||typeof b.id!=='string'||!b.id.startsWith(event.id+'s')||b.id.length>100||seenCombat.has(b.id))continue;const spec=WEAPON_TYPES.find(t=>t.id===b.type&&t.gun);if(!spec||!Number.isFinite(b.t)||Math.abs(Date.now()-b.t)>3000)continue;playSound('gun',clean(b.x),clean(b.y),spec.shape);seenCombat.set(b.id,Date.now());for(let k=0;k<(b.rays===8?8:1);k++)emitShot({damage:clean(b.damage,spec.base,1,600)},spec,clean(b.x),clean(b.y),clean(b.a,0,-100,100)+k*TAU/8,event.id,b.id+'-'+k)}}
 // Blade-vs-blade contact: distance between two segments (blade bodies, not only tips)
 function segSegDist2(ax,ay,bx,by,cx,cy,dx,dy){return Math.min(segmentDistanceSquared(ax,ay,cx,cy,dx,dy),segmentDistanceSquared(bx,by,cx,cy,dx,dy),segmentDistanceSquared(cx,cy,ax,ay,bx,by),segmentDistanceSquared(dx,dy,ax,ay,bx,by))}
