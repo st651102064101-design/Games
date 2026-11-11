@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#071522">
-<title>Frostline Outpost v3.1 — Living Combat & Weapons</title>
+<title>Frostline Outpost v3.2.1 — Auto Loot / No Stop</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9ab5c0;color:white;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;overscroll-behavior:none}
 #game,#ui{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}#game{z-index:0}#ui{z-index:1;pointer-events:auto;cursor:grab}#ui:active{cursor:grabbing}
@@ -136,6 +136,177 @@ function draw(name,x,y,z,sx,sy,sz,c,rotation=0,alpha=1){
  gl.drawArrays(gl.TRIANGLES,0,obj.count);
 }
 function orient(x,z,yaw,lx,lz){return [x+Math.cos(yaw)*lx+Math.sin(yaw)*lz,z-Math.sin(yaw)*lx+Math.cos(yaw)*lz]}
+
+// ===== v3.2 Animation Foundation: hierarchical joints and deterministic event timing =====
+// All matrices are column-major, matching the existing WebGL shader and draw path.
+const MAT_ID = new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+function animTranslate(x,y,z){const m=MAT_ID.slice();m[12]=x;m[13]=y;m[14]=z;return m}
+function animScale(x,y,z){const m=MAT_ID.slice();m[0]=x;m[5]=y;m[10]=z;return m}
+function animRotX(a){const m=MAT_ID.slice(),c=Math.cos(a),s=Math.sin(a);m[5]=c;m[6]=s;m[9]=-s;m[10]=c;return m}
+function animRotY(a){const m=MAT_ID.slice(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[2]=-s;m[8]=s;m[10]=c;return m}
+function animRotZ(a){const m=MAT_ID.slice(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[1]=s;m[4]=-s;m[5]=c;return m}
+function animJoint(parent,x=0,y=0,z=0,rx=0,ry=0,rz=0){
+ let m=matMul(parent,animTranslate(x,y,z));
+ if(ry)m=matMul(m,animRotY(ry));
+ if(rx)m=matMul(m,animRotX(rx));
+ if(rz)m=matMul(m,animRotZ(rz));
+ return m;
+}
+function animDrawMatrix(name,m,colorHex,alpha=1){
+ const obj=meshes[name];if(!obj)return;
+ if(cacheMesh!==name){gl.bindBuffer(gl.ARRAY_BUFFER,obj.buffer);
+  gl.vertexAttribPointer(loc.p,3,gl.FLOAT,false,24,0);
+  gl.vertexAttribPointer(loc.n,3,gl.FLOAT,false,24,12);cacheMesh=name}
+ gl.uniformMatrix4fv(loc.model,false,m);gl.uniform3fv(loc.diffuse,color(colorHex));
+ gl.uniform1f(loc.alpha,alpha);gl.drawArrays(gl.TRIANGLES,0,obj.count);
+}
+function animDraw(parent,name,x,y,z,sx,sy,sz,col,rx=0,ry=0,rz=0){
+ if(sx<=0||sy<=0||sz<=0)return;
+ let mat=animJoint(parent,x,y,z,rx,ry,rz);
+ animDrawMatrix(name,matMul(mat,animScale(sx,sy,sz)),col);
+}
+function animSegment(root,a,b,radius,col,depth=radius){
+ let vx=b[0]-a[0],vy=b[1]-a[1],vz=b[2]-a[2],length=Math.hypot(vx,vy,vz);
+ if(length<.0001)return;
+ let uy=[vx/length,vy/length,vz/length];
+ // Stable local basis, suitable for arms and legs even when nearly vertical.
+ let ux=[-uy[1],uy[0],0],ll=Math.hypot(...ux);
+ if(ll<.001){ux=[1,0,0];ll=1}
+ ux=ux.map(v=>v/ll);
+ const uz=[ux[1]*uy[2]-ux[2]*uy[1],ux[2]*uy[0]-ux[0]*uy[2],ux[0]*uy[1]-ux[1]*uy[0]];
+ const mx=(a[0]+b[0])*.5,my=(a[1]+b[1])*.5,mz=(a[2]+b[2])*.5;
+ const local=new Float32Array([
+  ux[0]*radius,ux[1]*radius,ux[2]*radius,0,
+  uy[0]*length,uy[1]*length,uy[2]*length,0,
+  uz[0]*depth,uz[1]*depth,uz[2]*depth,0,
+  mx,my,mz,1]);
+ animDrawMatrix('box',matMul(root,local),col);
+}
+function animLerp(a,b,t){return a+(b-a)*clamp(t,0,1)}
+function animSmooth01(a){a=clamp(a,0,1);return a*a*(3-2*a)}
+function animAngleDelta(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a))}
+function animIKArm(root,shoulder,target,side,coat,skin){
+ // A two-bone elbow solve: the hand is tied to the shoulder, not just a floating mesh.
+ const dx=target[0]-shoulder[0],dy=target[1]-shoulder[1],dz=target[2]-shoulder[2];
+ let d=Math.hypot(dx,dy,dz)||.001, L=.60;
+ d=Math.min(d,L*1.99);
+ const dir=[dx/d,dy/d,dz/d];
+ let bend=[side*.82,-.38,.3];
+ const proj=bend[0]*dir[0]+bend[1]*dir[1]+bend[2]*dir[2];
+ bend=[bend[0]-proj*dir[0],bend[1]-proj*dir[1],bend[2]-proj*dir[2]];
+ const mag=Math.hypot(...bend)||1;bend=bend.map(v=>v/mag);
+ const height=Math.sqrt(Math.max(0,L*L-(d*.5)*(d*.5)));
+ const elbow=[shoulder[0]+dir[0]*d*.5+bend[0]*height,shoulder[1]+dir[1]*d*.5+bend[1]*height,shoulder[2]+dir[2]*d*.5+bend[2]*height];
+ animSegment(root,shoulder,elbow,.27,coat,.33);
+ animSegment(root,elbow,target,.23,coat,.28);
+ animDraw(root,'sphere',elbow[0],elbow[1],elbow[2],.31,.29,.32,coat);
+ animDraw(root,'sphere',target[0],target[1],target[2],.27,.25,.3,skin);
+}
+function animIKLeg(root,side,footZ,footLift,trouser){
+ // Solves leg pose to a real planted foot point in model space.
+ const hx=side*.255,hy=.98,hz=0, fx=side*.255,fy=.16+footLift,fz=footZ;
+ const dy=fy-hy,dz=fz-hz,dd=Math.hypot(dy,dz)||.001, length=.55;
+ const distLeg=Math.min(dd,length*1.99),bend=Math.sqrt(Math.max(0,length*length-(distLeg*.5)**2));
+ const ky=(hy+fy)*.5+dz/dd*bend,kz=(hz+fz)*.5+dy/dd*bend;
+ const hip=[hx,hy,hz],knee=[hx,ky,kz],ankle=[fx,fy,fz];
+ animSegment(root,hip,knee,.43,trouser,.46);
+ animSegment(root,knee,ankle,.34,trouser,.39);
+ animDraw(root,'sphere',hx,ky,kz,.37,.37,.42,trouser);
+ animDraw(root,'box',fx,fy-.08,fz-.12,.47,.29,.74,0x1d2f3c);
+}
+function animGun(root,w,flash,reloadProgress,recoil){
+ const id=w.id;
+ const len=id==='pistol'?.52:id==='shotgun'?1.15:id==='sniper'?2.08:id==='lmg'?1.75:id==='plasma'?1.42:id==='dmr'?1.68:id==='smg'?.93:1.3;
+ const stock=id==='pistol'?0:id==='smg'?.20:.46;
+ const outline=0x233a49;
+ const part=(mesh,x,y,z,sx,sy,sz,c,rx=0)=>animDraw(root,mesh,x,y,z,sx,sy,sz,c,rx);
+ part('box',0,0,-.18,.28,.25,len,w.tint);
+ if(stock)part('box',0,-.08,stock*.72,.33,.19,stock,outline);
+ part('box',0,.12,-.10,.24,.14,.55,0x344f5b);
+ // Separate receiver, trigger guard and dynamically moving magazine.
+ part('box',.04,-.18,-.25,.19,.23,.29,0x24323f);
+ const magazineWiggle=reloadProgress>0&&reloadProgress<1?
+  reloadProgress<.24?reloadProgress/.24:reloadProgress<.6?1:(1-reloadProgress)/.4:0;
+ const magLower=Math.max(0,magazineWiggle)*.31;
+ part('box',0,-.34-magLower,-.24,id==='lmg'?.34:.21,id==='lmg'?.60:.39,id==='lmg'?.48:.25,id==='lmg'?0x806c4a:0x253642);
+ const barrel=id==='shotgun'?.21:id==='sniper'?.10:.13;
+ part('cylinder',0,.01,-len*.5-.22,barrel,.32,barrel,id==='plasma'?0x6cfff8:0x182c39,Math.PI*.5);
+ if(id==='shotgun'){
+  for(let side of [-1,1])part('box',side*.105,.07,-len/2-.36,.11,.12,.36,0x293b49);
+  // Pump action slides only during the late recovery portion.
+  part('box',0,-.18,-.47+(recoil>.12?recoil*.15:0),.29,.21,.52,0x8e6951);
+ }
+ if(id==='dmr'||id==='sniper'){
+  part('cylinder',0,.29,-.42,.22,.7,.22,0x283b47,Math.PI*.5);
+  part('sphere',0,.29,-.78,.21,.18,.11,0x8bcfe1);
+ }
+ if(id==='lmg')part('box',-.17,-.18,-.8,.25,.72,.65,0x877756);
+ if(id==='plasma'){
+  const pulse=.90+.1*Math.sin(t*18);
+  part('sphere',0,.15,-.65,.38*pulse,.32*pulse,.73,0x65ebdf);
+  part('box',0,-.10,-.64,.51,.11,1.09,0x274d54);
+ }
+ const action= Math.max(0,recoil);
+ if(action>.01){part('box',0,.15,-.08+action*.16,.20,.11,.38,0xaac4cc)}
+ if(flash>0){part('cone',0,.02,-len*.5-.56,.53,.73,.53,id==='plasma'?0x9cfff7:0xffda7b,-Math.PI/2)}
+}
+class CharacterAnimationController{
+ constructor(){this.locomotion=0;this.state='idle';this.upper='rest';this.stride=0;this.visualYaw=Math.PI;
+  this.lastX=0;this.lastZ=4;this.speed=0;this.bank=0;this.breath=0;
+  this.recoil=0;this.flash=0;this.carry=0;this.unload=0;this.placeTime=1;
+  this.weaponSwap=0;this.reloadPhase=0;this.hit=0;this.fireCount=0;this.placeCount=0;this.landedCount=0;
+  this.lastEvent='init';this.releasedCount=0;this.footContacts=0;this.prevStride=0;this.lastFootSound=0;
+ }
+ event(type,payload={}){
+  this.lastEvent=type;
+  if(type==='fire'){this.fireCount++;this.recoil=1;this.flash=.13}
+  if(type==='weaponSwap'){this.weaponSwap=1}
+  if(type==='startReload'){this.reloadPhase=0}
+  if(type==='placeStart'){this.placeTime=0;this.placeCount++}
+  if(type==='meatRelease'){this.releasedCount++}
+  if(type==='meatLanded'){this.landedCount++}
+  if(type==='damaged')this.hit=1;
+ }
+ tick(dt){
+  // Render at native requestAnimationFrame speed; interpolate based on elapsed time.
+  const dx=hero.x-this.lastX,dz=hero.z-this.lastZ;
+  this.speed=Math.hypot(dx,dz)>4.0?0:Math.hypot(dx,dz)/Math.max(dt,.0001);
+  this.lastX=hero.x;this.lastZ=hero.z;
+  const move=clamp(this.speed/7.2,0,1),ease=(v,target,rate)=>animLerp(v,target,1-Math.exp(-rate*dt));
+  this.locomotion=ease(this.locomotion,move,11);
+  this.state=this.locomotion>.12?'walk':'idle';
+  const desired=hero.yaw;
+  const difference=animAngleDelta(this.visualYaw,desired);
+  this.visualYaw+=difference*(1-Math.exp(-Math.max(8,hero.aim>0.4?17:12)*dt));
+  this.bank=ease(this.bank,clamp(-difference*1.0,-.20,.20),6);
+  this.prevStride=this.stride;
+  this.stride+=this.speed*dt*1.85;
+  // Two heel-strikes per stride cycle, synchronized with locomotion speed.
+  if(this.locomotion>.3&&Math.floor(this.stride/Math.PI)!==Math.floor(this.prevStride/Math.PI)){
+   this.footContacts++;sfx('foot');
+   if(dist(hero,camera)<25){const p=orient(hero.x,hero.z,this.visualYaw,((this.footContacts%2)?-.26:.26),-.10);
+    for(let i=0;i<2;i++)sparks.push({x:p[0]+rand(-.13,.13),y:.08,z:p[1]+rand(-.13,.13),vx:rand(-.4,.4),vy:rand(.3,.8),vz:rand(-.4,.4),life:.28,full:.28,color:0xecf9fd,size:.075});}
+  }
+  this.breath+=dt*2.4;
+  this.carry=ease(this.carry,clamp(Math.sqrt(state.meat)/9,0,1),4);
+  this.unload=ease(this.unload,hero.unloading?1:0,12);
+  this.recoil=Math.max(0,this.recoil-dt*8.5);
+  this.flash=Math.max(0,this.flash-dt);
+  this.hit=Math.max(0,this.hit-dt*4);
+  this.weaponSwap=Math.max(0,this.weaponSwap-dt*1.6);
+  this.placeTime=Math.min(1,this.placeTime+dt/.78);
+  this.reloadPhase=hero.reload>0?clamp(1-hero.reload/currentWeapon().reload,0,1):0;
+  this.upper=hero.unloading?'deposit':hero.swap>.05?'swap':hero.reload>0?'reload':hero.aim>.08?'aim':'carry';
+ }
+ snapshot(){return {state:this.state,upper:this.upper,stride:this.stride,locomotion:this.locomotion,
+  speed:this.speed,yaw:this.visualYaw,recoil:this.recoil,flash:this.flash,reloadPhase:this.reloadPhase,
+  carrying:state.meat,carryWeight:this.carry,depositPose:this.unload,placeTime:this.placeTime,
+  events:{fire:this.fireCount,place:this.placeCount,released:this.releasedCount,landed:this.landedCount,feet:this.footContacts,last:this.lastEvent}}}
+}
+const characterAnimator=new CharacterAnimationController();
+function animEvent(type,data){characterAnimator.event(type,data)}
+// New pose data is entirely transient. Never store it in the existing v3.1 save schema.
+
 
 let seed=98712453;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 const staticObjs=[],decor=[],shadow=[],boxes=[];
@@ -367,6 +538,20 @@ function notice(msg,x=hero.x,z=hero.z,tone='#ffffff',life=2.2){
  if(messages.length>12)messages.shift()
 }
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
+// Auto-loot may absorb dozens of bundles in a single frame. Save those transactions
+// together instead of synchronously blocking the animation loop for each bundle.
+let lootSavePending=false,lootSaveDelay=0;
+function queueLootSave(){
+ if(!lootSavePending)lootSaveDelay=.75;
+ lootSavePending=true;
+}
+function flushLootSave(dt){
+ if(!lootSavePending)return;
+ lootSaveDelay-=dt;
+ if(lootSaveDelay<=0){lootSavePending=false;lootSaveDelay=0;save()}
+}
+function saveOnExit(){lootSavePending=false;save()}
+
 function spawnBear(area,idx,explicitType=null){
  let x,z;
  if(area===0){x=rand(-22,22);z=rand(-38,-17)}
@@ -662,7 +847,7 @@ function damageEnemy(b,dmg,x,z,tint=0xffeaba,show=true){
 }
 function startReload(){
  if(hero.reload>0)return;
- const w=currentWeapon();hero.reload=w.reload;hero.ammo=0;hero.shotPulse=0;
+ const w=currentWeapon();hero.reload=w.reload;hero.ammo=0;hero.shotPulse=0;animEvent('startReload',{weapon:w.id});
  if(dist(hero,camera)<30)sfx('reload');
 }
 function armoryUpdate(dt){
@@ -672,14 +857,14 @@ function armoryUpdate(dt){
   if(inside&&!was){
    if(state.unlockedWeapons[p.id]){
     if(state.equippedWeapon!==p.id){
-     state.equippedWeapon=p.id;hero.ammo=p.mag;hero.reload=0;hero.shoot=.35;hero.swap=.95;
+     state.equippedWeapon=p.id;hero.ammo=p.mag;hero.reload=0;hero.shoot=.35;hero.swap=.95;animEvent('weaponSwap',{weapon:p.id});
      wave(p.x,p.z,p.tint,4);particles(hero.x,1.4,hero.z,p.tint,18);
      bannerEvent('weapon','ติดตั้ง '+p.name,'กระสุน '+p.mag+' นัด • ยิงอัตโนมัติ','#d6f5ff');sfx('weapon');save();
     }else notice(p.name+' พร้อมใช้งาน',p.x,p.z,'#c6eeef',1.1);
    }else if(state.coins>=p.cost&&state.crystals>=p.crystals&&state.cores>=p.cores){
     state.coins-=p.cost;state.crystals-=p.crystals;state.cores-=p.cores;
     state.unlockedWeapons[p.id]=true;state.weaponDiscoveries++;state.equippedWeapon=p.id;
-    hero.ammo=p.mag;hero.reload=0;hero.swap=1.2;hero.shoot=.5;
+    hero.ammo=p.mag;hero.reload=0;hero.swap=1.2;hero.shoot=.5;animEvent('weaponSwap',{weapon:p.id});
     wave(p.x,p.z,p.tint,6);particles(p.x,1.2,p.z,palette.gold,32);
     bannerEvent('weapon','ปลดล็อก '+p.name,'ปืนชนิดใหม่พร้อมใช้งาน','#c7ffee');sfx('unlock');save();
    }else{
@@ -717,7 +902,8 @@ function sfx(which){
  else if(which==='weapon'){tone(430,.17,'sine',.082,770);noise(.08,.03,1800)}
 }
 function particles(x,y,z,col,count=7){
- for(let i=0;i<count;i++)sparks.push({x,y,z,vx:rand(-5,5),vy:rand(1,6),vz:rand(-5,5),life:rand(.2,.55),full:.6,color:col,size:rand(.1,.3)})
+ // Prevent burst-heavy auto pickup from flooding the GPU and freezing movement.
+ for(let i=0;i<count && sparks.length<240;i++)sparks.push({x,y,z,vx:rand(-5,5),vy:rand(1,6),vz:rand(-5,5),life:rand(.2,.55),full:.6,color:col,size:rand(.1,.3)})
 }
 // Spawn a few visible grouped items, rather than granting loot from anywhere on the map.
 // Grouping protects mobile FPS even when many bears are killed.
@@ -762,6 +948,7 @@ function collectDrop(p){
  p.count-=amount;
  // Animate the last metre up into the backpack; inventory is committed only now.
  for(let j=0;j<Math.min(4,amount);j++){
+  if(lootFlights.length>=100)break;
   lootFlights.push({x:p.x+rand(-.15,.15),z:p.z+rand(-.15,.15),elapsed:-j*.055,life:.38,
    color:p.color,kind:p.kind});
  }
@@ -770,7 +957,7 @@ function collectDrop(p){
   notice(p.kind==='meat'?'🥩 เนื้อ +'+amount:'📦 เสบียง +'+amount,hero.x,hero.z,p.kind==='meat'?'#ffcfb8':'#ffe5a3',1.35);
   sfx(p.kind==='meat'?'meat':'pick');lootNoticeCooldown=.25;
  }
- save();return p.count<=0;
+ queueLootSave();return p.count<=0;
 }
 function harvestMeat(count,x,z){
  if(count<=0)return;
@@ -873,20 +1060,21 @@ function unloadUpdate(dt){
     meatReserved+=n;
     const offset=orient(hero.x,hero.z,hero.yaw,0,1.02);
     const tier=meatLayers(displayMeat);
-    depositFlights.push({n,elapsed:0,duration:.48,x:offset[0],y:1.45+tier*.22,z:offset[1],
+    depositFlights.push({n,elapsed:0,duration:.70,hold:.25,released:false,x:offset[0],y:1.45+tier*.22,z:offset[1],
       toX:BUILD.dropX+rand(-.8,.8),toY:1.2,toZ:BUILD.dropZ+rand(-.65,.65)});
-    hero.unloadSwing=1;
-    depositInterval=.16;
+    hero.unloadSwing=1;animEvent('placeStart',{count:n});
+    depositInterval=.43;
    }
   }
  }else depositInterval=0;
  for(let i=depositFlights.length-1;i>=0;i--){
   const f=depositFlights[i]; f.elapsed+=dt;
+  if(!f.released&&f.elapsed>=f.hold){f.released=true;animEvent('meatRelease',{count:f.n})}
   if(f.elapsed>=f.duration){
    // Only commit inventory/progress when the carried meat physically lands.
    meatReserved-=f.n;
    state.meat=Math.max(0,state.meat-f.n);
-   state.buildStored+=f.n;
+   state.buildStored+=f.n;animEvent('meatLanded',{count:f.n});
    particles(f.toX,f.toY,f.toZ,0xd98f79,Math.min(9,f.n+3));
    if(i%2===0)sfx('drop');
    depositFlights.splice(i,1);
@@ -921,22 +1109,23 @@ function fireWeapon(target){
    hits:new Set(),color:w.tint});
  }
  hero.ammo--;hero.shoot=Math.max(.078,w.rate/(1+(currentWeaponLevel()-1)*.008));
- hero.recoil=1;hero.shotPulse=1;gunFlash=.12;
+ hero.recoil=1;hero.shotPulse=1;gunFlash=.12;animEvent('fire',{weapon:w.id});
  ejectCasing(hero.x+.55,1.64,hero.z);
  if(w.id==='plasma')sfx('plasma');else if(w.id==='sniper'||w.id==='shotgun')sfx('sniper');
  else if(w.id==='smg'||w.id==='lmg')sfx('rapid');else sfx('shot');
  if(hero.ammo<=0)startReload();
 }
 function heroUpdate(dt){
- const inp=input();const moveFactor=hero.reload>0?.9:1;
- const speed=7.2*moveFactor;
+ // Input and movement are unconditional: collecting, reloading, trading and
+ // delivering cargo never lock the joystick, keyboard, or auto-fire updates.
+ const inp=input();const speed=7.2;
  if(inp.power>.01){
   let nx=clamp(hero.x+inp.x*dt*speed,-34,34),nz=clamp(hero.z+inp.z*dt*speed,-45,34);
   if(!state.gate&&hero.z<=12.75&&nz>12.75)nz=12.75;
   if(!state.gate&&hero.z>12.75&&nz<12.75)nz=12.75;
   hero.x=nx;hero.z=nz;
   hero.walk+=dt*(hero.reload>0?9.5:12);hero.step-=dt;
-  if(hero.step<=0){hero.step=.36;sfx('foot')}
+  if(hero.step<=0){hero.step=.36} // Foot-contact audio is emitted by the animator only.
  }
  hero.hit=Math.max(0,hero.hit-dt*2.3);
  hero.boost=Math.max(0,hero.boost-dt);
@@ -944,7 +1133,7 @@ function heroUpdate(dt){
  hero.recoil=Math.max(0,hero.recoil-dt*6.8);
  hero.shotPulse=Math.max(0,hero.shotPulse-dt*4);
  hero.shoot-=dt;
- if(hero.reload>0){hero.reload-=dt;if(hero.reload<=0){hero.reload=0;hero.ammo=currentWeapon().mag;sfx('weapon')}}
+ if(hero.reload>0){hero.reload-=dt;if(hero.reload<=0){hero.reload=0;hero.ammo=currentWeapon().mag;animEvent('reloadComplete');sfx('weapon')}}
  let target=null,near=currentWeapon().range;
  for(let b of bears){if(!b.alive)continue;const d=dist(b,hero);
   if(d<near){near=d;target=b}
@@ -1049,6 +1238,9 @@ function bulletsUpdate(dt){
  // Magnet pickup: world-distance check, easing, physical movement, arrival credit.
  magnetActive=0;
  lootNoticeCooldown=Math.max(0,lootNoticeCooldown-dt);
+ // Keep pickup processing bounded per frame; the rest remain in the world and
+ // are collected automatically on subsequent animation frames.
+ let collectedThisFrame=0;
  for(let i=pickups.length-1;i>=0;i--){
   let p=pickups[i];p.age+=dt;p.phase+=dt*2.0;p.life-=dt;
   let dx=hero.x-p.x,dz=hero.z-p.z,d=Math.hypot(dx,dz);
@@ -1065,8 +1257,11 @@ function bulletsUpdate(dt){
      const step=Math.max(0,Math.min(d-MAGNET.collectRadius*.5,p.speed*dt));
      p.x+=dx/d*step;p.z+=dz/d*step;
     }
-    if(Math.hypot(hero.x-p.x,hero.z-p.z)<MAGNET.collectRadius){
-     if(collectDrop(p)){pickups.splice(i,1);continue}
+    if(Math.hypot(hero.x-p.x,hero.z-p.z)<MAGNET.collectRadius&&collectedThisFrame<12){
+     const original=p.count;
+     const finished=collectDrop(p);
+     if(p.count!==original)collectedThisFrame++;
+     if(finished){pickups.splice(i,1);continue}
     }
    }
   }else p.speed=Math.max(0,p.speed-dt*20);
@@ -1187,12 +1382,21 @@ function drawConstruction(){
  }
  // Each meat bundle visibly arcs out of the stack and lands on the table.
  for(let f of depositFlights){
-  const u=clamp(f.elapsed/f.duration,0,1),e=u*u*(3-2*u);
-  const xx=f.x+(f.toX-f.x)*e,zz=f.z+(f.toZ-f.z)*e;
-  const yy=f.y+(f.toY-f.y)*e+Math.sin(Math.PI*u)*1.3;
+  // First, the hand takes the bundle off the stack. Only then is it released.
+  const hold=clamp(f.elapsed/f.hold,0,1),travel=clamp((f.elapsed-f.hold)/(f.duration-f.hold),0,1);
+  const dir=characterAnimator.visualYaw;
+  const grabbed=orient(hero.x,hero.z,dir,.55,-.82);
+  const reach=animSmooth01(hold);
+  let xx=animLerp(f.x,grabbed[0],reach),zz=animLerp(f.z,grabbed[1],reach);
+  let yy=animLerp(f.y,1.4,reach);
+  if(f.elapsed>=f.hold){
+   const e=animSmooth01(travel);
+   xx=animLerp(grabbed[0],f.toX,e);zz=animLerp(grabbed[1],f.toZ,e);
+   yy=animLerp(1.4,f.toY,e)+Math.sin(Math.PI*travel)*.65;
+  }
   const sc=f.n>=10?1.28:f.n>=3?.95:.75;
-  drawMeat(xx,yy,zz,sc,t*.7);
-  if(f.n>=3){draw('sphere',xx,yy+.4,zz,.18,.18,.18,palette.gold)}
+  drawMeat(xx,yy,zz,sc,characterAnimator.visualYaw+travel*.8);
+  if(f.n>=3)draw('sphere',xx,yy+.34,zz,.18,.18,.18,palette.gold);
  }
 }
 function drawChest(c){
@@ -1461,59 +1665,100 @@ function render3D(){
  for(let i=0;i<3;i++){let x=-3+Math.sin(t*5+i*2)*.28,z=-3+Math.cos(t*4+i*2)*.24;draw('cone',x,.65+i*.16,z,.55,1.3+Math.sin(t*7+i)*.3,.55,i===0?0xffca67:i===1?0xff873b:0xffe5a8)}
 }
 function drawHero(){
- const {x,z,yaw}=hero,walk=Math.sin(hero.walk)*.14,sh=hero.hit>.1,celebrate=hero.boost>.0;
- const part=(name,lx,y,lz,sx,sy,sz,c,ang=0)=>{
-  let p=orient(x,z,yaw,lx,lz);draw(name,p[0],y,p[1],sx,sy,sz,c,yaw+ang)
- };
- const coat=sh?palette.red:celebrate?0x53a2af:0x317b9b;
- // boots, legs, coat, scarf, head, hat
- part('box',-.26,.23,.14+walk,.42,.43,.73,palette.black);
- part('box',.26,.23,.14-walk,.42,.43,.73,palette.black);
- part('box',-.26,.73,0,.43,.82,.48,0x1c4b67);
- part('box',.26,.73,0,.43,.82,.48,0x1c4b67);
- part('box',0,1.43-hero.unloadPose*.12-hero.unloadSwing*.11,-hero.unloadPose*.17,1.07,1.24,.72,coat);
- part('box',0,1.72,-.38,1.12,.19,.35,0xc8e9ec);
- const lean=hero.unloadPose,sw=hero.unloadSwing,rdAnim=hero.reload>0?Math.sin((currentWeapon().reload-hero.reload)/currentWeapon().reload*Math.PI):0;
- part('box',-.71,1.5+lean*.18+sw*.22+rdAnim*.15,-.07-lean*.45-sw*.24-hero.aim*.25,.34,1.0,.42,coat);
- part('box',.71,1.5+lean*.15+sw*.18+rdAnim*.18-hero.recoil*.08,-.19-lean*.56-sw*.30-hero.aim*.31,.34,.99,.42,coat);
- if(lean>.03){
-  part('sphere',-.73,1.08+lean*.30+sw*.33,-.64-lean*.45-sw*.24,.25,.23,.28,palette.skin);
-  part('sphere',.73,1.08+lean*.25+sw*.29,-.68-lean*.42-sw*.30,.25,.22,.28,palette.skin);
+ const A=characterAnimator, coat=A.hit>.1||hero.hit>.1?palette.red:hero.boost>0?0x53a2af:0x317b9b;
+ // Bone hierarchy: world > pelvis > spine > shoulders/head > IK elbows/wrists, while
+ // the pelvis and the two leg chains attach to the world root. All bone rotations
+ // propagate to their attached meshes and weapon sockets.
+ const base=animJoint(MAT_ID,hero.x,0,hero.z,0,A.visualYaw);
+ const walking=A.locomotion;
+ const phase=A.stride,stepA=Math.sin(phase),stepB=Math.sin(phase+Math.PI);
+ const bob=(Math.cos(phase*2)*.025+.024)*walking;
+ const carryLean=A.carry*.11;
+ const unloading=A.unload;
+ const placeT=A.placeTime;
+ // The torso twists toward the stock during pickup and toward the deposit pad during release.
+ const placeReach=placeT<.32?animSmooth01(placeT/.32):placeT<.8?1:1-animSmooth01((placeT-.8)/.2);
+ const placeArm=unloading>0?placeReach:0;
+ const torsoLean=-.08*walking+carryLean*.70+unloading*.18+hero.hit*.07;
+ const pelvis=animJoint(base,0,bob,.01,torsoLean*.3,0,A.bank*.45);
+ const spine=animJoint(pelvis,0,1.47,0,torsoLean,Math.sin(phase)*.035*walking,A.bank*.7);
+ // Foot-ground contact is IK solved from hip to target ankle each frame.
+ const foot1=.26*Math.sin(phase)*walking,foot2=.26*Math.sin(phase+Math.PI)*walking;
+ const lift1=Math.max(0,Math.cos(phase))*.15*walking;
+ const lift2=Math.max(0,Math.cos(phase+Math.PI))*.15*walking;
+ animIKLeg(pelvis,-1,foot1,lift1,0x244d67);
+ animIKLeg(pelvis,1,foot2,lift2,0x244d67);
+ animDraw(pelvis,'box',0,1.01,0,.97,.45,.65,0x25445a);
+ animDraw(spine,'box',0,0,0,1.08,1.13,.72,coat);
+ animDraw(spine,'box',0,.20,-.38,1.1,.21,.24,0xb3dfe7);
+ animDraw(spine,'box',0,-.29,-.34,1.08,.16,.42,0x213e4a);
+ animDraw(spine,'box',0,-.43,0,1.13,.18,.74,0x243944);
+ // Neck/head has independent breathing, target look and hit reaction.
+ const neck=animJoint(spine,0,.65,-.05,Math.sin(A.breath)*.027+A.hit*.10,-A.bank*.5,0);
+ animDraw(neck,'sphere',0,.20,-.01,.66,.7,.62,palette.skin);
+ animDraw(neck,'cylinder',0,.59,.01,.82,.28,.76,0x243f53);
+ animDraw(neck,'box',0,.52,-.27,.94,.17,.41,0x243f53);
+ for(const side of [-1,1]){
+  animDraw(neck,'sphere',side*.16,.23,-.305,.085,.095,.087,0x213340);
  }
- part('sphere',0,2.28,-.02,.68,.7,.6,palette.skin);
- part('cylinder',0,2.66,0,.82,.28,.76,0x243f53);
- part('box',0,2.57,-.26,.94,.17,.38,0x243f53);
- part('box',0,1.14,-.01,1.14,.22,.81,palette.black);
- // Body leans/arms reach out in sync with the physical meat delivery arc.
+ // Shoulders and palms use an actual two-bone IK chain. Each hand reaches the
+ // same authored weapon/deposit socket the gameplay effect renders from.
+ const aim=clamp(hero.aim*(1-unloading*.75),0,1);
+ const swapping=clamp(hero.swap,0,1),reload=hero.reload>0?1:0;
+ const rprog=A.reloadPhase;
+ const grab=unloading*placeReach;
+ let rightHand=[.69,-.47,-.12],leftHand=[-.69,-.47,-.15];
+ const armedRight=[.44,-.14,-.67+A.recoil*.13],armedLeft=[-.27,-.16,-1.0+A.recoil*.08];
+ const poseWeight=animLerp(.36,.97,aim);
+ rightHand=rightHand.map((v,i)=>animLerp(v,armedRight[i],poseWeight));
+ leftHand=leftHand.map((v,i)=>animLerp(v,armedLeft[i],poseWeight));
+ if(reload){
+  const grabMag=Math.sin(rprog*Math.PI);
+  leftHand=[-.22+grabMag*.45,-.37-grabMag*.28,-.77+grabMag*.36];
+  rightHand=[.45,-.18,-.65];
+ }
+ if(swapping){rightHand[1]-=swapping*.22;rightHand[2]+=swapping*.28;leftHand[1]-=swapping*.28}
+ if(grab){
+  const handFrom=[.64,-.31,.70],handTo=[.58,-.21,-.96];
+  const reachTo=placeT<.38?0:placeT<.72?animSmooth01((placeT-.38)/.34):1;
+  const hand=handFrom.map((v,i)=>animLerp(v,handTo[i],reachTo));
+  rightHand=rightHand.map((v,i)=>animLerp(v,hand[i],grab));
+  leftHand=leftHand.map((v,i)=>animLerp(v,[-.11,-.35,.46][i],grab*.70));
+ }
+ animIKArm(spine,[-.61,.34,-.04],leftHand,-1,coat,palette.skin);
+ animIKArm(spine,[.61,.34,-.04],rightHand,1,coat,palette.skin);
+ // Bag frame rides with the spine rather than remaining horizontal during a turn.
  if(state.bag>0){
-  part('box',-.26,1.35,.55,.48,.64,.28,0xb89563);
-  part('box',-.26,1.48,.78,.39,.09,.18,palette.wooddark);
+  animDraw(spine,'box',-.25,-.12,.57,.48,.62,.28,0xb89563);
+  animDraw(spine,'box',-.25,.03,.79,.40,.12,.23,palette.wooddark);
  }
  const layers=meatLayers(displayMeat);
  if(layers>0){
-  part('box',0,1.42,.68,.86,.87,.25,0x76564d); // supporting frame
+  const sway=Math.sin(phase)*.037*walking+Math.sin(phase*.5)*.022*A.carry;
+  const pack=animJoint(spine,0,-.09,.81,0,-A.bank*.35,sway);
+  animDraw(pack,'box',0,0,-.13,.91,.96,.25,0x785851);
   for(let layer=0;layer<layers;layer++){
-   const yy=1.3+layer*.30,zz=.86+Math.sin(layer*2)*.04;
-   const sway=Math.sin(t*6+layer*.3)*(pointer.active||keys.size>0?.025:0);
-   for(let side of [-1,1]){
-    const px=side*.255+sway;
-    part('sphere',px,yy,zz,.46,.24,.51,layer%2?0xb96661:0xca746c);
-    part('sphere',px+.035,yy+.07,zz-.025,.30,.12,.33,0xe8a18c);
+   const yy=-.16+layer*.30,zz=.06+Math.sin(layer*2)*.025;
+   for(const side of [-1,1]){
+    animDraw(pack,'sphere',side*.245,yy,zz,.46,.24,.5,layer%2?0xb96661:0xca746c);
+    animDraw(pack,'sphere',side*.245+.035,yy+.067,zz-.03,.30,.12,.33,0xe8a18c);
    }
-   if(layer%3===0)part('box',0,yy+.12,zz,.94,.075,.72,0xa27b59);
+   if(layer%3===0)animDraw(pack,'box',0,yy+.14,zz,.98,.078,.72,0xa27b59);
   }
-  part('box',0,1.39+layers*.30,.90,1.04,.13,.72,0x745d51);
+  animDraw(pack,'box',0,-.05+layers*.30,.10,1.06,.13,.72,0x745d51);
  }
- // Equipped weapon is shown on the character, including aiming, recoil, swap and reload poses.
- const swapPose=hero.swap,rd=hero.reload>0?1:0;
- const gunPos=orient(x,z,yaw,.45,-.75+hero.recoil*.12+swapPose*.2);
- drawGunAt(gunPos[0],1.49+hero.aim*.06+swapPose*.25-rd*.35,gunPos[1],yaw,currentWeapon(),1.06,gunFlash,rd);
- if(hero.reload>0){
-  part('box',.22,1.04+rdAnim*.27,-.47,.22,.4,.23,0xf0d2a7);
-  part('box',.35,1.14+rdAnim*.18,-.64,.22,.37,.18,0xf6ce87);
+ // The weapon is attached to the spine's shoulder socket, preserving correct
+ // rotation under torso lean/recoil. Animation only changes the pose, never ammo.
+ const gunBase=animJoint(spine,.28,-.20-A.recoil*.04-swapping*.24-unloading*.23,-.82+A.recoil*.13+swapping*.2+unloading*.18,
+   -.035*aim+.15*reload,.0,A.bank*.12);
+ const weaponRoot=animJoint(gunBase,0,0,0,0,0,0);
+ animGun(weaponRoot,currentWeapon(),Math.max(gunFlash,A.flash),A.reloadPhase,A.recoil);
+ if(reload){ // Visible detachable magazine follows left-hand insertion.
+  const drop=Math.sin(rprog*Math.PI)*.36;
+  animDraw(spine,'box',leftHand[0],leftHand[1]-.11-drop*.22,leftHand[2],.22,.34,.22,0xdbbd75);
  }
-
 }
+
 function drawWolf(b){
  const {x,z,yaw}=b,walk=Math.sin(b.walk)*.19,hit=b.animHit||0,atk=b.attackPose||0;
  const part=(type,lx,y,lz,sx,sy,sz,c)=>{let p=orient(x,z,yaw,lx,lz);draw(type,p[0],y,p[1],sx,sy,sz,c,yaw)};
@@ -1584,7 +1829,7 @@ function renderUI(dt){
  let g=ctx.createLinearGradient(0,0,0,130);g.addColorStop(0,'rgba(5,20,36,.53)');g.addColorStop(1,'rgba(5,20,36,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,130);
  const margin=clamp(W*.04,16,34);
  ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=(W<620?'800 15px':'800 19px')+' system-ui';ctx.fillText('❄ FROSTLINE OUTPOST',margin,34);
- ctx.fillStyle='#d8f6ff';ctx.font=(W<620?'600 9px':'600 11px')+' system-ui';ctx.fillText(W<620?'v3.1 • WEAPONS':'v3.1 LIVING COMBAT • 8 WEAPONS',margin,53);
+ ctx.fillStyle='#d8f6ff';ctx.font=(W<620?'600 9px':'600 11px')+' system-ui';ctx.fillText(W<620?'v3.2.1 • AUTO LOOT':'v3.2.1 • AUTO LOOT / NO STOP • 8 WEAPONS',margin,53);
  // Minimal coin and supplies readout, not a status bar or button.
  ctx.textAlign='right';ctx.font='750 17px system-ui';ctx.fillStyle='#ffe59a';ctx.fillText('◉ '+state.coins, W-margin,35);
  ctx.font='650 12px system-ui';ctx.fillStyle='#eefaff';ctx.fillText('🥩 '+pretty(state.meat)+'  •  📦 '+(state.bag+state.warehouseGoods)+'  •  💎 '+state.crystals+'  •  '+currentWeapon().short+' Lv.'+currentWeaponLevel(),W-margin,W<620?73:53);
@@ -1711,15 +1956,24 @@ function renderUI(dt){
   ctx.strokeStyle='rgba(255,74,76,'+(hero.hit*.35)+')';ctx.lineWidth=hero.hit*24;ctx.strokeRect(0,0,W,H)
  }
 }
+let lastFrameErrorAt=-999;
 function frameLoop(ms){
+ // Always schedule the next frame first: a one-off animation or loot exception
+ // must never permanently stop the game loop.
+ requestAnimationFrame(frameLoop);
  if(!now)now=ms;
  const dt=clamp((ms-now)/1000,0,.035);now=ms;t+=dt;frame++;
- heroUpdate(dt);bearsUpdate(dt);bulletsUpdate(dt);turretsUpdate(dt);
- chestsUpdate(dt);workersUpdate(dt);raidUpdate(dt);questUpdate(dt);
- checkPads();armoryUpdate(dt);unloadUpdate(dt);cameraUpdate(dt);
- render3D();renderUI(dt);
- if(frame%480===0)save();
- requestAnimationFrame(frameLoop)
+ try{
+  heroUpdate(dt);bearsUpdate(dt);bulletsUpdate(dt);turretsUpdate(dt);
+  chestsUpdate(dt);workersUpdate(dt);raidUpdate(dt);questUpdate(dt);
+  checkPads();armoryUpdate(dt);unloadUpdate(dt);characterAnimator.tick(dt);cameraUpdate(dt);
+  flushLootSave(dt);
+  render3D();renderUI(dt);
+  if(frame%480===0)save();
+ }catch(err){
+  // Do not show alerts, pause overlays or stop controls.
+  if(t-lastFrameErrorAt>2){console.error('[Frostline] Non-blocking frame error:',err);lastFrameErrorAt=t}
+ }
 }
 overlay.addEventListener('pointerdown',ev=>{
  if(ev.button!==0&&ev.pointerType==='mouse')return;
@@ -1737,8 +1991,8 @@ overlay.addEventListener('pointerup',release);overlay.addEventListener('pointerc
 window.addEventListener('keydown',ev=>{let k=ev.key.toLowerCase();if('wasd'.includes(k)&&k.length===1||k.startsWith('arrow')){ev.preventDefault();keys.add(k);initSound()};});
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
 window.addEventListener('blur',()=>{keys.clear();pointer.active=false});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
-window.addEventListener('beforeunload',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveOnExit()});
+window.addEventListener('beforeunload',saveOnExit);
 // Diagnostics are available only when explicitly opening the local file with ?test=1.
 if(location.search.includes('test=1'))window.__FROSTLINE_TEST__={
  snapshot:()=>({x:hero.x,z:hero.z,crystals:state.crystals,cores:state.cores,warehouseGoods:state.warehouseGoods,warehouseMeat:state.warehouseMeat,quest:state.activeQuest,questCount:state.questCount,gunLevel:state.level,weapon:state.equippedWeapon,ammo:hero.ammo,reload:hero.reload,owned:Object.keys(state.unlockedWeapons).filter(k=>state.unlockedWeapons[k]),weaponLevels:{...state.weaponLevels},guards:turrets.filter(t=>t.active).length,gate:state.gate,raid:{active:raid.active,next:raid.next,hp:raid.hp,wave:raid.wave,alive:bears.filter(b=>b.raid&&b.alive).length,enemyHealth:bears.filter(b=>b.raid&&b.alive).reduce((sum,b)=>sum+b.hp,0)},workers:workers.map(w=>({x:w.x,z:w.z,carry:w.carry,phase:w.phase})),chests:chests.map(c=>({id:c.id,cool:c.cool,open:c.open})),animalKinds:bears.filter(b=>!b.raid).map(b=>b.type),meat:state.meat,reserved:meatReserved,level:state.fortLevel,stored:state.buildStored,goal:buildGoal(),bag:state.bag,coins:state.coins,flights:depositFlights.length,unloading:hero.unloading,pickups:pickups.map(p=>({kind:p.kind,count:p.count,x:p.x,z:p.z,attract:p.attract})),radius:MAGNET.radius}),
@@ -1747,6 +2001,9 @@ if(location.search.includes('test=1'))window.__FROSTLINE_TEST__={
  quietBears:()=>{for(let b of bears){b.alive=false;b.respawn=1000000}},
  dropTest:(kind,count,x,z)=>spawnDrop(kind,count,x,z),
  getGlError:()=>gl.getError(),
+ getRunState:()=>({frame,gameTime:t,savePending:lootSavePending,moving:characterAnimator.locomotion,unloading:hero.unloading,weapon:state.equippedWeapon,autoLoot:true,paused:false}),
+ animation:()=>characterAnimator.snapshot(),
+ debugAdvanceAnimation:dt=>{characterAnimator.tick(dt)},
  debugStartRaid:()=>{raid.next=0;startRaid()},
  debugClearRaid:()=>{for(let b of bears)if(b.raid&&b.alive)killBear(b);raidUpdate(.016)},
  debugRaidNear:()=>{for(let b of bears)if(b.raid){b.x=4+rand(-2,2);b.z=-13-rand(0,1);}},
@@ -1768,7 +2025,7 @@ if(location.search.includes('test=1'))window.__FROSTLINE_TEST__={
  debugArmoryEnter:id=>{const p=ARMORY_PADS.find(a=>a.id===id);if(!p)return false;hero.x=p.x;hero.z=p.z;p.wasInside=false;armoryUpdate(.016);return true},
  getRawState:()=>state
 };
-notice('v3.1 • ARMORY ทางขวา • ทหารประจำป้อม • 8 ปืน',0,4,'#e6faff',3);
+notice('v3.2.1 • AUTO LOOT ไม่ต้องหยุดเดิน • 8 ปืน',0,4,'#e6faff',3);
 requestAnimationFrame(frameLoop);
 })();
 </script>
