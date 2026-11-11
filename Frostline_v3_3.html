@@ -132,20 +132,13 @@ function segmentDistanceSquared(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,len=d
 function stepGun(state,spec,dt,trigger){state.cool=Math.max(0,(state.cool||0)-dt);state.heat=Math.max(0,(state.heat||0)-dt*.28);if(state.reload>0){state.reload=Math.max(0,state.reload-dt);if(!state.reload)state.ammo=spec.mag;return false}if(state.ammo===undefined)state.ammo=spec.mag;if(state.heat>=1)state.overheated=true;if(state.overheated&&state.heat<.25)state.overheated=false;state.spin=Math.max(0,Math.min(1,(state.spin||0)+(trigger?dt:-dt*2)));if(!trigger||state.cool>0||state.overheated||(spec.shape==='minigun'&&state.spin<.35))return false;if(state.ammo<=0){state.reload=spec.reload;return false}state.ammo--;state.cool=1/spec.fireRate;if(spec.shape==='minigun')state.heat=Math.min(1.08,state.heat+.055);return true}
 
 // ARSENAL_CORE_END
-const LEGACY_WEAPON_TYPES=[
- {id:'sword',icon:'🗡️',name:'ดาบนักล่า',base:17,reach:86,rate:1.0},
- {id:'axe',icon:'🪓',name:'ขวานหิมะ',base:28,reach:78,rate:.68},
- {id:'spear',icon:'🔱',name:'หอกน้ำแข็ง',base:20,reach:120,rate:.9},
- {id:'dagger',icon:'🔪',name:'มีดสั้น',base:12,reach:67,rate:1.65},
- {id:'scythe',icon:'🌙',name:'เคียวนักล่า',base:23,reach:105,rate:.78},
- {id:'hammer',icon:'🔨',name:'ค้อนรบ',base:31,reach:72,rate:.62}
-];
-const WEAPON_TYPES=[...ARSENAL,...LEGACY_WEAPON_TYPES];
+const WEAPON_TYPES=ARSENAL;
+const LEGACY_WEAPON_MIGRATION={sword:'ars11',axe:'ars08',spear:'ars14',dagger:'ars02',scythe:'ars10',hammer:'ars16'};
 const RARITIES=[{id:'common',name:'ธรรมดา',color:'#f4f9ff',mult:1},{id:'rare',name:'หายาก',color:'#5ed5ff',mult:1.3},{id:'epic',name:'มหากาพย์',color:'#bc91ff',mult:1.85},{id:'legendary',name:'ตำนาน',color:'#ffd36b',mult:2.55}];
 let weaponSeq=0;
 const choose=a=>a[Math.floor(Math.random()*a.length)];
 const randWeapon=(elite=false)=>{let t=choose(ARSENAL.filter(w=>w.tier<=Math.min(6,1+Math.floor(((game?.stage||1)-1)/2)+(elite?1:0)))),roll=Math.random(),rar=RARITIES[roll<(elite?.10:.04)?3:roll<(elite?.33:.16)?2:roll<(elite?.70:.43)?1:0];return {id:`w${Date.now().toString(36)}_${(++weaponSeq).toString(36)}_${Math.floor(Math.random()*1e5)}`,type:t.id,rarity:rar.id,damage:Math.round(t.base*rar.mult*rand(.85,1.2)),reach:Math.round(t.reach*rand(.90,1.13)),rate:Math.round(t.rate*rand(.91,1.12)*100)/100,crit:Math.round(rand(4,17)+(rar.mult-1)*10),element:Math.random()<(elite?.5:.27)?choose(['ice','fire','bleed']):'normal'};};
-const safeWeapons=(a)=>Array.isArray(a)?a.filter(v=>v&&WEAPON_TYPES.some(t=>t.id===v.type)&&RARITIES.some(r=>r.id===v.rarity)).map(v=>({id:String(v.id||'w'+Math.random()).slice(0,80),type:v.type,rarity:v.rarity,damage:clamp(Number(v.damage)||10,1,600),reach:clamp(Number(v.reach)||65,35,180),rate:clamp(Number(v.rate)||1,.3,2.5),crit:clamp(Number(v.crit)||5,0,60),element:['normal','ice','fire','bleed'].includes(v.element)?v.element:'normal'})):[];
+const safeWeapons=(a)=>Array.isArray(a)?a.map(v=>v&&({...v,type:LEGACY_WEAPON_MIGRATION[v.type]||v.type})).filter(v=>v&&WEAPON_TYPES.some(t=>t.id===v.type)&&RARITIES.some(r=>r.id===v.rarity)).map(v=>({id:String(v.id||'w'+Math.random()).slice(0,80),type:v.type,rarity:v.rarity,damage:clamp(Number(v.damage)||10,1,600),reach:clamp(Number(v.reach)||65,35,180),rate:clamp(Number(v.rate)||1,.3,2.5),crit:clamp(Number(v.crit)||5,0,60),element:['normal','ice','fire','bleed'].includes(v.element)?v.element:'normal'})):[];
 const weaponInfo=w=>{const t=WEAPON_TYPES.find(x=>x.id===w.type)||WEAPON_TYPES[0],r=RARITIES.find(x=>x.id===w.rarity)||RARITIES[0];return {t,r};};
 const MAX_ACTIVE_EXTRA=18;
 // A unique ID per tab, intentionally not tied to an email or account.
@@ -221,7 +214,7 @@ function collect(d){const g=game;if(d.type==='weapon'&&d.weapon){
  saveProgress();updateHud()}
 function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่มีเนื้อหมี');return}if(game.p.hp>=game.p.maxHp){note('เลือดเต็มแล้ว');return}game.inv.meat--;const heal=Math.min(game.p.maxHp-game.p.hp,35+game.level*2);game.p.hp+=heal;sparks(game.p.x,game.p.y,'#9ff9ba',14);addFloat(game.p.x,game.p.y-35,`+${Math.ceil(heal)} ♥`,'#a6ffca');saveProgress();updateHud();if(mode==='inventory')renderInventory()}
 function swingDamage(){let base=16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0);return base*(1+(game.perks.sharp||0)*.2)}
-function swordCount(){return Math.max(0,Math.min(7,1+(game.upd.sword>=3?1:0)+(game.upd.sword>=5?1:0)+(game.perks.twin||0))-(game.mainBroken||0))}
+function swordCount(){return 0}
 function swordRange(){return (75+(game.upd.sword-1)*5)*(1+(game.perks.range||0)*.12)}
 function magnetRadius(weaponRange,bagLevel,pack,perk){return weaponRange+(bagLevel-1)*48+(pack?42:0)+perk*48}
 function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
@@ -269,17 +262,14 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
 }
 function endGame(killerName=null,killerId=null){if(mode==='dead')return;if(killerId)publishNet('kill',{to:killerId,by:CLIENT_ID,victim:PLAYER_NAME,killId:CLIENT_ID+'_'+Date.now()});publishNet('state',{alive:false,name:PLAYER_NAME,x:game.p.x,y:game.p.y});if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}saveBest();saveProgress();mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;$('announce').classList.remove('visible');let min=Math.floor(game.elapsed/60),sec=Math.floor(game.elapsed%60);$('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · RUN COMPLETE</div><h2 style="margin-top:12px">การเดินทางสิ้นสุดแล้ว</h2><p class="lead">${killerName?`⚔️ คุณถูก ${escapeHTML(killerName)} กำจัดในสนาม PvP`:'หมีบนภูเขาหิมะหยุดคุณได้ในครั้งนี้ แต่การเดินทางครั้งใหม่เริ่มได้ทันที'}</p><div class="keyline" style="font-size:15px"><b>ด่าน ${game.stage} · เฟส ${game.phase}</b><br>⏱️ รอดชีวิต ${min}:${String(sec).padStart(2,'0')} นาที<br>🐻 กำจัดหมี ${game.kills} ตัว · เลเวล ${game.level}</div><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame;}
 const upgrades=[
-{id:'sword',icon:'🗡️',name:'ดาบพายุหิมะ',desc:'เพิ่มพลังโจมตีและระยะฟัน · Lv.3 ดาบคู่ · Lv.5 ดาบสาม',base:35,max:8},
+{id:'sword',icon:'🗡️',name:'พัฒนาอาวุธ',desc:'เพิ่มระยะอาวุธที่หมุนรอบตัว',base:35,max:8},
 {id:'boots',icon:'🥾',name:'รองเท้านักล่า',desc:'เดินและหลบหมีเร็วขึ้น +27 ต่อระดับ',base:30,max:8},
 {id:'bag',icon:'🎒',name:'กระเป๋าแม่เหล็ก',desc:'ระยะดูดของเพิ่ม 48 หน่วยต่อระดับ',base:30,max:8},
 {id:'armor',icon:'🛡️',name:'เสื้อเกราะ',desc:'ลดความเสียหายจากหมี 7% และ HP สูงสุด +8 ต่อระดับ',base:40,max:8}
 ];
 const recipes=[
-{id:'boneBlade',icon:'🦴',name:'ดาบกระดูก',desc:'พลังโจมตีเพิ่ม 10 หน่วย และรูปลักษณ์ดาบเปลี่ยน',mats:{bone:8},coins:100,once:true,weapon:'bone'},
 {id:'furArmor',icon:'🧥',name:'เสื้อหนังหมี',desc:'ลดความเสียหายเพิ่ม 13% และเปลี่ยนเสื้อเกราะ',mats:{hide:10},coins:80,once:true},
 {id:'leatherPack',icon:'🎒',name:'กระเป๋าหนัง',desc:'ระยะดูดของเพิ่ม 42 และเปลี่ยนสีของกระเป๋า',mats:{hide:6,bone:4},coins:60,once:true},
-{id:'iceBlade',icon:'❄️',name:'ดาบน้ำแข็ง',desc:'ฟันแล้วแช่หมีให้เคลื่อนที่ช้าลงชั่วคราว',mats:{frost:5,bone:10},coins:160,once:true,weapon:'ice'},
-{id:'bloodBlade',icon:'🩸',name:'ดาบโลหิต',desc:'ฟันแล้วทำให้หมีเสียเลือดต่อเนื่อง',mats:{claw:6,bone:12},coins:180,once:true,weapon:'blood'},
 {id:'ration',icon:'🥩',name:'อาหารสำรอง',desc:'ใช้เนื้อ 3 ชิ้นแปรรูปเป็นอาหาร ฟื้น HP 70 หน่วย',mats:{meat:3},coins:10,once:false}
 ];
 const costOf=u=>Math.round(u.base*Math.pow(1.55,game.upd[u.id]-1)/5)*5;
@@ -294,7 +284,7 @@ function renderShop(){$('tabUpgrade').classList.toggle('active',shopTab==='upgra
  $('craftList').querySelectorAll('[data-craft]').forEach(el=>el.onclick=()=>craftItem(el.dataset.craft));
 }
 function craftItem(id){const r=recipes.find(x=>x.id===id);if(!r||r.once&&game.craft[id]||game.coins<r.coins||!Object.entries(r.mats).every(([k,n])=>game.inv[k]>=n))return false;
- game.coins-=r.coins;for(const [k,n] of Object.entries(r.mats))game.inv[k]-=n;if(r.once)game.craft[id]=true;if(r.weapon)game.weapon=r.weapon;
+ game.coins-=r.coins;for(const [k,n] of Object.entries(r.mats))game.inv[k]-=n;if(r.once)game.craft[id]=true;
  if(id==='ration'){game.craft.ration++}if(id==='furArmor'){game.p.maxHp+=15;game.p.hp+=15}
  sparks(game.p.x,game.p.y,'#b9f8ff',25);note(`สร้าง ${r.icon} ${r.name} สำเร็จ!`);saveProgress();renderShop();updateHud();return true;
 }
@@ -302,9 +292,9 @@ function useRation(){if(!game||!game.craft.ration){if(game)note('ยังไม
 function equipWeapon(id){if(!game)return;const available=id==='steel'||id==='bone'&&game.craft.boneBlade||id==='ice'&&game.craft.iceBlade||id==='blood'&&game.craft.bloodBlade;if(!available)return;game.weapon=id;saveProgress();if(mode==='inventory')renderInventory();note('เปลี่ยนอาวุธแล้ว')}
 function openInventory(){if(!game||mode!=='playing')return;mode='inventory';clearInput();renderInventory();$('inventory').hidden=false}
 function closeInventory(){if(mode!=='inventory')return;mode='playing';$('inventory').hidden=true;last=performance.now()}
-function renderInventory(){$('materialList').innerHTML=MAT_KEYS.map(k=>`<div class="mat"><span>${ITEM_META[k].icon}</span><div><strong>${ITEM_META[k].name} × ${game.inv[k]}</strong><small>${ITEM_META[k].sub}</small></div></div>`).join('');$('equipmentInfo').innerHTML=`อาวุธ: <b>${{steel:'ดาบพายุหิมะ',bone:'ดาบกระดูก',ice:'ดาบน้ำแข็ง',blood:'ดาบโลหิต'}[game.weapon]}</b><br>เกราะ Lv.${game.upd.armor} · กระเป๋า Lv.${game.upd.bag} · รองเท้า Lv.${game.upd.boots}<br>เลือกดาบที่ปลดล็อกแล้วได้จากด้านล่าง · บันทึกทรัพยากรอัตโนมัติ`;
+function renderInventory(){$('materialList').innerHTML=MAT_KEYS.map(k=>`<div class="mat"><span>${ITEM_META[k].icon}</span><div><strong>${ITEM_META[k].name} × ${game.inv[k]}</strong><small>${ITEM_META[k].sub}</small></div></div>`).join('');$('equipmentInfo').innerHTML=`อาวุธจากชุด 30 ชนิด<br>เกราะ Lv.${game.upd.armor} · กระเป๋า Lv.${game.upd.bag} · รองเท้า Lv.${game.upd.boots}<br>บันทึกทรัพยากรอัตโนมัติ`;
  $('weaponCountLabel').textContent=`🗡️ อาวุธสุ่มสะสม ${game.weapons.length} ชิ้น · ต่อสู้พร้อมกันได้สูงสุด ${MAX_ACTIVE_EXTRA} ชิ้นเพิ่มเติม (ไม่ลบทิ้ง)`;$('weaponBagList').innerHTML=game.weapons.map((w,i)=>{const {t,r}=weaponInfo(w);const element={normal:'ธรรมดา',ice:'แช่แข็ง',fire:'ไฟ',bleed:'เลือดไหล'}[w.element]||'ธรรมดา';return `<div class="weaponTile" data-rarity="${r.id}"><span class="weaponEmoji">${t.icon}</span><div><div class="wName" style="color:${r.id==='common'?'#35596b':r.color==='#ffd36b'?'#99631f':r.color}">#${i+1} ${t.name} · ${r.name}</div><div class="wStats">⚔️ ${Math.round(w.damage)} · 📏 ${Math.round(w.reach)} · 💥 ${Math.round(w.crit)}% · ${element}${i>=MAX_ACTIVE_EXTRA?' · สำรอง':' · ใช้งาน'}</div></div></div>`}).join('')||'<div class="recipeNote">เดินเก็บอาวุธที่กระจายบนสนาม หรือกำจัดหมีเพื่อรับอาวุธสุ่ม</div>';
- $('weaponSelect').innerHTML=[{id:'steel',label:'⚔️ ดาบปกติ',ready:true},{id:'bone',label:'🦴 ดาบกระดูก',ready:game.craft.boneBlade},{id:'ice',label:'❄️ ดาบน้ำแข็ง',ready:game.craft.iceBlade},{id:'blood',label:'🩸 ดาบโลหิต',ready:game.craft.bloodBlade}].filter(w=>w.ready).map(w=>`<button class="${game.weapon===w.id?'active':''}" data-equip="${w.id}">${w.label}${game.weapon===w.id?' ✓':''}</button>`).join('');
+ $('weaponSelect').innerHTML='';
  $('weaponSelect').querySelectorAll('[data-equip]').forEach(btn=>btn.onclick=()=>equipWeapon(btn.dataset.equip));$('useMeat').disabled=game.inv.meat<1||game.p.hp>=game.p.maxHp;$('useRation').disabled=!game.craft.ration||game.p.hp>=game.p.maxHp;$('useRation').textContent=`🍲 ใช้อาหารสำรอง (${game.craft.ration||0})`}
 function closeActivePanel(){
  if(mode==='shop'){closeShop();return}
@@ -520,7 +510,7 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  const tp=performance.now();if(peer.lastArr)peer.gap=lerp(peer.gap,Math.min(tp-peer.lastArr,1500),.2);peer.lastArr=tp;peer.last=tp;
  peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
  if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
- if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:b.type==='main'||WEAPON_TYPES.some(t=>t.id===b.type)?b.type:'main',rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
+ if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
  if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'}}
  updateOnlineInfo();
 }
