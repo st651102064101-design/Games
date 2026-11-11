@@ -665,7 +665,7 @@ function torchScreenPosition(p){
 }
 function drawDayNight(){
  if(!game)return;
- const darkness=nightDarkness(gameHour())*(game.stage===4?.48:1);
+ const darkness=Math.min(.95,nightDarkness(gameHour())*(game.stage===4?.48:1)*2);
  if(darkness<=.01)return;
  if(!torchIsLit()||!torchShadeCtx){
   ctx.save();ctx.fillStyle='rgba(8,22,58,'+darkness.toFixed(3)+')';
