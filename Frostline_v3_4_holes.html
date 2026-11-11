@@ -414,7 +414,9 @@ function drawSparkBurst(){sparkBursts=sparkBursts.filter(b=>now-b.t0<.55);if(!sp
 const HOLE_COUNT=20;
 function spawnHole(initial=false){const g=game,p=g.p;let x,y;for(let t=0;t<20;t++){const a=rand(0,TAU),d=rand(initial?260:500,initial?1500:2400);x=clamp(p.x+Math.cos(a)*d,-half+120,half-120);y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<350))break}g.holes.push({x,y,r:rand(46,66),age:0,life:rand(22,40)})}
 function teleportTo(e,pad=120){const g=game;let x,y;for(let t=0;t<20;t++){x=rand(-half+pad,half-pad);y=rand(-half+pad,half-pad);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+120))break}sparks(e.x,e.y,'#bdeaff',14);e.x=x;e.y=y;sparks(x,y,'#e5ffff',18)}
-function updateHoles(dt){const g=game,p=g.p;if(g.holeBlink>0)g.holeBlink-=dt;if(g.haki)for(let i=g.haki.length-1;i>=0;i--){g.haki[i].life-=dt;if(g.haki[i].life<=0)g.haki.splice(i,1)}
+function updateHoles(dt){const g=game,p=g.p;if(g.holeBlink>0)g.holeBlink-=dt;
+ // Items never rest on a hole: anything inside a hole's rim is pushed out to its edge
+ for(const d of g.drops){for(const o of g.holes){const dd=Math.hypot(d.x-o.x,d.y-o.y);if(dd<o.r+30){const k=(o.r+40)/Math.max(dd,1);d.x=o.x+(d.x-o.x)*k;d.y=o.y+(d.y-o.y)*k;d.vx=0;d.vy=0}}}if(g.haki)for(let i=g.haki.length-1;i>=0;i--){g.haki[i].life-=dt;if(g.haki[i].life<=0)g.haki.splice(i,1)}
  g.rackTimer=(g.rackTimer??5)-dt;if(g.rackTimer<=0){spawnRack();g.rackTimer=rand(45,75)}
 g.holeCd=Math.max(0,g.holeCd-dt);
  for(let i=g.holes.length-1;i>=0;i--){const o=g.holes[i];o.age+=dt;if(o.age>=o.life){g.holes.splice(i,1);spawnHole()}}
