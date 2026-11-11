@@ -2674,28 +2674,130 @@ function guideSnow(g,t,dark=false){
   g.fillStyle=dark?'#e5eeffb8':'#ffffffaf';g.beginPath();g.arc(x,y,1.1+i%3*.4,0,Math.PI*2);g.fill();
  }
 }
+
+function guideFinger(g,x,y,scale=1,angle=0){
+ // Hand-drawn fingertip / palm silhouette rather than a static emoji.
+ g.save();g.translate(x,y);g.rotate(angle);g.scale(scale,scale);
+ g.shadowColor='#234d6680';g.shadowBlur=9;g.shadowOffsetY=5;
+ g.beginPath();g.moveTo(-18,46);g.quadraticCurveTo(-28,32,-20,17);
+ g.quadraticCurveTo(-17,7,-10,9);g.lineTo(-10,-23);
+ g.quadraticCurveTo(-10,-39,0,-39);g.quadraticCurveTo(10,-39,10,-23);
+ g.lineTo(10,4);g.quadraticCurveTo(24,-4,29,7);
+ g.quadraticCurveTo(38,23,30,35);g.lineTo(18,47);
+ g.closePath();g.fillStyle='#ffdab4';g.fill();
+ g.shadowBlur=0;g.shadowOffsetY=0;g.lineWidth=2;g.strokeStyle='#ce9878';g.stroke();
+ guideRR(g,-6,-30,12,12,6,'#fff0d7');
+ g.strokeStyle='#f0bb96';g.beginPath();g.moveTo(-13,25);g.quadraticCurveTo(0,33,12,25);g.stroke();
+ g.restore();
+}
+function guideTapRing(g,x,y,r,alpha){
+ g.save();g.globalAlpha=alpha;g.lineWidth=4;g.strokeStyle='#30a1bf';
+ g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.stroke();
+ g.lineWidth=2;g.strokeStyle='#ffffff';g.beginPath();g.arc(x,y,r+4,0,Math.PI*2);g.stroke();g.restore();
+}
 function guideSceneWalk(g,t){
+ const touch=howToUsesTouch();
  guideSnow(g,t);
- guideTree(g,49,160,.73);guideTree(g,435,145,.62);
- guideTree(g,278,153,.38,'#5caaa3');
- g.beginPath();g.moveTo(40,206);g.bezierCurveTo(115,173,180,205,250,170);g.bezierCurveTo(304,144,360,184,441,170);
- g.setLineDash([8,10]);g.strokeStyle='#76afc9b2';g.lineWidth=8;g.lineCap='round';g.stroke();g.setLineDash([]);
- const x=110+Math.sin(t*1.45)*52;
- guideActor(g,x,178,.85,t,howToHero);
- g.save();g.translate(343,76);g.strokeStyle='#1f7997';g.lineWidth=4;g.lineCap='round';
- g.beginPath();g.arc(0,0,29,0,Math.PI*2);g.stroke();
- g.fillStyle='#e4f9ffb5';g.beginPath();g.arc(0,0,26,0,Math.PI*2);g.fill();
- const joyX=Math.cos(t*1.5)*12,joyY=Math.sin(t*1.5)*12;
- g.fillStyle='#2f91a9';g.beginPath();g.arc(joyX,joyY,13,0,Math.PI*2);g.fill();
- g.strokeStyle='#7bcde6';g.lineWidth=3;g.beginPath();g.moveTo(joyX,joyY);g.lineTo(joyX+22,joyY-14);g.stroke();g.restore();
- // A four-key keyboard illustration with an animated active key.
- const keys=[['W',404,51],['A',379,75],['S',404,75],['D',429,75]];
- keys.forEach(([label,x,y],i)=>{
-  const active=(Math.floor(t*2)%4)===i;
-  guideRR(g,x-10,y-10,21,20,5,active?'#71ccbd':'#edfafe');
-  g.fillStyle=active?'#fff':'#295d71';g.font='900 12px system-ui';g.textAlign='center';g.fillText(label,x+1,y+4);
- });
- guideStar(g,235,133,8,t,'#fef6c8');
+ guideTree(g,40,168,.75);guideTree(g,440,160,.65);guideTree(g,274,148,.4,'#64aaa4');
+ g.beginPath();g.moveTo(42,206);g.bezierCurveTo(109,172,185,201,245,170);
+ g.bezierCurveTo(301,139,365,181,439,166);
+ g.setLineDash([8,10]);g.strokeStyle='#75b8cdbc';g.lineWidth=8;g.lineCap='round';g.stroke();g.setLineDash([]);
+ const cycle=t%6.6,warping=touch&&cycle>3.5;
+ const hx=warping?114+Math.min(1,(cycle-3.5)/1.2)*158:115+Math.sin(t*1.6)*52;
+ guideActor(g,hx,183,.87,t,howToHero);
+ guideStar(g,245,137,8,t,'#fff7be');
+ if(touch){
+  // Real finger drawing demonstrates holding and swiping the virtual stick.
+  guideRR(g,312,22,146,145,21,'#e4f9ffbb');
+  g.strokeStyle='#b4dae8';g.lineWidth=2;g.beginPath();g.roundRect(312,22,146,145,21);g.stroke();
+  g.fillStyle='#347b94';g.font='900 13px system-ui';g.textAlign='center';
+  g.fillText(warping?'แตะ 2 ครั้ง':'ลาก 1 นิ้ว',385,44);
+  if(!warping){
+   const dx=Math.sin(t*2)*21,dy=Math.cos(t*2)*13;
+   guideTapRing(g,382,105,32,.6);
+   guideFinger(g,382+dx,107+dy,.72,-.09);
+   g.strokeStyle='#f8fffe';g.lineWidth=3;g.beginPath();g.moveTo(359,145);g.lineTo(402,145);g.stroke();
+  }else{
+   const tap=(cycle-3.5)%1.15,lit=Math.min(1,Math.max(0,1-Math.abs(tap-.13)/.15));
+   guideTapRing(g,384,108,18+(1-lit)*15,.3+lit*.6);
+   guideFinger(g,385,116+Math.sin(tap*7)*6,.72,.08);
+   g.fillStyle='#267c95';g.font='1000 22px system-ui';g.fillText('×2',385,155);
+   for(let i=0;i<4;i++)guideStar(g,263+i*13,149+Math.sin(t*5+i)*12,5,t+i,'#fcebb0');
+  }
+ }else{
+  // Desktop: no touch joystick; show physically illustrated WASD/arrow keys.
+  guideRR(g,309,26,151,142,18,'#e4f8ffdc');
+  g.fillStyle='#317a95';g.font='900 13px system-ui';g.textAlign='center';g.fillText('W A S D',385,48);
+  const keys=[['W',382,76],['A',356,102],['S',382,102],['D',408,102]];
+  keys.forEach(([letter,x,y],i)=>{
+   const active=Math.floor(t*2)%4===i;
+   guideRR(g,x-12,y-12,24,24,6,active?'#63c9af':'#ffffff');
+   g.fillStyle=active?'#fff':'#31657a';g.font='900 13px system-ui';g.fillText(letter,x,y+5);
+  });
+  // Mouse pointer sweeps to the warp target, with double-click pulse.
+  const mx=357+Math.sin(t*1.7)*13,my=139+Math.cos(t*1.7)*5;
+  g.save();g.translate(mx,my);g.beginPath();g.moveTo(0,-11);g.lineTo(1,13);g.lineTo(6,8);g.lineTo(11,17);
+  g.lineTo(16,14);g.lineTo(10,6);g.lineTo(16,5);g.closePath();
+  g.fillStyle='#ffffff';g.strokeStyle='#28788f';g.lineWidth=2;g.fill();g.stroke();g.restore();
+  if(Math.sin(t*6)>.1)guideTapRing(g,mx,my,12,.45);
+ }
+}
+function guideSceneTwoFinger(g,t,elapsed){
+ guideSnow(g,t);
+ guideTree(g,28,173,.5);guideTree(g,450,176,.55);
+ const local=Math.max(0,elapsed),phase=Math.floor((local%10.8)/3.6),v=(local%3.6)/3.6;
+ const label=['01  ลากสองนิ้วพร้อมกัน','02  ถ่าง–หุบสองนิ้ว','03  แตะสองนิ้วสองครั้ง'][phase];
+ if($('howToSceneLabel').textContent!==label)$('howToSceneLabel').textContent=label;
+ // An animated map panel with perspective grid, landmarks and a player.
+ guideRR(g,92,31,295,155,20,'#effdff');
+ g.save();g.beginPath();g.roundRect(100,39,279,139,14);g.clip();
+ const map=g.createLinearGradient(98,42,380,180);
+ map.addColorStop(0,phase===0?'#b0e5eb':'#cde9f2');map.addColorStop(1,'#f3fcfc');
+ g.fillStyle=map;g.fillRect(96,34,290,150);
+ g.strokeStyle='#82bacb88';g.lineWidth=2;
+ for(let n=0;n<5;n++){
+  const yy=60+n*29+(phase===0?Math.sin(v*Math.PI*2)*6:0);
+  g.beginPath();g.moveTo(94,yy);g.lineTo(388,yy);g.stroke();
+ }
+ for(let n=0;n<7;n++){g.beginPath();g.moveTo(100+n*46,40);g.lineTo(100+n*46,190);g.stroke()}
+ guideTree(g,146,140,.4);guideTree(g,345,133,.37);guideTree(g,206,83,.25);
+ g.fillStyle='#4cabc1';g.beginPath();g.arc(239,112,12,0,7);g.fill();
+ g.fillStyle='#dffaff';g.beginPath();g.arc(239,108,5,0,7);g.fill();
+ if(phase===1){
+  const zoom=1+.22*Math.sin(v*Math.PI*2);
+  g.save();g.translate(239,112);g.scale(zoom,zoom);g.strokeStyle='#40a5bd';g.lineWidth=4;
+  g.beginPath();g.arc(0,0,32,0,7);g.stroke();g.restore();
+ }
+ g.restore();
+ const lerp=Math.sin(v*Math.PI*2);
+ let x1=200,x2=277,y1=132,y2=132;
+ if(phase===0){y1+=lerp*26;y2+=lerp*26}
+ if(phase===1){x1-=lerp*28;x2+=lerp*28}
+ if(phase===2){
+  const tapTime=(local%3.6);
+  const pulse=(tapTime<.9?Math.sin(Math.min(tapTime/.22,1)*Math.PI)*9:
+    tapTime>1.3&&tapTime<2.3?Math.sin(Math.min((tapTime-1.3)/.22,1)*Math.PI)*9:0);
+  y1+=pulse;y2+=pulse;
+  if(tapTime>.1&&tapTime<.85||tapTime>1.3&&tapTime<2){
+   guideTapRing(g,x1,y1-25,25+Math.sin(t*8)**2*13,.55);
+   guideTapRing(g,x2,y2-25,25+Math.sin(t*8)**2*13,.55);
+  }
+ }
+ guideFinger(g,x1,y1,.72,-.10);guideFinger(g,x2,y2,.72,.12);
+ if(phase===0){
+  g.strokeStyle='#187991';g.lineWidth=3;g.lineCap='round';
+  for(const x of [x1,x2]){g.beginPath();g.moveTo(x,y1-64);g.lineTo(x,y1-92);g.stroke();
+   g.beginPath();g.moveTo(x-6,y1-84);g.lineTo(x,y1-92);g.lineTo(x+6,y1-84);g.stroke()}
+ }else if(phase===1){
+  g.strokeStyle='#187991';g.lineWidth=3;g.lineCap='round';
+  g.beginPath();g.moveTo(177,55);g.lineTo(140,55);g.moveTo(300,55);g.lineTo(337,55);g.stroke();
+  for(const sign of [-1,1]){const bx=sign<0?140:337;g.beginPath();g.moveTo(bx-sign*8,49);g.lineTo(bx,55);g.lineTo(bx-sign*8,61);g.stroke()}
+ }else{
+  guideRR(g,159,47,161,26,10,'#fff0e5');
+  g.fillStyle='#a34c42';g.font='900 13px system-ui';g.textAlign='center';g.fillText('จบเกมทันที / เริ่มใหม่',239,65);
+ }
+ // Small progression bars make the three distinct gestures memorable.
+ for(let i=0;i<3;i++)guideRR(g,178+i*44,202,35,6,3,i===phase?'#2d9fb8':'#b8d6dc');
 }
 function guideSceneBattle(g,t){
  guideSnow(g,t);
@@ -2769,9 +2871,10 @@ function renderHowToScene(t){
  const canvas=$('howToScene');if(!canvas)return;
  const g=canvas.getContext('2d');if(!g)return;
  g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,480,230);
- const localTime=(t*1.2+howToPage*.5);
+ const localTime=t*1.2+howToPage*.5,touch=howToUsesTouch();
  if(howToPage===0)guideSceneWalk(g,localTime);
- else if(howToPage===1)guideSceneBattle(g,localTime);
+ else if(touch&&howToPage===1)guideSceneTwoFinger(g,localTime,t-howToPageAt/1000);
+ else if(howToPage===(touch?2:1))guideSceneBattle(g,localTime);
  else guideSceneExplore(g,localTime);
 }
 
