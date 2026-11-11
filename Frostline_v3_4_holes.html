@@ -147,12 +147,14 @@ function stopFootstep(){if(!walkAudio)return;if(!walkAudio.paused)walkAudio.paus
 function playFootstep(speed){if(!audioCtx||audioCtx.state!=='running')return;if(speed<=10){stopFootstep();return}if(!walkAudio){walkAudio=walkingClip;walkAudio.loop=true;walkAudio.volume=0;walkAudio.playbackRate=1}const running=speed>245;walkAudio.loop=true;walkAudio.playbackRate=running?1.28:.78;walkAudio.volume=Math.min(.72,audioSettings.master*audioSettings.environment*(running?.85:.52));if(walkAudio.volume<=0)return;if(walkAudio.paused){const playback=walkAudio.play();if(playback&&playback.catch)playback.catch(()=>playSound('foot'))}clearTimeout(playFootstep.stopTimer);playFootstep.stopTimer=setTimeout(()=>{if(walkAudio){walkAudio.pause();walkAudio.currentTime=0}},running?650:900)}
 
 // ===== Procedural rock music =====
-let rockNext=0,rockStep=0,rockDist=null,rockBus=null,rockNoise=null;
+let rockNext=0,rockStep=0,rockDist=null,rockBus=null,rockNoise=null,musicIntense=false;
+// Situational track: intense when HP is low, a boss is alive, or other hunters are close.
+function computeIntense(){const g=game;if(!g)return false;if(g.p.hp/g.p.maxHp<.35)return true;if((g.mobs||[]).some(m=>m.boss))return true;for(const r of peers.values()){if(r.init&&Math.hypot(r.x-g.p.x,r.y-g.p.y)<700)return true}return false}
 function rockMusic(){try{rockMusicInner()}catch(e){}}
 function rockMusicInner(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime,vol=audioSettings.music;if(vol<=0.001)return;
  if(!rockBus){rockBus=audioCtx.createGain();rockBus.connect(audioMaster);const n=2048,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/n*2-1;c[i]=Math.tanh(x*7)}rockDist=audioCtx.createWaveShaper();rockDist.curve=c;rockDist.oversample='2x';const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;rockDist.connect(lp);lp.connect(rockBus);const len=audioCtx.sampleRate;rockNoise=audioCtx.createBuffer(1,len,audioCtx.sampleRate);const d=rockNoise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1}
  rockBus.gain.value=vol*.5;
- const bpm=148,step=60/bpm/4;if(rockNext<t-.5||rockNext===0){rockNext=t+.08;rockStep=0}
+ const bpm=musicIntense?170:148,step=60/bpm/4;if(rockNext<t-.5||rockNext===0){rockNext=t+.08;rockStep=0}
  while(rockNext<t+.35){rockScheduleStep(rockNext,rockStep);rockNext+=step;rockStep=(rockStep+1)%64}}
 function rockScheduleStep(t,st){const bar=Math.floor(st/16),s16=st%16,ROOTS=[82.41,82.41,65.41,73.42],root=ROOTS[bar];
  const env=(g,a,d,pk)=>{g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(pk,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d)};
@@ -171,7 +173,7 @@ function rockScheduleStep(t,st){const bar=Math.floor(st/16),s16=st%16,ROOTS=[82.
  if(s16%2===0){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(root,t);env(g,.005,.2,.25);o.connect(g);g.connect(rockBus);o.start(t);o.stop(t+.24)}
  // lead lick every other bar
  if(bar%2===1&&[2,5,7,10,13].includes(s16)){const sc=[1,1.189,1.335,1.498,1.782],note=root*4*sc[(s16*3+bar)%5],o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(note,t);env(g,.01,.22,.07);o.connect(g);g.connect(rockDist);o.start(t);o.stop(t+.25)}}
-function audioTick(dt){if(!audioCtx)return;if(!game||mode!=='playing'){stopFootstep();return}footstepTimer-=dt;heartbeatTimer-=dt;const moving=Math.hypot(game.p.mx,game.p.my);if(moving>10){if(footstepTimer<=0){playFootstep(moving);footstepTimer=moving>245?.27:moving>100?.35:.48}}else{stopFootstep();footstepTimer=0}rockMusic();if(game.p.hp/game.p.maxHp<.25&&heartbeatTimer<=0){playSound('heartbeat');heartbeatTimer=.8}}
+function audioTick(dt){if(!audioCtx)return;if(!game||mode!=='playing'){stopFootstep();return}footstepTimer-=dt;heartbeatTimer-=dt;const moving=Math.hypot(game.p.mx,game.p.my);if(moving>10){if(footstepTimer<=0){playFootstep(moving);footstepTimer=moving>245?.27:moving>100?.35:.48}}else{stopFootstep();footstepTimer=0}musicIntense=computeIntense();rockMusic();if(game.p.hp/game.p.maxHp<.25&&heartbeatTimer<=0){playSound('heartbeat');heartbeatTimer=.8}}
 
 let shakeOn=true,lang='th';try{shakeOn=localStorage.getItem('frostline_shake')!=='0';lang=localStorage.getItem('frostline_lang')||'th'}catch{}
 const STR={th:{master:'หลัก',combat:'เสียงต่อสู้',env:'บรรยากาศ',ui:'ไอเทม',tagline:'❄ SNOW SURVIVAL ARENA',sub:'เดิน • เก็บอาวุธ • เอาชีวิตรอด',graphics:'🎨 กราฟิก',name:'ชื่อของคุณ',settings:'⚙️ ตั้งค่า',music:'เพลง',sound:'เสียง',shake:'สั่นจอ',language:'ภาษา',keys:'🖥️ WASD / ลูกศร  📱 ลากนิ้วเดิน'},en:{master:'Master',combat:'Weapon & combat SFX',env:'Environment',ui:'Interface & items',tagline:'❄ SNOW SURVIVAL ARENA',sub:'Move • Collect weapons • Survive',graphics:'🎨 Graphics',name:'Your name',settings:'⚙️ Settings',music:'Music',sound:'Sound',shake:'Screen shake',language:'Language',keys:'🖥️ WASD / Arrows  📱 Drag to move'}};
