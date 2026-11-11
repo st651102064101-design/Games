@@ -238,6 +238,40 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
 #shopList{min-height:132px!important;flex:1 0 auto!important}
 .shopBox{overflow-y:auto!important}
 </style>
+<style>
+/* Frostline Illustrated Adventure Guide · handcrafted animated canvas scenes. */
+#howToGuide[hidden]{display:none!important}
+#howToGuide{position:fixed;inset:0;z-index:42;display:grid;place-items:center;padding:14px;background:radial-gradient(ellipse at 50% 35%,#174a66bc,#09263df0);backdrop-filter:blur(7px);overflow:auto;overscroll-behavior:contain;touch-action:pan-y}
+.howToCard{position:relative;width:min(100%,455px);max-height:min(95dvh,830px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;border-radius:30px;padding:clamp(15px,3.6vw,22px);background:linear-gradient(165deg,#f9feff,#e7f5fc 85%);color:#173c56;border:2px solid #ffffff;box-shadow:0 25px 75px #031a33ba, inset 0 1px #fff;scrollbar-width:thin}
+.howToTop{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.howToEyebrow{font:900 11px system-ui;letter-spacing:.065em;color:#42879d}
+#howToSkip{border:1px solid #b6dce6;border-radius:999px;background:#ffffffb8;color:#36657c;font:800 12px system-ui;padding:8px 13px;cursor:pointer;touch-action:manipulation}
+.howToTitle{margin:7px 0 3px;text-align:center;font:1000 clamp(23px,5.8vw,29px) system-ui;color:#123e59;line-height:1.19}
+.howToSubtitle{text-align:center;margin:0 auto 12px;max-width:380px;font:700 13px/1.45 system-ui;color:#47758a}
+.howToPagePane{will-change:opacity,transform}
+.howToPagePane.howToEnterNext{animation:howToEnterNext .38s cubic-bezier(.19,.86,.3,1) both}
+.howToPagePane.howToEnterPrev{animation:howToEnterPrev .38s cubic-bezier(.19,.86,.3,1) both}
+@keyframes howToEnterNext{from{opacity:.12;transform:translateX(36px) scale(.972)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes howToEnterPrev{from{opacity:.12;transform:translateX(-36px) scale(.972)}to{opacity:1;transform:translateX(0) scale(1)}}
+.howToStage{position:relative;overflow:hidden;border:4px solid #fff;border-radius:21px;background:#c5eaf0;box-shadow:inset 0 -12px 16px #3e96ab26,0 4px 15px #257c9840}
+#howToScene{display:block;width:100%;height:auto;aspect-ratio:480/230}
+.howToSceneLabel{position:absolute;left:12px;top:11px;padding:5px 10px;border:1px solid #ffffffad;border-radius:999px;background:#f5ffffd9;color:#23657c;font:900 11px system-ui;box-shadow:0 3px 10px #3274871e;pointer-events:none}
+.howToSteps{display:grid;gap:7px;margin-top:12px}
+.howToStep{display:flex;align-items:flex-start;gap:10px;padding:10px 11px;background:#ffffffb9;border:1px solid #cde6ed;border-radius:13px;box-shadow:0 3px 9px #4b95ab0c}
+.howToStepNum{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:9px;background:#d9f3ef;color:#206b79;font:1000 12px system-ui}
+.howToStepText{min-width:0}.howToStepText b{display:block;font:900 13px system-ui;color:#1b536e;margin-bottom:2px}.howToStepText span{display:block;font:700 12px/1.35 system-ui;color:#50788b}
+.howToBottom{display:grid;grid-template-columns:100px 1fr;gap:10px;margin-top:12px}
+.howToBottom button{min-height:47px;border-radius:14px;font:900 15px system-ui;cursor:pointer;touch-action:manipulation}
+#howToPrev{color:#2d6079;background:#f7fdff;border:2px solid #b8dce8}
+#howToPrev:disabled{opacity:.35;cursor:default}
+#howToNext{color:white;border:1px solid #176788;background:linear-gradient(125deg,#2285a4,#126384);box-shadow:0 5px 0 #114c61}
+.howToProgress{display:flex;gap:7px;justify-content:center;align-items:center;margin:14px 0 2px}
+.howToDot{display:block;height:7px;width:9px;border:0;border-radius:20px;background:#b4d3df;transition:width .28s,background .28s;cursor:pointer;padding:0;touch-action:manipulation}
+.howToDot.active{width:32px;background:#258eab}
+@media(max-height:650px){.howToCard{padding:12px;max-height:97dvh}.howToTitle{font-size:22px;margin-top:2px}.howToSubtitle{margin-bottom:7px;font-size:11px}.howToSteps{gap:5px;margin-top:7px}.howToStep{padding:6px 9px}.howToBottom{margin-top:7px}.howToBottom button{min-height:42px}.howToProgress{margin:8px 0 0}#howToScene{max-height:175px;object-fit:contain}}
+@media(max-width:380px){.howToCard{border-radius:21px}.howToStepText span{font-size:11px}.howToBottom{grid-template-columns:86px 1fr}}
+@media(prefers-reduced-motion:reduce){.howToPagePane.howToEnterNext,.howToPagePane.howToEnterPrev{animation:none!important}.howToDot{transition:none!important}}
+</style>
 </head>
 <body>
 <canvas id="game" aria-label="สนามเกมเอาตัวรอด Frostline"></canvas><div id="tiltStatus" hidden aria-live="off"></div>
@@ -266,7 +300,24 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
  <details class="menuCategory"><summary><span class="homeCategoryIcon" aria-hidden="true">⚙️</span><span data-i18n="settings">ตั้งค่า</span><span aria-hidden="true">›</span></summary><div class="settingsBox categoryBody" id="settingsBox"><label class="setRow"><span data-i18n="music">เพลง</span><input type="range" id="set-music" min="0" max="100" aria-label="เพลง"></label><label class="setRow"><span data-i18n="master">หลัก</span><input type="range" id="set-master" min="0" max="100" aria-label="หลัก"></label><label class="setRow"><span data-i18n="shake">สั่นจอ</span><input type="checkbox" id="set-shake" checked></label><div class="setRow"><span data-i18n="language">ภาษา</span><div class="seg" role="group"><button type="button" id="lang-th" aria-pressed="true">TH</button><button type="button" id="lang-en" aria-pressed="false">ENG</button></div></div><small id="audio-status" aria-live="polite" style="display:none"></small></div></details><button type="button" data-shop="1" class="shopCta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า <span class="shopCoin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="walletCoins">0</span></span></button><p class="shopHint">ฆ่าผู้เล่นอื่นรับ <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> 5 · ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า</p><div class="nameBox"><label for="nameInput" data-i18n="name">ชื่อของคุณ</label><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"></div><button class="primary" id="playBtn"><span aria-hidden="true" class="bigPlayIcon">▶</span> <span data-home-play>เล่นเลย!</span></button>
  <p id="bestText" style="color:#789aaa;font-size:11px;text-align:center;margin:15px 0 0"></p>
 </div></div>
-<div id="firstGuide" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guideCard"><div id="guideStep" aria-hidden="true"></div><h2 id="guideTitle"></h2><p id="guideSub"></p><div id="guideContent"></div><div class="guideNav"><button type="button" class="secondary guideBack" id="guideBack"></button><button type="button" class="primary guideNext" id="guideNext"></button></div></div></div><div id="categoryPage" hidden role="dialog" aria-modal="true" aria-labelledby="categoryPageTitle"><div class="categoryPageCard"><div class="categoryPageHeader"><button type="button" class="categoryBack" id="categoryBack" aria-label="Back">←</button><h2 id="categoryPageTitle"></h2></div><div id="categoryPageBody"></div></div></div><div id="warpGuide" hidden role="dialog" aria-modal="true" aria-labelledby="warpGuideTitle"><div class="warpGuideCard"><h2 id="warpGuideTitle">พุ่งวาร์ป!</h2><div class="warpDemo" aria-hidden="true"><div class="warpSnow warpSnowA"></div><div class="warpSnow warpSnowB"></div><div class="warpPine warpPineA"></div><div class="warpPine warpPineB"></div><div class="warpStart"></div><div class="warpPath"></div><div class="warpDestination"><i></i><i></i></div><div class="warpSpark">✦</div><img class="warpCharacter" id="warpCharacter" alt=""><div class="warpTapHint"><span>👆</span><b>×2</b></div></div><p id="warpGuideInstruction">แตะจุดหมาย 2 ครั้งเร็ว ๆ</p><p id="warpGuideCooldown">⏳ รอ 1 นาที แล้วใช้ใหม่ได้</p><button type="button" class="primary" id="warpGuideDone">เข้าใจแล้ว ▶</button></div></div><button type="button" id="wildlifeBtn" hidden aria-label="สมุดสะสมสัตว์ 50 ชนิด">🐾 <span id="wildlifeCount">0/50</span></button><button id="pauseBtn" aria-label="หยุดชั่วคราว" title="หยุดชั่วคราว (P)" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button><div id="pauseMenu" hidden><div class="pausePanel"><div class="pauseArt" aria-hidden="true">❄️</div><h2 id="pauseTitle">พักเกม</h2><button class="primary pauseResume" id="resumeBtn"><span aria-hidden="true">▶</span> <span id="resumeText">เล่นต่อ</span></button><button type="button" class="secondary pauseHome" id="homeBtn"><span aria-hidden="true">⌂</span> <span id="homeText">หน้าหลัก</span></button><small id="pauseHint">กด P หรือ Esc เพื่อเล่นต่อ</small></div></div>
+<div id="firstGuide" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guideCard"><div id="guideStep" aria-hidden="true"></div><h2 id="guideTitle"></h2><p id="guideSub"></p><div id="guideContent"></div><div class="guideNav"><button type="button" class="secondary guideBack" id="guideBack"></button><button type="button" class="primary guideNext" id="guideNext"></button></div></div></div><div id="categoryPage" hidden role="dialog" aria-modal="true" aria-labelledby="categoryPageTitle"><div class="categoryPageCard"><div class="categoryPageHeader"><button type="button" class="categoryBack" id="categoryBack" aria-label="Back">←</button><h2 id="categoryPageTitle"></h2></div><div id="categoryPageBody"></div></div></div><div id="warpGuide" hidden role="dialog" aria-modal="true" aria-labelledby="warpGuideTitle"><div class="warpGuideCard"><h2 id="warpGuideTitle">พุ่งวาร์ป!</h2><div class="warpDemo" aria-hidden="true"><div class="warpSnow warpSnowA"></div><div class="warpSnow warpSnowB"></div><div class="warpPine warpPineA"></div><div class="warpPine warpPineB"></div><div class="warpStart"></div><div class="warpPath"></div><div class="warpDestination"><i></i><i></i></div><div class="warpSpark">✦</div><img class="warpCharacter" id="warpCharacter" alt=""><div class="warpTapHint"><span>👆</span><b>×2</b></div></div><p id="warpGuideInstruction">แตะจุดหมาย 2 ครั้งเร็ว ๆ</p><p id="warpGuideCooldown">⏳ รอ 1 นาที แล้วใช้ใหม่ได้</p><button type="button" class="primary" id="warpGuideDone">เข้าใจแล้ว ▶</button></div></div>
+<div id="howToGuide" hidden role="dialog" aria-modal="true" aria-labelledby="howToTitle">
+ <div class="howToCard">
+  <div class="howToTop"><span class="howToEyebrow">FROSTLINE · ADVENTURE SCHOOL</span><button id="howToSkip" type="button">ข้ามทั้งหมด ✕</button></div>
+  <div id="howToPagePane" class="howToPagePane">
+   <h2 id="howToTitle" class="howToTitle">ออกเดินทางกัน!</h2>
+   <p id="howToSubtitle" class="howToSubtitle">ควบคุมนักสำรวจและออกเดินทางบนหิมะ</p>
+   <div class="howToStage"><canvas id="howToScene" width="960" height="460" role="img" aria-label="ภาพการ์ตูนเคลื่อนไหวสาธิตวิธีเล่น"></canvas><span id="howToSceneLabel" class="howToSceneLabel">ลองเดินตามเส้นทาง</span></div>
+   <div id="howToSteps" class="howToSteps"></div>
+  </div>
+  <div class="howToProgress" aria-label="หน้าคู่มือ">
+   <button class="howToDot active" data-guide-page="0" aria-label="หน้า 1 การเดิน"></button>
+   <button class="howToDot" data-guide-page="1" aria-label="หน้า 2 เป้าหมาย"></button>
+   <button class="howToDot" data-guide-page="2" aria-label="หน้า 3 สำรวจโลก"></button>
+  </div>
+  <div class="howToBottom"><button id="howToPrev" type="button">← ย้อนกลับ</button><button id="howToNext" type="button">ถัดไป ▶</button></div>
+ </div>
+</div><button type="button" id="wildlifeBtn" hidden aria-label="สมุดสะสมสัตว์ 50 ชนิด">🐾 <span id="wildlifeCount">0/50</span></button><button id="pauseBtn" aria-label="หยุดชั่วคราว" title="หยุดชั่วคราว (P)" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button><div id="pauseMenu" hidden><div class="pausePanel"><div class="pauseArt" aria-hidden="true">❄️</div><h2 id="pauseTitle">พักเกม</h2><button class="primary pauseResume" id="resumeBtn"><span aria-hidden="true">▶</span> <span id="resumeText">เล่นต่อ</span></button><button type="button" class="secondary" id="howToReplay">✦ วิธีเล่น</button><button type="button" class="secondary pauseHome" id="homeBtn"><span aria-hidden="true">⌂</span> <span id="homeText">หน้าหลัก</span></button><small id="pauseHint">กด P หรือ Esc เพื่อเล่นต่อ</small></div></div>
 <div id="wildlifePanel" hidden role="dialog" aria-modal="true" aria-label="สมุดสะสมสัตว์"><div class="wildlifeBox"><div class="wildlifeHead"><h2>🐾 สมุดสัตว์ 50 ชนิด</h2><button type="button" id="wildlifeClose" aria-label="ปิดสมุดสัตว์">×</button></div><div id="wildlifeProgress">พบแล้ว 0 / 50</div><div id="wildlifeList"></div></div></div><div id="sprintHud" hidden><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="sprintRing" cx="22" cy="22" r="18"/></svg><b id="sprintNum"></b></div><div id="shopPanel" hidden role="dialog" aria-modal="true" aria-label="ร้านค้า"><div class="shopBox"><button type="button" class="shopX" id="shopClose" aria-label="ปิด"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า</h2><div class="walletLine"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="shopWallet">0</span></div><div class="shopCategoryTabs" role="tablist" aria-label="หมวดร้านค้า"><button type="button" data-shop-tab="weapons" role="tab" aria-selected="true">⚔️ อาวุธ</button><button type="button" data-shop-tab="skins" role="tab" aria-selected="false">👕 ตัวละคร (15)</button></div>
  <div id="skinPreview" class="skinPreview" hidden><canvas id="skinPreviewCanvas" width="144" height="144" aria-label="ตัวอย่างสกินตัวละคร"></canvas><div class="skinPreviewInfo"><b id="skinPreviewName"></b><small id="skinPreviewDetails"></small></div></div>
  <p class="shopNote" id="shopNote"></p><div id="shopList"></div></div></div><div id="fatal"></div><div id="killBanner" aria-live="polite" aria-atomic="true"><div class="streakStars" aria-hidden="true">✦ ★ ✦</div><div class="streakBadge"><span class="streakNumber" id="streakNumber">1</span><span id="streakText"></span></div></div>
@@ -697,7 +748,7 @@ function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
  keepInWorld(game.p,1100);game.p.skin=safeSkinId(saved.skinEquipped);wildlifeStart(1);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};friendlyStart(1);game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];game.nextBotId=0;game.nextBotBalance=0;reconcileBots();for(const b of game.bots)keepInWorld(b,180);for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
- cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();showWarpGuideOnce();
+ cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();showWarpGuideOnce();if($('warpGuide').hidden)showHowToOnce();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
 function spawnGroundWeapon(near=false,forcedType=null){if(!game||!game._bossDropContext)return;let p=game.p,x,y;if(near){let a=rand(0,TAU),d=rand(100,380);x=clamp(p.x+Math.cos(a)*d,-half+90,half-90);y=clamp(p.y+Math.sin(a)*d,-half+90,half-90)}else{x=rand(-half+80,half-80);y=rand(-half+80,half-80)}spawnDrop(x,y,'weapon',1,randWeapon(game.stage>2,forcedType));}
@@ -2441,7 +2492,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
 function drawEnemyArrows(){if(!game?.radar)return;const current=performance.now(),margin=35,cx=w/2,cy=h/2;for(const r of peers.values()){if(!r.init||current-r.last>6500)continue;const dx=r.x-cam.x,dy=(r.y-cam.y)*cameraPitchScale();if(Math.abs(dx)*screenScale<cx-margin&&Math.abs(dy)*screenScale<cy-margin)continue;const angle=Math.atan2(dy,dx),factor=Math.min((cx-margin)/(Math.abs(dx)||.001),(cy-margin)/(Math.abs(dy)||.001)),x=cx+dx*factor,y=cy+dy*factor;ctx.save();ctx.translate(x,y);ctx.rotate(angle);poly([[15,0],[-10,-9],[-6,0],[-10,9]],'#f5655f');ctx.restore()}}
 function renderMenuBackdrop(t){now=t;cam.x=Math.sin(now*.05)*70;cam.y=Math.cos(now*.075)*50;drawGround();ctx.fillStyle='#153e5d12';ctx.fillRect(0,0,w,h);for(let s of particle){ctx.globalAlpha=.55;ellipse(s.x,s.y,s.r,s.r,'#fff')}ctx.globalAlpha=1}
 function draw(){if(mode==='menu'){renderMenuBackdrop(now)}else{drawGame()}}
-function tick(t){if(!last)last=t;let dt=Math.min((t-last)/1000,.045);last=t;frame++;cameraTilt+=(cameraTiltTarget-cameraTilt)*Math.min(1,dt*13);if(tiltNoticeUntil<performance.now())$('tiltStatus').hidden=true;if(mode==='playing')update(dt);if(mode==='menu')now+=dt;for(let s of particle){s.x+=s.vx*dt;s.y+=s.vy*dt;s.p+=dt;if(s.y>h+8){s.y=-8;s.x=rand(0,w)}if(s.x<-8)s.x=w+8}draw();requestAnimationFrame(tick)}
+function tick(t){if(!last)last=t;let dt=Math.min((t-last)/1000,.045);last=t;frame++;cameraTilt+=(cameraTiltTarget-cameraTilt)*Math.min(1,dt*13);if(tiltNoticeUntil<performance.now())$('tiltStatus').hidden=true;if(mode==='playing')update(dt);if(mode==='menu')now+=dt;for(let s of particle){s.x+=s.vx*dt;s.y+=s.vy*dt;s.p+=dt;if(s.y>h+8){s.y=-8;s.x=rand(0,w)}if(s.x<-8)s.x=w+8}draw();if(howToOpen)renderHowToScene(t/1000);requestAnimationFrame(tick)}
 function setPointer(e){if(input.pointerId===null)return;input.x=e.clientX;input.y=e.clientY;let dx=input.x-input.ox,dy=input.y-input.oy,m=Math.hypot(dx,dy);if(m<9){input.dx=input.dy=0;return}let intensity=clamp(m/78,0,1);input.dx=dx/m*intensity;input.dy=dy/m*intensity}
 canvas.addEventListener('pointerdown',e=>{if(audioCtx&&audioCtx.state!=='running')audioInitialize();if(mode!=='playing'||pinchPts.size>=1||input.pointerId!==null)return;input.pointerId=e.pointerId;input.ox=e.clientX;input.oy=e.clientY;input.x=e.clientX;input.y=e.clientY;input.dx=input.dy=0;try{canvas.setPointerCapture(e.pointerId)}catch{}},{passive:true});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId===input.pointerId)setPointer(e)},{passive:true});
@@ -2461,9 +2512,227 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{const move=movementCode(e);if(move){movementKeys.delete(move);syncMovement()}});
 
 
+
+// Three illustrated, animated lessons after the existing warp demonstration.
+// Images are drawn by Canvas paths or use the current real character skin image.
+const HOWTO_KEY='frostline_howto_illustrated_v1';
+const HOWTO_PAGES=[
+ {title:'ออกเดินทางกัน!',sub:'ลองขยับตัวละครและสำรวจแผนที่หิมะ',label:'การเดินและมุมกล้อง',
+  steps:[['มือถือ','กดค้างแล้วลากนิ้วเพื่อเดินตามทิศทางที่ต้องการ'],['คอมพิวเตอร์','ใช้ W A S D หรือปุ่มลูกศรเพื่อเดิน'],['ท่าทางสองนิ้ว','ลากขึ้น–ลงพร้อมกันเพื่อเอียงกล้อง · ถ่าง–หุบเพื่อซูม']]},
+ {title:'พิชิตภารกิจ!',sub:'ต่อสู้ เก็บของ และผจญภัยไปยังด่านใหม่',label:'การต่อสู้และรางวัล',
+  steps:[['โจมตี','เข้าใกล้ศัตรู ให้อาวุธของเราช่วยโจมตี'],['รับรางวัล','เก็บไอเทม เพิ่มเลเวล และสะสมเหรียญ'],['เป้าหมาย','เอาชีวิตรอด สำรวจด่าน และเอาชนะบอส']]},
+ {title:'โลกมหัศจรรย์รออยู่!',sub:'มีเพื่อนสัตว์และความลับรอให้ออกสำรวจ',label:'สัตว์เลี้ยงและการสำรวจ',
+  steps:[['เพื่อนนักสำรวจ','โมจิจะเดินตามเรา และมีสัตว์ให้สะสม 50 ชนิด'],['กลางคืน','คบเพลิงจะช่วยส่องทาง · ระวังหลุมบนแผนที่'],['ร้านตัวละคร','เก็บเหรียญแล้วเลือกซื้อสกินตัวโปรด']]}
+];
+let howToOpen=false,howToPage=0,howToFromPause=false,howToPageAt=0,howToLastPaint=0;
+let howToHero=null,howToBot=null;
+function howToSkinArt(){
+ const source=game?.p?.skin||'scout';
+ function create(id){
+  try{const img=new Image();img.src=skinImage(id);return img}catch{return null}
+ }
+ howToHero=create(source);howToBot=create('crimson');
+}
+function showHowTo(page=0,fromPause=false,once=false){
+ if(!game||mode!=='playing')return false;
+ if(once){try{if(localStorage.getItem(HOWTO_KEY)==='1')return false}catch{}}
+ howToFromPause=!!fromPause;howToOpen=true;paused=true;clearInput();
+ $('pauseMenu').hidden=true;$('howToGuide').hidden=false;
+ howToSkinArt();howToSetPage(page,true);$('howToNext').focus();
+ return true;
+}
+function showHowToOnce(){return showHowTo(0,false,true)}
+function howToSetPage(n,first=false){
+ const page=Math.max(0,Math.min(HOWTO_PAGES.length-1,n)),direction=page<howToPage?'howToEnterPrev':'howToEnterNext';
+ howToPage=page;howToPageAt=performance.now();howToLastPaint=0;
+ const data=HOWTO_PAGES[page];
+ $('howToTitle').textContent=data.title;
+ $('howToSubtitle').textContent=data.sub;
+ $('howToSceneLabel').textContent=data.label;
+ $('howToSteps').innerHTML=data.steps.map(([head,body],i)=>
+  '<div class="howToStep"><span class="howToStepNum">'+(i+1)+'</span><div class="howToStepText"><b>'+head+'</b><span>'+body+'</span></div></div>').join('');
+ $('howToPrev').disabled=page===0;
+ $('howToNext').textContent=page===HOWTO_PAGES.length-1?'เริ่มผจญภัย! ▶':'ถัดไป ▶';
+ document.querySelectorAll('[data-guide-page]').forEach((btn,i)=>{
+  btn.classList.toggle('active',i===page);btn.setAttribute('aria-current',i===page?'step':'false')});
+ const pane=$('howToPagePane');pane.classList.remove('howToEnterPrev','howToEnterNext');
+ if(!first){void pane.offsetWidth;pane.classList.add(direction)}
+ renderHowToScene(performance.now()/1000);
+}
+function finishHowTo(){
+ if(!howToOpen)return;
+ howToOpen=false;$('howToGuide').hidden=true;
+ try{localStorage.setItem(HOWTO_KEY,'1')}catch{}
+ clearInput();last=performance.now();howToHero=null;howToBot=null;
+ if(howToFromPause){paused=true;$('pauseMenu').hidden=false;$('resumeBtn').focus()}
+ else{paused=false;$('pauseMenu').hidden=true;$('pauseBtn').focus()}
+}
+$('howToNext').onclick=()=>howToPage===HOWTO_PAGES.length-1?finishHowTo():howToSetPage(howToPage+1);
+$('howToPrev').onclick=()=>{if(howToPage>0)howToSetPage(howToPage-1)};
+$('howToSkip').onclick=finishHowTo;
+document.querySelectorAll('[data-guide-page]').forEach(btn=>btn.onclick=()=>howToSetPage(+btn.dataset.guidePage));
+$('howToReplay').onclick=()=>showHowTo(0,true,false);
+document.addEventListener('keydown',e=>{
+ if(!howToOpen)return;
+ if(['Escape','ArrowRight','ArrowLeft'].includes(e.key))e.preventDefault();
+ if(e.key==='Escape')finishHowTo();
+ if(e.key==='ArrowRight'&&howToPage<2)howToSetPage(howToPage+1);
+ if(e.key==='ArrowLeft'&&howToPage>0)howToSetPage(howToPage-1);
+});
+// All art is vector-drawn, except the actor thumbnail rendered from the
+// game's existing skin painter: no new remote art assets or dependencies.
+function guideRR(g,x,y,wid,hei,rad,fill){
+ g.beginPath();g.roundRect(x,y,wid,hei,rad);g.fillStyle=fill;g.fill();
+}
+function guideTree(g,x,y,scale,color='#408a86'){
+ g.save();g.translate(x,y);g.scale(scale,scale);
+ guideRR(g,-4,-1,8,24,2,'#6d8580');
+ for(let i=0;i<3;i++){const cy=-55+i*15,wid=18+i*8;
+  g.beginPath();g.moveTo(0,cy-14);g.lineTo(wid,cy+22);g.lineTo(-wid,cy+22);g.closePath();
+  g.fillStyle=i%2?'#51a199':color;g.fill();
+  g.beginPath();g.moveTo(0,cy-14);g.lineTo(-wid+5,cy+17);g.lineTo(4,cy+8);g.fillStyle='#eaffffca';g.fill();
+ }
+ g.restore();
+}
+function guideStar(g,x,y,rad,t,color='#fff8de'){
+ g.save();g.translate(x,y);g.rotate(t*.8);g.globalAlpha=.55+.4*Math.sin(t*3)**2;
+ g.beginPath();g.moveTo(0,-rad);g.quadraticCurveTo(rad*.22,-rad*.2,rad,0);
+ g.quadraticCurveTo(rad*.22,rad*.2,0,rad);g.quadraticCurveTo(-rad*.22,rad*.2,-rad,0);
+ g.quadraticCurveTo(-rad*.22,-rad*.2,0,-rad);g.fillStyle=color;g.fill();g.restore();
+}
+function guideActor(g,x,y,scale,t,img,bot=false){
+ g.save();g.translate(x,y);g.scale(scale,scale);
+ g.fillStyle='#4b71885b';g.beginPath();g.ellipse(0,3,32,9,0,0,Math.PI*2);g.fill();
+ const bounce=Math.abs(Math.sin(t*4))*3;
+ if(img?.complete&&img.naturalWidth)g.drawImage(img,-52,-100-bounce,104,108);
+ else{
+  // Fallback vector actor, also visible while the real skin raster loads.
+  guideRR(g,-15,-40-bounce,30,35,9,bot?'#bb696a':'#2d6077');
+  g.beginPath();g.arc(0,-53-bounce,17,0,Math.PI*2);g.fillStyle='#f7d6bb';g.fill();
+  guideRR(g,-18,-72-bounce,36,10,4,bot?'#90445b':'#325c72');
+  g.fillStyle='#293d4d';g.beginPath();g.arc(-6,-55-bounce,2,0,7);g.arc(6,-55-bounce,2,0,7);g.fill();
+  guideRR(g,-14,-8-bounce,10,14,3,'#4e6b7b');guideRR(g,4,-8-bounce,10,14,3,'#4e6b7b');
+ }
+ g.restore();
+}
+function guideSnow(g,t,dark=false){
+ const sky=g.createLinearGradient(0,0,0,230);
+ sky.addColorStop(0,dark?'#37416f':'#92c9dc');sky.addColorStop(.72,dark?'#6789af':'#d8f1ef');sky.addColorStop(1,dark?'#a3b0d6':'#effbff');
+ g.fillStyle=sky;g.fillRect(0,0,480,230);
+ g.fillStyle=dark?'#aaaee0':'#e9f9fb';
+ g.beginPath();g.moveTo(0,164);g.bezierCurveTo(80,122,120,171,203,153);g.bezierCurveTo(300,130,361,173,480,141);g.lineTo(480,230);g.lineTo(0,230);g.fill();
+ g.fillStyle=dark?'#c4c9ed':'#f6ffff';
+ g.beginPath();g.moveTo(0,202);g.bezierCurveTo(115,175,169,222,295,200);g.bezierCurveTo(391,183,440,211,480,193);g.lineTo(480,230);g.lineTo(0,230);g.fill();
+ for(let i=0;i<22;i++){
+  const x=((i*73+Math.sin(i)*15+t*(8+i%5*3))%520+520)%520-20;
+  const y=(i*31+t*(8+i%7*2))%250-10;
+  g.fillStyle=dark?'#e5eeffb8':'#ffffffaf';g.beginPath();g.arc(x,y,1.1+i%3*.4,0,Math.PI*2);g.fill();
+ }
+}
+function guideSceneWalk(g,t){
+ guideSnow(g,t);
+ guideTree(g,49,160,.73);guideTree(g,435,145,.62);
+ guideTree(g,278,153,.38,'#5caaa3');
+ g.beginPath();g.moveTo(40,206);g.bezierCurveTo(115,173,180,205,250,170);g.bezierCurveTo(304,144,360,184,441,170);
+ g.setLineDash([8,10]);g.strokeStyle='#76afc9b2';g.lineWidth=8;g.lineCap='round';g.stroke();g.setLineDash([]);
+ const x=110+Math.sin(t*1.45)*52;
+ guideActor(g,x,178,.85,t,howToHero);
+ g.save();g.translate(343,76);g.strokeStyle='#1f7997';g.lineWidth=4;g.lineCap='round';
+ g.beginPath();g.arc(0,0,29,0,Math.PI*2);g.stroke();
+ g.fillStyle='#e4f9ffb5';g.beginPath();g.arc(0,0,26,0,Math.PI*2);g.fill();
+ const joyX=Math.cos(t*1.5)*12,joyY=Math.sin(t*1.5)*12;
+ g.fillStyle='#2f91a9';g.beginPath();g.arc(joyX,joyY,13,0,Math.PI*2);g.fill();
+ g.strokeStyle='#7bcde6';g.lineWidth=3;g.beginPath();g.moveTo(joyX,joyY);g.lineTo(joyX+22,joyY-14);g.stroke();g.restore();
+ // A four-key keyboard illustration with an animated active key.
+ const keys=[['W',404,51],['A',379,75],['S',404,75],['D',429,75]];
+ keys.forEach(([label,x,y],i)=>{
+  const active=(Math.floor(t*2)%4)===i;
+  guideRR(g,x-10,y-10,21,20,5,active?'#71ccbd':'#edfafe');
+  g.fillStyle=active?'#fff':'#295d71';g.font='900 12px system-ui';g.textAlign='center';g.fillText(label,x+1,y+4);
+ });
+ guideStar(g,235,133,8,t,'#fef6c8');
+}
+function guideSceneBattle(g,t){
+ guideSnow(g,t);
+ guideTree(g,49,167,.59);guideTree(g,457,159,.52);
+ guideRR(g,17,14,112,29,12,'#f6feffe3');g.fillStyle='#2a6580';g.textAlign='left';g.font='900 13px system-ui';g.fillText('LEVEL 2',30,34);
+ const progress=(Math.sin(t*1.5)+1)*.5;guideRR(g,140,27,76,9,5,'#c2e6e9');guideRR(g,140,27,20+progress*56,9,5,'#4bc6ad');
+ guideActor(g,135,189,.95,t,howToHero);
+ guideActor(g,298,183,.83,t+.4,howToBot,true);
+ // Orbiting blade and impact sparks, mirroring the actual auto-combat system.
+ const phase=t*3.3;
+ const bx=135+Math.cos(phase)*54,by=142+Math.sin(phase)*23;
+ g.save();g.translate(bx,by);g.rotate(phase+.8);
+ g.strokeStyle='#d9eefe';g.lineWidth=5;g.lineCap='round';g.beginPath();g.moveTo(-22,0);g.lineTo(26,0);g.stroke();
+ guideRR(g,25,-5,20,10,3,'#ffd18a');g.restore();
+ const hit=Math.sin(phase)> .85;
+ if(hit){for(let i=0;i<7;i++){const a=i*Math.PI*2/7+t;
+  guideStar(g,262+Math.cos(a)*18,142+Math.sin(a)*19,5,t+i,'#ffe197')}}
+ // Collectibles bob and sparkle, illustrated rather than emoji stamps.
+ const b=Math.sin(t*3)*4;
+ g.fillStyle='#eeb957';g.beginPath();g.arc(378,143+b,16,0,Math.PI*2);g.fill();
+ g.strokeStyle='#fff1bb';g.lineWidth=4;g.stroke();
+ g.fillStyle='#fff9d5';g.font='900 17px system-ui';g.textAlign='center';g.fillText('★',378,149+b);
+ g.beginPath();g.moveTo(420,115+b);g.lineTo(431,130+b);g.lineTo(420,149+b);g.lineTo(408,130+b);g.closePath();g.fillStyle='#9ce9ef';g.fill();
+ guideStar(g,386,114,7,t,'#fff6c5');
+ g.fillStyle='#8d6da8';g.beginPath();g.ellipse(248,190,32,10,0,0,Math.PI*2);g.fill();
+ g.fillStyle='#4f6887';guideRR(g,231,176,34,11,6,'#516b81');guideRR(g,224,161,49,14,7,'#e8cb8e');
+ // Small health meter for the enemy, bounces during strikes.
+ guideRR(g,275,80,52,7,4,'#274b60');guideRR(g,275,80,hit?21:41,7,4,'#ff888e');
+}
+function guideSceneExplore(g,t){
+ guideSnow(g,t,true);
+ guideTree(g,49,168,.66,'#4e96ae');guideTree(g,444,163,.58,'#6e91bb');
+ const x=233+Math.sin(t*.85)*9;
+ guideActor(g,x,181,.92,t,howToHero);
+ // Crystal pillars have genuinely shifting highlights.
+ for(const [xx,yy,sc] of [[63,173,.9],[395,186,1.15],[343,171,.55]]){
+  g.save();g.translate(xx,yy);g.scale(sc,sc);
+  g.fillStyle='#8279cb';g.beginPath();g.moveTo(-13,0);g.lineTo(-9,-42);g.lineTo(1,-62);g.lineTo(12,-42);g.lineTo(14,0);g.fill();
+  g.fillStyle='#c7b8fa';g.beginPath();g.moveTo(-9,-42);g.lineTo(1,-62);g.lineTo(2,0);g.lineTo(-13,0);g.fill();g.restore();
+  guideStar(g,xx,yy-55,5,t+xx,'#eff7ff');
+ }
+ // A tiny hand-drawn corgi that follows and bounces, matching Mochi.
+ const dogX=x-58+Math.sin(t*2)*6,dogY=193-Math.abs(Math.sin(t*4))*4;
+ g.fillStyle='#43678b55';g.beginPath();g.ellipse(dogX,dogY+4,25,6,0,0,Math.PI*2);g.fill();
+ guideRR(g,dogX-19,dogY-23,34,23,10,'#e4a16a');
+ g.fillStyle='#f9d9b2';g.beginPath();g.arc(dogX+12,dogY-20,14,0,Math.PI*2);g.fill();
+ g.fillStyle='#ab603c';g.beginPath();g.moveTo(dogX+3,dogY-31);g.lineTo(dogX+5,dogY-46);g.lineTo(dogX+17,dogY-32);g.fill();
+ g.beginPath();g.moveTo(dogX+19,dogY-33);g.lineTo(dogX+28,dogY-43);g.lineTo(dogX+29,dogY-24);g.fill();
+ g.fillStyle='#273d4c';g.beginPath();g.arc(dogX+18,dogY-22,2,0,Math.PI*2);g.fill();
+ // A non-hostile rabbit playing to the right of the hero.
+ const rabbitY=185-Math.abs(Math.sin(t*3))*7;
+ g.fillStyle='#f8faff';g.beginPath();g.ellipse(323,rabbitY,14,13,0,0,Math.PI*2);g.fill();
+ guideRR(g,314,rabbitY-41,7,26,4,'#f6fbff');guideRR(g,328,rabbitY-39,7,25,4,'#f6fbff');
+ g.fillStyle='#58778b';g.beginPath();g.arc(328,rabbitY-3,1.7,0,7);g.fill();
+ // A functional warm torch light over the icy ground, not an emoji icon.
+ const fireX=x+24,fireY=95,glow=g.createRadialGradient(fireX,fireY,5,fireX,fireY,72);
+ glow.addColorStop(0,'#ffb96ba8');glow.addColorStop(1,'#ffb96b00');
+ g.fillStyle=glow;g.beginPath();g.arc(fireX,fireY,72,0,7);g.fill();
+ g.strokeStyle='#71543d';g.lineWidth=5;g.beginPath();g.moveTo(x+23,151);g.lineTo(x+23,104);g.stroke();
+ g.fillStyle='#ffb24f';g.beginPath();g.moveTo(fireX-10,102);g.quadraticCurveTo(fireX-15,84,fireX+Math.sin(t*11)*4,67);g.quadraticCurveTo(fireX+15,88,fireX+9,103);g.fill();
+ g.fillStyle='#fff0b3';g.beginPath();g.moveTo(fireX-4,101);g.quadraticCurveTo(fireX-2,85,fireX+3,79);g.quadraticCurveTo(fireX+9,94,fireX+4,102);g.fill();
+ for(let i=0;i<5;i++)guideStar(g,fireX+Math.sin(t*3+i)*30,fireY-25-i*10,3,t+i,'#ffe9a0');
+ // Collection book floating above the rabbit and corgi.
+ guideRR(g,361,31,80,37,13,'#f4ffffdd');g.fillStyle='#31758d';g.font='900 11px system-ui';g.textAlign='center';g.fillText('ANIMALS',401,45);g.font='1000 16px system-ui';g.fillText('0 / 50',401,61);
+}
+function renderHowToScene(t){
+ if(!howToOpen)return;
+ // 30fps illustration loop on mobile, smooth CSS transitions at display refresh.
+ if(t-howToLastPaint<(lowGraphics()?1/24:1/45))return;
+ howToLastPaint=t;
+ const canvas=$('howToScene');if(!canvas)return;
+ const g=canvas.getContext('2d');if(!g)return;
+ g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,480,230);
+ const localTime=(t*1.2+howToPage*.5);
+ if(howToPage===0)guideSceneWalk(g,localTime);
+ else if(howToPage===1)guideSceneBattle(g,localTime);
+ else guideSceneExplore(g,localTime);
+}
+
 let warpFx=[];
 function showWarpGuideOnce(){let done=false;try{done=localStorage.getItem('frostline_warp_guide_v2')==='1'}catch{}if(done)return;const en=lang==='en';$('warpGuideTitle').textContent=en?'Quick warp!':'พุ่งวาร์ป!';$('warpGuideInstruction').textContent=en?'Double-tap or double-click the destination':'แตะหรือคลิกจุดหมาย 2 ครั้งเร็ว ๆ';$('warpGuideCooldown').textContent=en?'⏳ Ready again in 1 minute':'⏳ รอ 1 นาที แล้วใช้ใหม่ได้';$('warpGuideDone').textContent=en?'Got it ▶':'เข้าใจแล้ว ▶';$('warpCharacter').src=skinImage(game.p.skin);clearInput();paused=true;$('warpGuide').hidden=false;$('warpGuideDone').focus()}
-$('warpGuideDone').addEventListener('click',()=>{try{localStorage.setItem('frostline_warp_guide_v2','1')}catch{}$('warpGuide').hidden=true;clearInput();paused=false;last=performance.now()});
+$('warpGuideDone').addEventListener('click',()=>{try{localStorage.setItem('frostline_warp_guide_v2','1')}catch{}$('warpGuide').hidden=true;clearInput();if(!showHowToOnce()){paused=false;last=performance.now()}});
 function teleportHero(sx,sy){const g=game,p=g.p;const wx=clamp(cam.x+(sx-w/2)/screenScale,-half+50,half-50),wy=clamp(cam.y+(sy-h/2)/(screenScale*cameraPitchScale()),-half+50,half-50),safe=worldSpot(wx,wy,110);sparks(p.x,p.y,'#c8f5ff',16);g.dash={x0:p.x,y0:p.y,x1:safe.x,y1:safe.y,t0:now,out:.2,inDur:.25};showEmotion(p,'warp',true);playSound('ui',p.x,p.y)}
 // Google Maps-style pitch in a 2D Canvas world: flatten only ground plane,
 // keep creatures and trees upright, and leave UI / zoom independent.
@@ -2591,7 +2860,7 @@ const battleMusic=new Audio('battle-music.mp3');battleMusic.loop=true;battleMusi
 function syncBattleMusic(){const want=mode==='playing'&&!paused&&!!game;const vol=clamp(audioSettings.music*audioSettings.master,0,1);
  try{const track=battleMusic;if(!want||vol<=.001){if(!track.paused)track.pause();return}track.volume=vol;track.playbackRate=musicIntense?1.08:1;if(track.paused)track.play().catch(()=>{})}catch(e){}}
 setInterval(syncBattleMusic,300);
-const pauseGame=on=>{if(on&&(mode!=='playing'||!game))return;paused=on;$('pauseMenu').hidden=!on;if(on)clearInput()};$('pauseBtn').onclick=()=>pauseGame(!paused);$('resumeBtn').onclick=()=>pauseGame(false);$('homeBtn').onclick=()=>{try{saveBest();saveProgress()}catch{}location.reload()};document.addEventListener('keydown',e=>{if(mode==='playing'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){e.preventDefault();pauseGame(!paused)}});setInterval(()=>{const on=mode==='playing'&&!!game;$('wildlifeBtn').hidden=!on;$('pauseBtn').hidden=!on;if(!on&&paused){paused=false;$('pauseMenu').hidden=true}},200);
+const pauseGame=on=>{if(on&&(mode!=='playing'||!game))return;paused=on;$('pauseMenu').hidden=!on;if(on)clearInput()};$('pauseBtn').onclick=()=>pauseGame(!paused);$('resumeBtn').onclick=()=>pauseGame(false);$('homeBtn').onclick=()=>{try{saveBest();saveProgress()}catch{}location.reload()};document.addEventListener('keydown',e=>{if(howToOpen)return;if(mode==='playing'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){e.preventDefault();pauseGame(!paused)}});setInterval(()=>{const on=mode==='playing'&&!!game;$('wildlifeBtn').hidden=!on;$('pauseBtn').hidden=!on;if(!on&&paused){paused=false;$('pauseMenu').hidden=true}},200);
 let lastTap={t:0,x:0,y:0};document.addEventListener('pointerdown',e=>{if(mode!=='playing'||!game||paused||(e.pointerType==='touch'&&(!e.isPrimary||pinchPts.size>1))||(e.target.closest&&e.target.closest('#pauseBtn,#pauseMenu,button,#shopPanel,#sprintHud')))return;const t=performance.now();if(t-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<50){lastTap.t=0;if((game.sprintCd||0)<=0){teleportHero(e.clientX,e.clientY);game.sprintCd=HERO_WARP_COOLDOWN}}else lastTap={t,x:e.clientX,y:e.clientY}});setInterval(()=>{const hud=$('sprintHud');if(!hud)return;const on=mode==='playing'&&!!game&&!paused;hud.hidden=!on;if(!on)return;const g=game,sp=g.sprint>0,cd=g.sprintCd>0;hud.classList.toggle('on',sp);const frac=sp?g.sprint/1.5:cd?(HERO_WARP_COOLDOWN-g.sprintCd)/HERO_WARP_COOLDOWN:1;$('sprintRing').style.strokeDashoffset=(113.1*(1-frac)).toFixed(1);$('sprintNum').textContent=sp?Math.ceil(g.sprint):cd?Math.ceil(g.sprintCd):'⚡'},100);
 
 const UI_EN={'ร้านสกินตัวละคร':'Character skins','ตัวละคร':'characters','ร้านค้า':'Shop','อัตโนมัติ':'Auto','ประหยัด':'Low','ปกติ':'Normal','สถิติสูงสุด:':'Best:','นาที':'min','ด่าน':'Stage','เฟส':'Phase','ฆ่าผู้เล่นอื่นรับ':'Defeat a player to earn','ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า':'Buy weapons for your next game','เล่นได้ทั้งมือถือและคอมพิวเตอร์':'Play on mobile or desktop','ไม่ต้องเชื่อมต่ออินเทอร์เน็ต':'Offline play available','อาวุธ':'Weapons','สกิน':'Skins','ปิด':'Close','เลือก':'Choose','หยุดชั่วคราว':'Paused','เล่นต่อ':'Resume','หน้าหลัก':'Home','กด P หรือ Esc เพื่อเล่นต่อ':'Press P or Esc to resume','เก่งมาก!':'Great job!','พร้อมออกผจญภัยอีกครั้งไหม?':'Ready for another adventure?','เล่นอีกครั้ง':'Play again','เวลา':'Time','กำจัด':'Defeated','กระเป๋าวัตถุดิบ':'Materials','กระเป๋าและใช้ไอเทม':'Inventory & items','ใช้เนื้อฟื้นเลือด':'Eat meat','ใช้อาหารสำรอง':'Use food','ไปคราฟต์อุปกรณ์':'Craft equipment','อัปเกรดอุปกรณ์':'Upgrade equipment','อัปเกรด':'Upgrade','คราฟต์':'Craft','สร้างแล้ว':'Crafted','เหรียญ':'coins','เลเวล':'Level','ฟรี':'Free','สวมใส่':'Equip','ใช้อยู่':'Equipped','ขาด':'Need','รับฟรี':'Claim free','ของตกแต่ง ไม่มีโบนัสพลังโจมตี':'Cosmetic only, no attack bonus','เลือกเพื่อดูตัวอย่าง · ซื้อครั้งเดียวใช้ได้ถาวร · สวมใส่แล้วมีผลในเกมรอบถัดไป':'Preview · Buy once · Equip for your next game','ซื้อได้ทุกชิ้น · ราคาตามความหายาก · ของที่ซื้อจะใช้ตอนเริ่มเกมครั้งถัดไป':'Buy weapons for your next game','รายชื่อ':'Players','ความสามารถ':'Ability','เนื้อหมี':'Meat','หนังหมี':'Hide','กระดูกหมี':'Bone','กรงเล็บ':'Claw','ผลึกน้ำแข็ง':'Ice crystal','เสื้อหนังหมี':'Fur armor','กระเป๋าหนัง':'Leather pack','อาหารสำรอง':'Food','ดาบคู่':'Twin blades','คมดาบ':'Sharp blade','ดาบยักษ์':'Long reach','ฟันเร็ว':'Fast spin','วิ่งไว':'Speed','ยืนหยัด':'Guard','ฟื้นฟู':'Regeneration','นักล่าชีวิต':'Lifesteal','คลื่นดาบ':'Blade wave','เรดาร์':'Radar','รองเท้า':'Boots','เกราะ':'Armor','แม่เหล็ก':'Magnet','กระเป๋า':'Bag'};
