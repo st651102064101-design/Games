@@ -255,7 +255,7 @@ function orbitAngle(index){return game.swordPhase+orbitOffset(index,orbitCount()
 function hitWithExtraWeapon(m, w, n, total){
  if(combatSpec(w).gun)return false;
  const g=game, p=g.p,a=orbitAngle(swordCount()+n),reach=swordRange(),sx=p.x+Math.cos(a)*reach,sy=p.y+Math.sin(a)*reach;
- if(m.hitTime>0||d2(sx-m.x,sy-m.y)>(m.r+24)**2)return false;playSound('slash',m.x,m.y);playSound('hit',m.x,m.y);playSound('bear',m.x,m.y);
+ if(d2(sx-m.x,sy-m.y)>(m.r+24)**2)return false;playSound('slash',m.x,m.y);playSound('hit',m.x,m.y);playSound('bear',m.x,m.y);
  let damage=w.damage*PLAYER_DAMAGE_MULTIPLIER*(w.type==='ars09'?2:1)*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
  m.hp-=damage;m.hitTime=.22;m.flash=.25;m.stun=w.type==='ars16'?.75:w.element==='ice'||w.type==='ars18'?.6:.10;if(w.type==='ars06'||w.type==='ars07'){const d=Math.hypot(m.x-p.x,m.y-p.y)||1;m.x+=(m.x-p.x)/d*18;m.y+=(m.y-p.y)/d*18}if(w.type==='ars19')for(const other of g.mobs)if(other!==m&&d2(other.x-m.x,other.y-m.y)<85**2){other.hp-=damage*.75;other.flash=.2}
  if(w.element==='bleed'||w.element==='fire'){m.bleed=Math.max(m.bleed||0,w.element==='fire'?2:3);m.bleedPower=(w.element==='fire'?7:3.5)*3}
@@ -417,6 +417,7 @@ function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.
  const weapon=extra[k],a=orbitAngle(swordCount()+k),reach=swordRange();
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
+function dropLabel(d){if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return spec?.name||'อาวุธ'}if(d.type==='coin')return 'เหรียญ';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);let rare=r==='claw'||r==='frost';
  ellipse(0,11,12,4,'#2e7d9c36');if(rare){ctx.globalAlpha=.23+.12*Math.sin(now*5+d.glow);ellipse(0,0,19,19,r==='frost'?'#6defff':'#ffdc88');ctx.globalAlpha=1}
  if(r==='coin'){ellipse(0,0,10,10,'#e6b94d');ellipse(0,-1,7,7,'#f8d875');ellipse(0,-2,3.6,4.6,'#fff0a2');line(-5,-8,1,-9,1.6,'#ffec9b')}
@@ -428,10 +429,10 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
  else if(r==='claw'){ctx.shadowBlur=lowGraphics()?0:12;ctx.shadowColor='#ffe193';for(let i=-1;i<=1;i++){ctx.save();ctx.translate(i*6,0);ctx.rotate(i*.18);poly([[-3,8],[-4,-4],[0,-14],[4,-3],[3,8]],'#e9cfb2');poly([[0,-14],[4,-3],[2,-1]],'#ffe9b9');ctx.restore()}}
  else if(r==='weapon'&&d.weapon){const {r:rarity}=weaponInfo(d.weapon);ctx.shadowBlur=lowGraphics()?0:10;ctx.shadowColor=rarity.color;ellipse(0,-3,20,20,'#345d72dd');ctx.shadowBlur=0;ctx.strokeStyle=rarity.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-3,20,0,TAU);ctx.stroke();ctx.save();ctx.translate(0,9);ctx.scale(.47,.47);drawWeaponModel(0,0,-Math.PI/2,d.weapon);ctx.restore();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 9px system-ui';ctx.fillStyle='#1c3b50';ctx.fillText(String(d.weapon.damage),0,23)}
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
- ctx.shadowBlur=0;ctx.restore()}
+ ctx.shadowBlur=0;ctx.restore();if(d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*game.shake,h/2+(Math.random()-.5)*game.shake);ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  // Drops under combatants.
- let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops)if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55)drawDrop(d);
+ let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp')d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
@@ -537,7 +538,7 @@ function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)
  if(rt>=last.t){const e=Math.min(rt-last.t,250)/1000;return {x:clamp(last.x+last.vx*e,-half+50,half-50),y:clamp(last.y+last.vy*e,-half+50,half-50),s:last.s+last.w*e}}
  for(let i=n-1;i>0;i--){const a=buf[i-1],c=buf[i];if(rt>=a.t){const f=(rt-a.t)/Math.max(1,c.t-a.t);if(Math.hypot(c.x-a.x,c.y-a.y)>450)return f<1?a:c;return {x:lerp(a.x,c.x,f),y:lerp(a.y,c.y,f),s:lerp(a.s,c.s,f)}}}
  return buf[0]}
-function remoteBlades(r){return r.bl?r.bl.map(b=>({id:b.id,a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity})):[]}
+function remoteBlades(r){return r.bl?r.bl.map(b=>({id:b.id,a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity,speed:b.speed||r.w||5.5,count:b.count||r.bl.length||1})):[]}
 function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_ID||typeof event.id!=='string'||event.id.length>100)return;
  if(event.kind==='kill'){if(event.to===CLIENT_ID){playSound('kill');if(event.killId&&seenKills.has(event.killId))return;if(event.killId){seenKills.add(event.killId);if(seenKills.size>250)seenKills.clear()}pvpKills++;if(game)note(`⚔️ กำจัดผู้เล่นแล้ว! รวม ${pvpKills}`);updateOnlineInfo()}return}
  if(event.kind!=='state')return;
@@ -560,12 +561,12 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  const tp=performance.now();if(peer.lastArr)peer.gap=lerp(peer.gap,Math.min(tp-peer.lastArr,1500),.2);peer.lastArr=tp;peer.last=tp;
  peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
  if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
- if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
+ if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,600),speed:clean(b.speed,5.5,1,20),count:clean(b.count,1,1,24),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
  if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'}}
  updateOnlineInfo();
 }
-function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main'});
- allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(orbitOffset(n+k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity}));return list.slice(0,24)}
+function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main',speed:spinSpeed(),count:Math.max(1,orbitCount())});
+ allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(orbitOffset(n+k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,24)}
 function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp)}}
 function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
@@ -596,7 +597,7 @@ function updatePeers(dt){const ts=performance.now(),wall=nowMs();for(const [id,r
  if(!game||mode!=='playing'||game.p.inv>0)continue;
  const p=game.p,dist=Math.hypot(r.x-p.x,r.y-p.y);if(dist>230)continue;
  const struck=remoteBlades(r).find(b=>!combatSpec({type:b.type}).gun&&d2((r.x+Math.cos(b.a)*b.reach)-p.x,(r.y+Math.sin(b.a)*b.reach)-p.y)<42*42);
- if(struck){playSound('hit');const reduction=Math.min(.55,(game.upd.armor-1)*.045+(game.perks.guard||0)*.04);const dealt=Math.max(3,Math.round(Math.min(34,struck.damage*.5)*(1-reduction)));p.hp-=dealt;p.inv=.75;game.hitFlash=.30;game.shake=5;sparks(p.x,p.y,'#f9a4ba',8);addFloat(p.x,p.y-44,`⚔️ -${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame(r.name,id)}break}
+ if(struck){const weaponCount=Math.max(1,struck.count||remoteBlades(r).length),orbitSpeed=clamp(struck.speed||r.w||5.5,1,20),attackInterval=clamp((TAU/orbitSpeed)*weaponCount*.34,.16,1.65);if(ts<(r.nextPlayerHit||0))continue;r.nextPlayerHit=ts+attackInterval;playSound('hit');const reduction=Math.min(.55,(game.upd.armor-1)*.045+(game.perks.guard||0)*.04);const dealt=Math.max(3,Math.round(Math.min(102,struck.damage*.5)*(1-reduction)));p.hp-=dealt;p.inv=Math.min(p.inv||0,attackInterval*.35);game.hitFlash=.30;game.shake=5;sparks(p.x,p.y,'#f9a4ba',8);addFloat(p.x,p.y-44,`⚔️ -${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame(r.name,id)}break}
 }
 }
 function drawRemotePlayers(){const ts=performance.now();for(const r of peers.values()){
