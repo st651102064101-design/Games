@@ -1134,18 +1134,36 @@ function drawPortal(){const D=game.dash;if(!D)return;const el=now-D.t0;ctx.save(
  else{const k=Math.min(1,(el-D.out)/D.inDur);ctx.globalAlpha=1-k*.7;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x1,D.y1,10+k*40,6+k*22,0,0,TAU);ctx.stroke();ctx.globalAlpha=(1-k)*.35;ctx.fillStyle='#bfeeff';ctx.beginPath();ctx.ellipse(D.x1,D.y1,8+k*36,4+k*18,0,0,TAU);ctx.fill()}
  ctx.restore()}
 // Stage 2: meteor strikes. A warning ring shows, then a big meteor lands and hits everything in the blast
-function updateMeteors(dt){const g=game,p=g.p;g.meteors=g.meteors||[];if(g.stage!==2){g.meteorT=8;return}
- g.meteorT=(g.meteorT??8)-dt;if(g.meteorT<=0){g.meteorT=12;const tg=[{x:p.x+(p.mx||0)*1.6,y:p.y-25+(p.my||0)*1.6}];for(const r of peers.values()){if(r.init&&performance.now()-r.last<1500)tg.push({x:r.x,y:r.y-25})}for(const q of tg)g.meteors.push({x:clamp(q.x,-half+120,half-120),y:clamp(q.y,-half+120,half-120),t0:now,dur:1.6})}
+function updateMeteors(dt){const g=game,p=g.p;g.meteors=g.meteors||[];if(g.craters)g.craters=g.craters.filter(c=>now-c.t0<c.dur);if(g.stage!==2){g.meteors.length=0;g.meteorT=8;return}
+ g.meteorT=(g.meteorT??8)-dt;if(g.meteorT<=0){g.meteorT=12;const tg=[{x:p.x+(p.mx||0)*1.6,y:p.y-25+(p.my||0)*1.6}];for(const r of peers.values()){if(r.init&&performance.now()-r.last<1500)tg.push({x:r.x,y:r.y-25})}for(const q of tg){const x=clamp(q.x,-half+120,half-120),y=clamp(q.y,-half+120,half-120);if(!g.meteors.some(m=>(m.x-x)**2+(m.y-y)**2<70**2))g.meteors.push({x,y,t0:now,dur:1.6})}}
  for(let i=g.meteors.length-1;i>=0;i--){const M=g.meteors[i];if(now-M.t0<M.dur)continue;g.meteors.splice(i,1);
-  playSound('explosion',M.x,M.y);g.shake=Math.max(g.shake,16);(g.craters=g.craters||[]).push({x:M.x,y:M.y,t0:now,dur:8});if(g.craters.length>12)g.craters.shift();sparks(M.x,M.y,'#ffd9a0',30);
+  playSound('explosion',M.x,M.y);g.shake=Math.max(g.shake,16);g.craters=g.craters||[];const nearby=g.craters.find(c=>(c.x-M.x)**2+(c.y-M.y)**2<140**2);if(nearby){nearby.x=M.x;nearby.y=M.y;nearby.t0=now}else g.craters.push({x:M.x,y:M.y,t0:now,dur:8});if(g.craters.length>12)g.craters.shift();sparks(M.x,M.y,'#ffd9a0',30);
   if(Math.hypot(p.x-M.x,(p.y-25)-M.y)<100&&p.inv<=0){const red=Math.min(.5,(g.upd.armor-1)*.045);const dealt=Math.max(10,Math.round(40*(1-red)));p.hp-=dealt;p.inv=.6;addFloat(p.x,p.y-44,`-${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame('อุกกาบาต')}}
   for(const m of g.mobs){if(Math.hypot(m.x-M.x,m.y-M.y)<95)m.hp=0}}}
-function drawMeteors(){const g=game;if(g.craters){g.craters=g.craters.filter(c=>now-c.t0<c.dur);for(const c of g.craters){if(!isVisible(c.x,c.y,140))continue;const al=clamp((c.dur-(now-c.t0))/2,0,1);ctx.save();ctx.globalAlpha=.55*al;ctx.fillStyle='#1d2630';ctx.beginPath();ctx.ellipse(c.x,c.y,88,36,0,0,TAU);ctx.fill();ctx.globalAlpha=.6*al;ctx.strokeStyle='#ffb36b';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(c.x,c.y,88,36,0,0,TAU);ctx.stroke();ctx.restore()}}
- if(!g.meteors)return;for(const M of g.meteors){const el=now-M.t0,k=Math.min(1,el/M.dur);if(!isVisible(M.x,M.y,140))continue;ctx.save();
- ctx.globalAlpha=.25+.35*k;ctx.fillStyle='#2a3440';ctx.beginPath();ctx.ellipse(M.x,M.y,95*(0.4+0.6*k),40*(0.4+0.6*k),0,0,TAU);ctx.fill();
- ctx.globalAlpha=1;ctx.strokeStyle='#ff8a5c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(M.x,M.y,95,40,0,0,TAU);ctx.stroke();
- const fy=M.y-(1-k)*420;ctx.fillStyle='#5b4a44';ctx.beginPath();ctx.arc(M.x,fy,22,0,TAU);ctx.fill();ctx.strokeStyle='#ffb36b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(M.x,fy,26,Math.PI*1.1,Math.PI*1.6);ctx.stroke();
- ctx.restore()}}
+// Ground marks stay below pickups and characters.
+function drawMeteorGround(){
+ const g=game;
+ for(const c of g.craters||[]){
+  if(!isVisible(c.x,c.y,140))continue;
+  const fade=clamp((c.dur-(now-c.t0))/2,0,1);ctx.save();
+  ctx.globalAlpha=.35*fade;ctx.fillStyle='#1d2630';ctx.beginPath();ctx.arc(c.x,c.y,88,0,TAU);ctx.fill();
+  ctx.globalAlpha=.55*fade;ctx.strokeStyle='#ffb36b';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(c.x,c.y,88,0,TAU);ctx.stroke();ctx.restore();
+ }
+ for(const M of g.meteors||[]){
+  if(!isVisible(M.x,M.y,140))continue;
+  const k=clamp((now-M.t0)/M.dur,0,1);ctx.save();
+  ctx.fillStyle='rgba(255,103,55,'+(.10+.14*k).toFixed(3)+')';ctx.beginPath();ctx.arc(M.x,M.y,100,0,TAU);ctx.fill();
+  ctx.strokeStyle='#ff8a5c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(M.x,M.y,100,0,TAU);ctx.stroke();ctx.restore();
+ }
+}
+function drawMeteors(){
+ for(const M of game.meteors||[]){
+  if(!isVisible(M.x,M.y,450))continue;
+  const k=clamp((now-M.t0)/M.dur,0,1),fy=M.y-(1-k)*420;
+  ctx.save();ctx.fillStyle='#5b4a44';ctx.beginPath();ctx.arc(M.x,fy,22,0,TAU);ctx.fill();
+  ctx.strokeStyle='#ffb36b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(M.x,fy,26,Math.PI*1.1,Math.PI*1.6);ctx.stroke();ctx.restore();
+ }
+}
 // Titan: one slow, very tough, hard-hitting bear with a group of four elite escorts
 function spawnTitan(){const p=game.p,a=rand(0,TAU),d=rand(500,800),x=clamp(p.x+Math.cos(a)*d,-half+120,half-120),y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);const mk=(ox,oy,t)=>{game.mobs.push({id:++game.uid,x:x+ox,y:y+oy,hp:t?4000:300,maxHp:t?4000:300,r:22,speed:t?34:70,damage:t?30:12,dir:1,walk:0,flash:0,stun:0,hitTime:0,contact:0,bleed:0,hits:0,needHits:t?100:10,beast:'bear',elite:true,titan:!!t,boss:false,leaper:!!t})};mk(0,0,true);for(let i=0;i<4;i++){const q=i*TAU/4;mk(Math.cos(q)*90,Math.sin(q)*90,false)}}
 // On death: nearby animals gather around the hero, then fall where they stand
@@ -1929,7 +1947,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
  ctx.shadowBlur=0;ctx.restore();if(!lowGraphics()&&d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d);ctx.font='900 15px system-ui';const width=Math.max(58,ctx.measureText(label).width+20),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 15px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  drawVisibleCuteObstacles();
- drawHoles();
+ drawHoles();drawMeteorGround();
  drawWildlifeScene();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
