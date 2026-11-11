@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#b9e4ed">
-<title>FROSTLINE v3.3 · Random Weapons + PvP</title>
+<title>FROSTLINE v3.3 · Random Weapons + PvP (Cross-device fix)</title>
 <style>
 :root{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#17334a;font-synthesis:none}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -124,6 +124,8 @@ const MAX_ACTIVE_EXTRA=18;
 const CLIENT_ID='f'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 const PLAYER_NAME='นักล่า-'+String(1000+Math.floor(Math.random()*9000));
 let peers=new Map(),onlineRoom=null,sendStateFn=null,sendKillFn=null,network='offline',lastNetworkSend=0,pvpKills=0,localChannel=null,nextNetworkRetry=0,seenKills=new Set();
+// Optional Netlify server presence fallback: works across devices and network types.
+let cloudReady=false,cloudInFlight=false,cloudNextSync=0,cloudRetryMs=5000,cloudError='',cloudLastSuccess=0;
 
 const emptyInv=()=>({meat:0,hide:0,bone:0,claw:0,frost:0});
 const emptyCraft=()=>({boneBlade:false,furArmor:false,leatherPack:false,iceBlade:false,bloodBlade:false,ration:0});
@@ -229,7 +231,7 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
  for(let i=g.corpses.length-1;i>=0;i--){g.corpses[i].life-=dt;if(g.corpses[i].life<=0)g.corpses.splice(i,1)}
  for(let i=g.fx.length-1;i>=0;i--){let f=g.fx[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=Math.exp(-dt*3);f.vy*=Math.exp(-dt*3);if(f.life<=0)g.fx.splice(i,1)}
  for(let i=g.float.length-1;i>=0;i--){let f=g.float[i];f.life-=dt;f.y+=f.vy*dt;if(f.life<=0)g.float.splice(i,1)}
- updatePeers(dt);sendMyState(dt);if(frame%6===0)updateHud();if(frame%360===0)saveProgress();if((network==='offline'||network==='local')&&performance.now()>nextNetworkRetry&&navigator.onLine!==false)connectOnline();
+ updatePeers(dt);sendMyState(dt);if(performance.now()>cloudNextSync&&!cloudInFlight)syncCloud();if(frame%6===0)updateHud();if(frame%360===0)saveProgress();if((network==='offline'||network==='local')&&performance.now()>nextNetworkRetry&&navigator.onLine!==false)connectOnline();
 }
 function endGame(killerName=null,killerId=null){if(mode==='dead')return;if(killerId)publishNet('kill',{to:killerId,by:CLIENT_ID,victim:PLAYER_NAME,killId:CLIENT_ID+'_'+Date.now()});publishNet('state',{alive:false,name:PLAYER_NAME,x:game.p.x,y:game.p.y});saveBest();saveProgress();mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;$('announce').classList.remove('visible');let min=Math.floor(game.elapsed/60),sec=Math.floor(game.elapsed%60);$('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · RUN COMPLETE</div><h2 style="margin-top:12px">การเดินทางสิ้นสุดแล้ว</h2><p class="lead">${killerName?`⚔️ คุณถูก ${escapeHTML(killerName)} กำจัดในสนาม PvP`:'หมีบนภูเขาหิมะหยุดคุณได้ในครั้งนี้ แต่การเดินทางครั้งใหม่เริ่มได้ทันที'}</p><div class="keyline" style="font-size:15px"><b>ด่าน ${game.stage} · เฟส ${game.phase}</b><br>⏱️ รอดชีวิต ${min}:${String(sec).padStart(2,'0')} นาที<br>🐻 กำจัดหมี ${game.kills} ตัว · เลเวล ${game.level}</div><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame;}
 const upgrades=[
@@ -377,7 +379,7 @@ initDecor();resize();requestAnimationFrame(tick);
 const ROOM_ID='public-'+(location.hostname||'local-files').toLowerCase().replace(/[^a-z0-9.-]/g,'').slice(0,80);
 const clean=(v, fallback=0, low=-half, high=half)=>Number.isFinite(Number(v))?clamp(Number(v),low,high):fallback;
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function updateOnlineInfo(){const el=$('onlineInfo');if(!game||mode==='menu'){el.hidden=true;return}el.hidden=false;el.textContent=`🌐 ${network==='p2p'?'เชื่อมต่อผู้เล่น':network==='ready'?'ค้นหาผู้เล่น':network==='connecting'?(peers.size?'เล่นร่วมกัน':'กำลังเชื่อมต่อ'):network==='local'?'ในเบราว์เซอร์':'ออฟไลน์'} · ผู้เล่น ${peers.size+1} · ${PLAYER_NAME} · ⚔️ ${pvpKills}${peers.size&&game?` · 🎯 ${closestPeerDirection()}`:''}`;}
+function updateOnlineInfo(){const el=$('onlineInfo');if(!game||mode==='menu'){el.hidden=true;return}el.hidden=false;const connected=peers.size>0;const status=connected?'🟢 เชื่อมต่อกับผู้เล่นแล้ว':cloudReady?'🌐 เซิร์ฟเวอร์พร้อม · รอคู่ต่อสู้':network==='ready'?'🟡 WebRTC กำลังค้นหาผู้เล่น':network==='connecting'?'🟡 กำลังเชื่อมต่อ':cloudError?'🔴 เซิร์ฟเวอร์ไม่พร้อม':network==='local'?'🔵 เฉพาะแท็บในเครื่องนี้':'⚪ ออฟไลน์';el.textContent=`${status} · ผู้เล่น ${peers.size+1} · ${PLAYER_NAME} · ⚔️ ${pvpKills}${connected?` · 🎯 ${closestPeerDirection()}`:` · 📍 ${Math.round(game.p.x)},${Math.round(game.p.y)}`}`;el.style.color=connected?'#226a45':cloudReady?'#2d6c77':'#835b38';}
 function closestPeerDirection(){if(!game||!peers.size)return '';let p=game.p,closest=[...peers.values()].sort((a,b)=>d2(a.x-p.x,a.y-p.y)-d2(b.x-p.x,b.y-p.y))[0];let dx=closest.x-p.x,dy=closest.y-p.y,angle=Math.atan2(dy,dx);const arrows=['➡','↘','⬇','↙','⬅','↖','⬆','↗'];let index=(Math.round(angle/(Math.PI/4))+8)%8;return `${arrows[index]} ${Math.round(Math.hypot(dx,dy))}`;}
 function publishNet(kind,payload){const event={kind,id:CLIENT_ID,...payload};try{localChannel?.postMessage(event)}catch{}try{if(kind==='state')sendStateFn?.send?.(event);else if(kind==='kill')sendKillFn?.send?.(event)}catch{}}
 function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_ID||typeof event.id!=='string'||event.id.length>100)return;
@@ -387,8 +389,14 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  let peer=peers.get(id);if(!peer){peer={id,x,y,tx:x,ty:y,name:'นักล่า',last:0,hp:100,maxHp:100,count:1,angle:0,reach:80,damage:18,invuln:0};peers.set(id,peer);if(game)note('🌐 นักล่าคนใหม่เข้าสู่สนาม');}
  peer.tx=x;peer.ty=y;peer.name=String(event.name||'นักล่า').slice(0,25).replace(/[<>]/g,'');peer.hp=clean(event.hp,100,0,10000);peer.maxHp=clean(event.maxHp,125,1,10000);peer.angle=clean(event.angle,0,-100000,100000);peer.count=clean(event.count,1,1,24);peer.reach=clean(event.reach,80,40,220);peer.damage=clean(event.damage,15,3,100);peer.blades=Array.isArray(event.blades)?event.blades.slice(0,24).map(b=>({a:clean(b.a,0,-100000,100000),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120)})):null;peer.last=performance.now();updateOnlineInfo();}
 function ownBladePositions(){let blades=[];for(let k=0;k<swordCount();k++)blades.push({a:game.swordAngle+k*TAU/swordCount(),reach:swordRange(),damage:swingDamage()});for(let [k,w] of allActiveWeapons().entries())blades.push({a:game.swordAngle*w.rate+k*2.3999,reach:w.reach*(1+(game.perks.range||0)*.08),damage:w.damage});return blades.slice(0,24)}
-function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=.12;
- publishNet('state',{name:PLAYER_NAME,x:Math.round(game.p.x),y:Math.round(game.p.y),hp:Math.round(game.p.hp),maxHp:Math.round(game.p.maxHp),angle:game.swordAngle,count:swordCount()+Math.min(MAX_ACTIVE_EXTRA,game.weapons.length),reach:Math.round(Math.max(swordRange(),...allActiveWeapons().map(w=>w.reach))),damage:Math.round(swingDamage()),blades:ownBladePositions(),alive:true});}
+function ownNetworkState(){return {name:PLAYER_NAME,x:Math.round(game.p.x),y:Math.round(game.p.y),hp:Math.round(game.p.hp),maxHp:Math.round(game.p.maxHp),angle:game.swordAngle,count:swordCount()+Math.min(MAX_ACTIVE_EXTRA,game.weapons.length),reach:Math.round(Math.max(swordRange(),...allActiveWeapons().map(w=>w.reach))),damage:Math.round(swingDamage()),blades:ownBladePositions(),alive:true};}
+function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=.12;publishNet('state',ownNetworkState());}
+// Cross-device HTTP fallback: server tracks anonymous players when public P2P signaling is blocked.
+async function syncCloud(){if(!game||mode!=='playing'||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),6000);
+ try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,...ownNetworkState()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?1200:3500);updateOnlineInfo();}
+ catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(30000,cloudRetryMs*1.5);updateOnlineInfo();}
+ finally{clearTimeout(timer);cloudInFlight=false;}
+}
 function updatePeers(dt){const ts=performance.now();for(const [id,r] of peers){if(ts-r.last>6500){peers.delete(id);if(network==='p2p'&&peers.size===0)network='ready';updateOnlineInfo();continue}r.x=lerp(r.x,r.tx,clamp(dt*10,0,1));r.y=lerp(r.y,r.ty,clamp(dt*10,0,1));
  // Victim validates approximate incoming hit locally. A dedicated server is required for secure ranked PvP.
  if(!game||mode!=='playing'||game.p.inv>0)continue;
@@ -420,10 +428,10 @@ async function connectOnline(){if(network==='connecting'||network==='p2p'||netwo
   network='ready';updateOnlineInfo();
  }catch(e){network=localChannel?'local':'offline';nextNetworkRetry=performance.now()+30000;updateOnlineInfo();console.warn('Frostline online relay unavailable; offline mode active:',e)}
 }
-window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{localChannel?.close()}catch{}});
+window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}});
 
 // Read-only health check for automated smoke tests; does not alter gameplay.
-Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3',mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,peerCount:peers.size,playerName:PLAYER_NAME,pvpKills})});
+Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3',mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,playerName:PLAYER_NAME,pvpKills})});
 })()
 </script>
 </body>
