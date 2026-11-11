@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#b9e4ed">
 <title>FROSTLINE v3.4 · Natural World Coastlines · Holes + PvP</title>
+<script>
+/* Deterrents only: F12 / view-source / right-click / selection are blocked on the public site (not on localhost). */
+(()=>{const h=location.hostname;if(h==='localhost'||h==='127.0.0.1'||h===''||h==='[::1]'||h.endsWith('.localhost'))return;
+const stop=e=>{e.preventDefault();e.stopPropagation();return false};
+addEventListener('contextmenu',stop,true);addEventListener('dragstart',stop,true);addEventListener('copy',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))stop(e)},true);addEventListener('cut',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))stop(e)},true);
+addEventListener('selectstart',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName||(e.target.parentElement||{}).tagName||''))stop(e)},true);
+addEventListener('keydown',e=>{const k=(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey;if(e.key==='F12'||(c&&e.shiftKey&&['i','j','c','k'].includes(k))||(c&&e.altKey&&['i','j','c','u'].includes(k))||(c&&['u','s','p'].includes(k)&&!e.shiftKey)){stop(e)}},true);
+const st=document.createElement('style');st.textContent='body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}input,textarea{-webkit-user-select:text;user-select:text}img{-webkit-user-drag:none}';document.head.appendChild(st);
+})();
+</script>
 <style>
 :root{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#17334a;font-synthesis:none}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
