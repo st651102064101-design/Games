@@ -1553,8 +1553,12 @@ function updateSnowDog(dt){
  const g=game,d=g&&g.dog;if(!d)return;
  const p=g.p,motion=Math.hypot(p.mx||0,p.my||0),following=motion>14;
  d.findTimer=(d.findTimer||0)-dt;if(d.findTimer<=0){d.findTimer=2;let best=260*260;d.itemHint=null;for(const item of g.drops){const dd=(item.x-d.x)**2+(item.y-d.y)**2;if(dd<best){best=dd;d.itemHint={x:item.x,y:item.y}}}}
- const tx=following?p.x-(p.dir||1)*57:p.x+Math.sin(now*.88)*65;
- const ty=following?p.y+20:p.y+20+Math.sin(now*.62)*6;
+ // Trail BEHIND the player's actual movement, rather than staying at
+ // screen-bottom (positive Y) regardless of their walking direction.
+ // When idle, Mochi rests slightly behind and to the side of the hero.
+ const ux=following?p.mx/motion:0,uy=following?p.my/motion:0;
+ const tx=following?p.x-ux*75-(p.dir||1)*16:p.x-(p.dir||1)*50+Math.sin(now*.88)*7;
+ const ty=following?p.y-uy*75-(Math.abs(uy)<.35?20:0):p.y-38+Math.sin(now*.62)*4;
  let dx=tx-d.x,dy=ty-d.y,dist=Math.hypot(dx,dy);
  if(dist>500){d.x=tx;d.y=ty;d.moving=false;d.step=0}
  else{
@@ -2258,7 +2262,14 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,leaper:c.leaper,speciesId:c.speciesId,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
- let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});if(game.dog&&isVisible(game.dog.x,game.dog.y,100))arr.push({kind:'dog',y:game.dog.y,obj:game.dog});for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y,obj:b});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else if(a.kind==='dog')drawSnowDog(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
+ // Sort by the actual GROUND CONTACT (feet), not sprite origins:
+ // the hero/bots draw their shadow ~18 px below origin, Mochi ~1 px.
+ // This prevents a pet behind the hero from being drawn over the hero.
+ let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y+15,obj:m}));
+ arr.push({kind:'hero',y:game.p.y+18,obj:game.p});
+ if(game.dog&&isVisible(game.dog.x,game.dog.y,100))arr.push({kind:'dog',y:game.dog.y+1,obj:game.dog});
+ for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y+18,obj:b});
+ arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else if(a.kind==='dog')drawSnowDog(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawBearShots();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;worldTiltActive=false;ctx.restore();
