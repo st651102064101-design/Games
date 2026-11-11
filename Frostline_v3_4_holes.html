@@ -319,12 +319,12 @@ function playClang(x,y){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||
  setTimeout(()=>{try{out.disconnect()}catch(e){}},900)}catch(e){}}
 function spawnHaki(x,y){if(!game)return;game.haki=game.haki||[];if(game.haki.length>6)game.haki.shift();const bolts=[];const n=9;for(let i=0;i<n;i++){const a=i/n*TAU+rand(-.2,.2),pts=[];let r=0,ang=a;for(let k=0;k<6;k++){r+=rand(.14,.22);ang+=rand(-.35,.35);pts.push([Math.cos(ang)*r,Math.sin(ang)*r])}bolts.push(pts)}game.haki.push({x,y,life:.75,max:.75,bolts});game.shake=Math.max(game.shake,14)}
 function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!isVisible(h.x,h.y,300))continue;const t=1-h.life/h.max,a=Math.max(0,1-t);ctx.save();ctx.translate(h.x,h.y);
- const R=30+t*190,gr=ctx.createRadialGradient(0,0,0,0,0,R);gr.addColorStop(0,'rgba(0,0,0,'+(.75*a)+')');gr.addColorStop(.55,'rgba(70,0,25,'+(.45*a)+')');gr.addColorStop(1,'rgba(255,30,70,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill();
+ const R=8+t*14,gr=ctx.createRadialGradient(0,0,0,0,0,R);gr.addColorStop(0,'rgba(0,0,0,'+(.75*a)+')');gr.addColorStop(.55,'rgba(70,0,25,'+(.45*a)+')');gr.addColorStop(1,'rgba(255,30,70,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill();
  ctx.lineCap='round';ctx.lineJoin='round';
  ctx.strokeStyle='rgba(10,0,10,'+a+')';ctx.lineWidth=12*a+2;ctx.beginPath();ctx.arc(0,0,R*.92,0,TAU);ctx.stroke();ctx.strokeStyle='rgba(255,45,85,'+a+')';ctx.lineWidth=3*a+.5;ctx.beginPath();ctx.arc(0,0,R*.92,0,TAU);ctx.stroke();
  ctx.strokeStyle='rgba(255,255,255,'+(a*.8)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,R*.55,0,TAU);ctx.stroke();
- const L=70+t*170;for(const pts of h.bolts){for(const pass of [0,1]){ctx.strokeStyle=pass?'rgba(255,60,90,'+a+')':'rgba(5,0,8,'+a+')';ctx.lineWidth=pass?2:6*a+1.5;ctx.beginPath();ctx.moveTo(0,0);for(const q of pts)ctx.lineTo(q[0]*L,q[1]*L);ctx.stroke()}}
- if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,26*(1-t/.25)+6,0,TAU);ctx.fill()}
+ const L=10+t*16;for(const pts of h.bolts){for(const pass of [0,1]){ctx.strokeStyle=pass?'rgba(255,60,90,'+a+')':'rgba(5,0,8,'+a+')';ctx.lineWidth=pass?2:6*a+1.5;ctx.beginPath();ctx.moveTo(0,0);for(const q of pts)ctx.lineTo(q[0]*L,q[1]*L);ctx.stroke()}}
+ if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,10*(1-t/.25)+3,0,TAU);ctx.fill()}
  ctx.restore()}}
 function drawYouLabel(p){labelQ.push(['You',p.x,p.y+36,'#ffe28a','900 12px system-ui'])}
 function drawWeaponCount(p){const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
