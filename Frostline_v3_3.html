@@ -240,7 +240,7 @@ function collect(d){playSound(d.weapon?.rarity==='legendary'?'rare':'pickup');co
 function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่มีเนื้อหมี');return}if(game.p.hp>=game.p.maxHp){note('เลือดเต็มแล้ว');return}game.inv.meat--;const heal=Math.min(game.p.maxHp-game.p.hp,35+game.level*2);game.p.hp+=heal;sparks(game.p.x,game.p.y,'#9ff9ba',14);addFloat(game.p.x,game.p.y-35,`+${Math.ceil(heal)} ♥`,'#a6ffca');saveProgress();updateHud();if(mode==='inventory')renderInventory()}
 function swingDamage(){let base=16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0);return base*(1+(game.perks.sharp||0)*.2)}
 function swordCount(){return 0}
-function swordRange(){return (75+(game.upd.sword-1)*5)*(1+(game.perks.range||0)*.12)}
+function swordRange(){return (48+(game.upd.sword-1)*3)*(1+(game.perks.range||0)*.08)}
 function magnetRadius(weaponRange,bagLevel,pack,perk){return weaponRange+(bagLevel-1)*48+(pack?42:0)+perk*48}
 function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
 function orbitOffset(index,total){return total>0?index*TAU/total:0}
@@ -407,7 +407,7 @@ function drawWeaponModel(x,y,a,weapon){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.length;k++){
- const weapon=extra[k],a=combatSpec(weapon).gun&&Number.isFinite(weapon.fire?.aim)?weapon.fire.aim:orbitAngle(swordCount()+k),reach=swordRange();
+ const weapon=extra[k],a=orbitAngle(swordCount()+k),reach=swordRange();
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);let rare=r==='claw'||r==='frost';
@@ -470,12 +470,12 @@ function emitShot(w,spec,x,y,a,owner=CLIENT_ID,id=null){
  const b=shotPool.pop()||{};Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,vx:Math.cos(a)*(spec.shape==='rpg'?430:1000),vy:Math.sin(a)*(spec.shape==='rpg'?430:1000),life:spec.range/(spec.shape==='rpg'?430:1000),damage:w.damage||spec.base,shape:spec.shape,blast:spec.shape==='rpg'?100:0});
  if(shots.length>=160){shotPool.push(shots.shift())}shots.push(b);return b;
 }
-function emitRadialVolley(w,spec,x,y,a){playSound('gun',x,y,spec.shape);let first=null;for(let k=0;k<8;k++){const b=emitShot(w,spec,x,y,a+k*TAU/8);if(!first)first={id:b.id,type:w.type,x,y,a,damage:b.damage,t:Date.now(),rays:8}}recentShots.push(first);while(recentShots.length>18)recentShots.shift()}
+function emitRotatingVolley(w,spec,x,y,a){playSound('gun',x,y,spec.shape);const count=spec.shape==='shotgun'?8:1;for(let k=0;k<count;k++){const angle=a+(k-(count-1)/2)*.065,b=emitShot(w,spec,x,y,angle);recentShots.push({id:b.id,type:w.type,x,y,a:angle,damage:b.damage,t:Date.now(),rays:1})}while(recentShots.length>18)recentShots.shift()}
 function weaponImpact(m,b){playSound(b.blast?'explosion':'hit',m.x,m.y);m.hp-=b.damage;m.flash=.3;m.stun=Math.max(m.stun||0,.10);sparks(m.x,m.y,b.blast?'#ffb65b':'#fff2bf',b.blast?10:3);addFloat(m.x,m.y-24,String(Math.round(b.damage)),'#fff0b4')}
 function updateArsenal(dt){
- for(const w of allActiveWeapons()){const spec=combatSpec(w);if(!spec.gun)continue;w.fire=w.fire||{};let target=null,best=spec.range**2;for(const m of game.mobs){const d=d2(m.x-game.p.x,m.y-game.p.y);if(m.hp>0&&d<best){best=d;target=m}}for(const r of peers.values()){const d=d2(r.x-game.p.x,r.y-game.p.y);if(r.init&&performance.now()-r.last<6500&&d<best){best=d;target=r}}
- if(w.fire.burstLeft>0){w.fire.burstTimer-=dt;if(w.fire.burstTimer<=0){w.fire.burstLeft--;w.fire.burstTimer=.07;w.fire.ammo--;emitRadialVolley(w,spec,game.p.x,game.p.y,w.fire.aim)}}
- const reloadBefore=w.fire.reload||0;if(stepGun(w.fire,spec,dt,!!target)){const a=Math.atan2(target.y-game.p.y,target.x-game.p.x),count=spec.shape==='shotgun'?8:1;w.fire.aim=a;w.fire.flash=.09;if(spec.shape==='burst'){w.fire.burstLeft=Math.min(2,w.fire.ammo);w.fire.burstTimer=.07;}emitRadialVolley(w,spec,game.p.x,game.p.y,a)}
+ for(const [index,w] of allActiveWeapons().entries()){const spec=combatSpec(w);if(!spec.gun)continue;w.fire=w.fire||{};const a=orbitAngle(swordCount()+index),x=game.p.x+Math.cos(a)*swordRange(),y=game.p.y+Math.sin(a)*swordRange();
+ if(w.fire.burstLeft>0){w.fire.burstTimer-=dt;if(w.fire.burstTimer<=0){w.fire.burstLeft--;w.fire.burstTimer=.07;w.fire.ammo--;emitRotatingVolley(w,spec,x,y,a)}}
+ const reloadBefore=w.fire.reload||0;if(stepGun(w.fire,spec,dt,true)){w.fire.flash=.09;if(spec.shape==='burst'){w.fire.burstLeft=Math.min(2,w.fire.ammo);w.fire.burstTimer=.07;}emitRotatingVolley(w,spec,x,y,a)}
  if(!reloadBefore&&w.fire.reload>0)playSound('reload',game.p.x,game.p.y,spec.shape);w.fire.flash=Math.max(0,(w.fire.flash||0)-dt);
  }
  for(let i=shots.length-1;i>=0;i--){const b=shots[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;let hit=null;if(b.owner===CLIENT_ID){for(const m of game.mobs)if(m.hp>0&&segmentDistanceSquared(m.x,m.y,b.px,b.py,b.x,b.y)<(m.r+5)**2){hit=m;break}if(hit){if(b.blast){for(const m of game.mobs)if(m.hp>0&&d2(m.x-hit.x,m.y-hit.y)<b.blast*b.blast)weaponImpact(m,b);game.fx.push({x:hit.x,y:hit.y,vx:0,vy:0,life:.3,max:.3,r:b.blast,color:'#ffc16c',ring:true})}else weaponImpact(hit,b)}}else if(game.p.inv<=0&&segmentDistanceSquared(game.p.x,game.p.y,b.px,b.py,b.x,b.y)<26**2){hit=game.p;const damage=Math.min(65,b.damage*.5);game.p.hp-=damage;game.p.inv=.4;game.hitFlash=.3;sparks(game.p.x,game.p.y,'#ffa0a0',5);if(game.p.hp<=0){game.p.hp=0;endGame(peers.get(b.owner)?.name,b.owner)}}if(hit||b.life<=0){shots.splice(i,1);if(shotPool.length<160)shotPool.push(b)}}
