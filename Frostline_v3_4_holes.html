@@ -301,7 +301,7 @@ const SWING_PRESET={'ars01': [1700, 0.06, 0.09, 'triangle', 0.05], 'ars02': [200
 function hitWithExtraWeapon(m, w, n, total){
  if(combatSpec(w).gun)return false;
  const g=game, p=g.p,a=orbitAngle(swordCount()+n),reach=swordRange(),sx=p.x+Math.cos(a)*reach,sy=p.y+Math.sin(a)*reach;
- if(segmentDistanceSquared(m.x,m.y,p.x+Math.cos(a)*22,p.y+Math.sin(a)*22,sx,sy)>(m.r+14)**2)return false;m.x+=Math.cos(a)*16;m.y+=Math.sin(a)*16;addSlash(m.x,m.y,a);dropOwnBlade(w.id,m.x,m.y);playSound('swing',m.x,m.y,w.type||'');playSound('hit',m.x,m.y);playSound('beast',m.x,m.y,m.beast||'bear');
+ let hit=false;for(const f of [0,.5,1]){const aa=a-spinSpeed()*f/30;const ex=p.x+Math.cos(aa)*reach,ey=p.y+Math.sin(aa)*reach;if(segmentDistanceSquared(m.x,m.y,p.x+Math.cos(aa)*22,p.y+Math.sin(aa)*22,ex,ey)<=(m.r+14)**2){hit=true;break}}if(!hit)return false;m.x+=Math.cos(a)*16;m.y+=Math.sin(a)*16;addSlash(m.x,m.y,a);dropOwnBlade(w.id,m.x,m.y);playSound('swing',m.x,m.y,w.type||'');playSound('hit',m.x,m.y);playSound('beast',m.x,m.y,m.beast||'bear');
  let damage=w.damage*PLAYER_DAMAGE_MULTIPLIER*(w.type==='ars09'?2:1)*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
  m.hp-=damage;m.hits=(m.hits||0)+1;if(m.hits>=2)m.hp=0;m.hitTime=.22;m.flash=.25;m.stun=w.type==='ars16'?.75:w.element==='ice'||w.type==='ars18'?.6:.10;if(w.type==='ars06'||w.type==='ars07'){const d=Math.hypot(m.x-p.x,m.y-p.y)||1;m.x+=(m.x-p.x)/d*18;m.y+=(m.y-p.y)/d*18}if(w.type==='ars19')for(const other of g.mobs)if(other!==m&&d2(other.x-m.x,other.y-m.y)<85**2){other.hp-=damage*.75;other.flash=.2}
  if(w.element==='bleed'||w.element==='fire'){m.bleed=Math.max(m.bleed||0,w.element==='fire'?2:3);m.bleedPower=(w.element==='fire'?7:3.5)*3}
