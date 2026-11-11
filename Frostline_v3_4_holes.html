@@ -390,7 +390,7 @@ function separateBots(){const L=(game.bots||[]).filter(b=>!b.dead);for(let i=0;i
 // Door portals: one opens where the double-tap started, one at the destination
 function drawPortal(){const D=game.dash;if(!D)return;const el=now-D.t0;ctx.save();ctx.lineCap='round';
  if(el<D.out){const k=el/D.out;ctx.globalAlpha=1-k*.5;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x0,D.y0,14+k*34,8+k*18,0,0,TAU);ctx.stroke()}
- else{const k=Math.min(1,(el-D.out)/D.inDur);ctx.globalAlpha=1-k;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x1,D.y1,48-k*34,26-k*18,0,0,TAU);ctx.stroke()}
+ else{const k=Math.min(1,(el-D.out)/D.inDur);ctx.globalAlpha=1-k*.7;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x1,D.y1,10+k*40,6+k*22,0,0,TAU);ctx.stroke();ctx.globalAlpha=(1-k)*.35;ctx.fillStyle='#bfeeff';ctx.beginPath();ctx.ellipse(D.x1,D.y1,8+k*36,4+k*18,0,0,TAU);ctx.fill()}
  ctx.restore()}
 // Stage 2: meteor strikes. A warning ring shows, then a big meteor lands and hits everything in the blast
 function updateMeteors(dt){const g=game,p=g.p;g.meteors=g.meteors||[];if(g.stage!==2){g.meteorT=8;return}
