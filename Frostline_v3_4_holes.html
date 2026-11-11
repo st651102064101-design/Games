@@ -2107,7 +2107,7 @@ function drawBear(m){if(m.speciesId){drawWildlifeBoss(m);return}const beast=STAG
  drawThemedBossAdornment(m);
  if(m.boss||m.titan){drawCrown();}else if(m.elite){ctx.strokeStyle='#e4a2ad';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-24,-8);ctx.lineTo(-16,-16);ctx.stroke()}
  if(m.flash>0){ellipse(0,-14,27,29,'#ffffff65')}
- ctx.restore();if(m.hp<m.maxHp){let width=m.elite?58:44,pr=clamp(m.hp/m.maxHp,0,1);roundRect(m.x-width/2,m.y-52,width,5,2,'#1b425862');roundRect(m.x-width/2,m.y-52,width*pr,5,2,m.elite?'#ea8d91':'#5ccac0')}}
+ ctx.restore();if(m.hp<m.maxHp){let width=m.elite?58:44,pr=clamp(m.hp/m.maxHp,0,1);roundRect(m.x-width/2,m.y-70,width,5,2,'#1b425862');roundRect(m.x-width/2,m.y-70,width*pr,5,2,m.elite?'#ea8d91':'#5ccac0')}}
 
 // Original vector art, drawn on the existing Canvas (no extra asset requests).
 function drawSnowDog(d){
