@@ -377,6 +377,8 @@ function drawHeroPose(p){const dying=mode==='dying';const t=dying?Math.min(1,(no
 // Bodies do not overlap: the hero is pushed out of other hunters and bots
 function pushBodies(p){const R=34;const bodies=[];for(const r of peers.values()){if(r.init&&performance.now()-r.last<1500)bodies.push(r)}for(const b of game.bots||[]){if(!b.dead)bodies.push(b)}
  for(const q of bodies){const ox=p.x-q.x,oy=p.y-q.y,d=Math.hypot(ox,oy);if(d<R){const nx=d>1e-6?ox/d:1,ny=d>1e-6?oy/d:0;p.x=q.x+nx*R;p.y=q.y+ny*R}}}
+// Dash/warp trail: a streak from the start point to the new spot, with a fading afterimage
+function drawWarpFx(){warpFx=warpFx.filter(f=>now-f.t0<.38);for(const f of warpFx){const k=Math.max(0,1-(now-f.t0)/.38);ctx.save();ctx.lineCap='round';ctx.globalAlpha=k*.7;ctx.strokeStyle='#e6fbff';ctx.lineWidth=12*k+2;ctx.beginPath();ctx.moveTo(f.x0,f.y0-10);ctx.lineTo(f.x1,f.y1-10);ctx.stroke();ctx.globalAlpha=k*.3;ctx.strokeStyle='#8fe3ff';ctx.lineWidth=28*k+4;ctx.stroke();ctx.globalAlpha=k*.4;ctx.fillStyle='#bfeeff';ctx.beginPath();ctx.arc(f.x0,f.y0-10,18*(0.6+0.4*k),0,TAU);ctx.fill();ctx.restore()}}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+36,'#ffffff','900 11px system-ui']);
@@ -615,7 +617,7 @@ function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(M
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y,obj:b});for(const o of game.obstacles)if(isVisible(o.x,o.y,OBS_W))arr.push({kind:'obs',y:o.y-500,obj:o});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
-  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawSlashes();
+  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();
@@ -637,7 +639,8 @@ window.addEventListener('keydown',e=>{if(audioCtx&&audioCtx.state!=='running')au
 window.addEventListener('keyup',e=>{let key=e.key.toLowerCase();if(key==='w'||key==='arrowup')input.up=false;if(key==='s'||key==='arrowdown')input.down=false;if(key==='a'||key==='arrowleft')input.left=false;if(key==='d'||key==='arrowright')input.right=false});
 
 
-function teleportHero(sx,sy){const g=game,p=g.p;const wx=clamp(cam.x+(sx-w/2)/screenScale,-half+50,half-50),wy=clamp(cam.y+(sy-h/2)/screenScale,-half+50,half-50);sparks(p.x,p.y,'#c8f5ff',16);p.x=wx;p.y=wy;resolveObs(p,16);cam.x=p.x;cam.y=p.y;sparks(p.x,p.y,'#e5ffff',20);playSound('ui',p.x,p.y)}
+let warpFx=[];
+function teleportHero(sx,sy){const g=game,p=g.p;const wx=clamp(cam.x+(sx-w/2)/screenScale,-half+50,half-50),wy=clamp(cam.y+(sy-h/2)/screenScale,-half+50,half-50);sparks(p.x,p.y,'#c8f5ff',16);warpFx.push({x0:p.x,y0:p.y,x1:wx,y1:wy,t0:now});if(warpFx.length>6)warpFx.shift();p.x=wx;p.y=wy;resolveObs(p,16);cam.x=p.x;cam.y=p.y;sparks(p.x,p.y,'#e5ffff',20);playSound('ui',p.x,p.y)}
 function writeMeta(patch){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');Object.assign(o,patch);localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch{}}
 function isGod(){return String(PLAYER_NAME||'').trim().toLowerCase()==='god'}
 function shopPrice(t){const base=[10,20,35,60,100,180][t.tier-1]||10;return base+(t.gun?40:0)}
