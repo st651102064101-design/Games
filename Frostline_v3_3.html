@@ -60,7 +60,7 @@ body{background:#b7dfed;touch-action:none;user-select:none}
 #levelReady{position:fixed;z-index:6;left:50%;top:calc(15px + env(safe-area-inset-top,0px));transform:translateX(-50%);border:1px solid #e4d7ff;background:#754ca9;color:white;border-radius:20px;padding:9px 15px;font:900 12px system-ui;box-shadow:0 5px 15px #4e357450;cursor:pointer;animation:levelPulse 1.7s ease-in-out infinite}
 #levelReady[hidden]{display:none!important}
 @keyframes levelPulse{50%{box-shadow:0 7px 24px #b083eb99;filter:brightness(1.1)}}
-#onlineInfo{position:fixed;z-index:5;top:calc(72px + env(safe-area-inset-top,0px));right:14px;pointer-events:none;border-radius:9px;background:#eaf8f5d7;border:1px solid #ffffffb7;padding:5px 8px;font:800 10px system-ui;color:#2d6c77;text-align:right;max-width:160px}
+#onlineInfo{position:fixed;z-index:5;top:calc(72px + env(safe-area-inset-top,0px));right:14px;pointer-events:none;border-radius:9px;background:#eaf8f5e8;border:1px solid #ffffffb7;padding:7px 10px;font:700 11px/1.65 system-ui;color:#245667;text-align:left;white-space:pre-line;overflow-wrap:anywhere;max-width:min(260px,52vw);max-height:60vh;overflow:hidden;box-shadow:0 3px 16px #193b4722}
 #onlineInfo[hidden]{display:none!important}
 #weaponBagList{max-height:35vh;overflow:auto;display:grid;gap:6px;margin:10px 0 14px}
 .weaponTile{border:1px solid #c3dce5;background:#fff;border-radius:10px;padding:9px;display:flex;gap:10px;align-items:center}
@@ -77,7 +77,7 @@ body{background:#b7dfed;touch-action:none;user-select:none}
  <button id="coinBtn" aria-label="เปิดร้านอัปเกรด"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#e1b34d" stroke="#ad8130" stroke-width="1.5"/><circle cx="12" cy="12" r="7" stroke="#fff0ac" stroke-width="1.4"/><path d="M8.8 13.9c1.4 1.5 5 1.5 6.4-.2 1.6-2.3-1.2-2.6-3.2-3-2.2-.5-2.3-2.7-.1-3.3 1.7-.5 3.3.1 4.2.8" stroke="#fff6cb" stroke-linecap="round" stroke-width="1.7"/></svg><span class="coinValue" id="coins">0</span><span class="coinPlus">+</span></button>
 </header>
 <div id="bottomHud" hidden><button id="bagBtn" class="hudAction" aria-label="เปิดกระเป๋า" title="กระเป๋า (I)">🎒<b id="bagCount" hidden>0</b></button><div id="xpDock"><small id="xpLabel">LV. 1</small><div id="xpTrack"><div id="xpFill"></div></div></div><button id="eatBtn" class="hudAction" aria-label="ใช้เนื้อหมีฟื้นเลือด" title="ใช้เนื้อ (H)">🥩<b id="meatCount" hidden>0</b></button></div>
-<button id="levelReady" hidden aria-label="เลือกพลังที่รออยู่">✨ เลือกสกิล (+1)</button><div id="onlineInfo" hidden>🌐 กำลังเชื่อมต่อ...</div>
+<button id="levelReady" hidden aria-label="เลือกพลังที่รออยู่">✨ เลือกสกิล (+1)</button><div id="onlineInfo" hidden aria-label="รายชื่อผู้เล่นออนไลน์เรียงตามระยะห่าง">รายชื่อ</div>
 <div id="announce" aria-live="polite"><strong id="announceTitle"></strong><small id="announceSub"></small></div>
 <div id="notice" aria-live="polite"></div>
 <div id="shop" hidden role="dialog" aria-modal="true" aria-label="ร้านอัปเกรด">
@@ -394,8 +394,25 @@ initDecor();resize();requestAnimationFrame(tick);
 const ROOM_ID='public-'+(location.hostname||'local-files').toLowerCase().replace(/[^a-z0-9.-]/g,'').slice(0,80);
 const clean=(v, fallback=0, low=-half, high=half)=>Number.isFinite(Number(v))?clamp(Number(v),low,high):fallback;
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function updateOnlineInfo(){const el=$('onlineInfo');if(!game||mode==='menu'){el.hidden=true;return}el.hidden=false;const connected=peers.size>0;const status=connected?'🟢 เชื่อมต่อกับผู้เล่นแล้ว':cloudReady?'🌐 เซิร์ฟเวอร์พร้อม · รอคู่ต่อสู้':network==='ready'?'🟡 WebRTC กำลังค้นหาผู้เล่น':network==='connecting'?'🟡 กำลังเชื่อมต่อ':cloudError?'🔴 เซิร์ฟเวอร์ไม่พร้อม':network==='local'?'🔵 เฉพาะแท็บในเครื่องนี้':'⚪ ออฟไลน์';el.textContent=`${status} · ผู้เล่น ${peers.size+1} · ${PLAYER_NAME} · ⚔️ ${pvpKills}${connected?` · 🎯 ${closestPeerDirection()}`:` · 📍 ${Math.round(game.p.x)},${Math.round(game.p.y)}`}`;el.style.color=connected?'#226a45':cloudReady?'#2d6c77':'#835b38';}
-function closestPeerDirection(){if(!game||!peers.size)return '';let p=game.p,closest=[...peers.values()].sort((a,b)=>d2(a.x-p.x,a.y-p.y)-d2(b.x-p.x,b.y-p.y))[0];let dx=closest.x-p.x,dy=closest.y-p.y,angle=Math.atan2(dy,dx);const arrows=['➡','↘','⬇','↙','⬅','↖','⬆','↗'];let index=(Math.round(angle/(Math.PI/4))+8)%8;return `${arrows[index]} ${Math.round(Math.hypot(dx,dy))}`;}
+// Unit conversion for player separation. One world coordinate unit is displayed as one meter.
+const playerDistanceFormat=new Intl.NumberFormat('th-TH',{maximumFractionDigits:2});
+function formatPlayerDistance(worldUnits){
+ const meters=Math.max(0,Number(worldUnits)||0);
+ if(meters>=1000)return playerDistanceFormat.format(meters/1000)+' กม.';
+ if(meters>=1)return playerDistanceFormat.format(meters<10?Math.round(meters*10)/10:Math.round(meters))+' ม.';
+ return playerDistanceFormat.format(Math.round(meters*100))+' ซม.';
+}
+function updateOnlineInfo(){
+ const el=$('onlineInfo');
+ if(!game||mode==='menu'){el.hidden=true;return}
+ const now=performance.now(),pos=game.p;
+ const people=[...peers.values()].filter(r=>Number.isFinite(r.x)&&Number.isFinite(r.y)&&now-r.last<6500)
+   .map(r=>({name:String(r.name||'ผู้เล่น').replace(/\s+/g,' ').trim().slice(0,25)||'ผู้เล่น',distance:Math.hypot(r.x-pos.x,r.y-pos.y)}))
+   .sort((a,b)=>a.distance-b.distance||a.name.localeCompare(b.name,'th'));
+ if(!people.length){el.hidden=true;el.textContent='';return}
+ el.hidden=false;
+ el.textContent='รายชื่อ\n'+people.map((r,i)=>(i+1)+'. '+r.name+'  '+formatPlayerDistance(r.distance)).join('\n');
+}
 function publishNet(kind,payload){const event={kind,id:CLIENT_ID,...payload};try{localChannel?.postMessage(event)}catch{}try{if(kind==='state')sendStateFn?.send?.(event);else if(kind==='kill')sendKillFn?.send?.(event)}catch{}}
 // ---- Realtime sync: timestamped samples + snapshot interpolation (remote players render slightly in the past, always smooth) ----
 const SEND_INTERVAL=.05,MAX_BUF=48;
