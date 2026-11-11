@@ -467,13 +467,66 @@ function phaseAt(elapsed){const step=Math.floor(Math.max(0,elapsed)/PHASE_SECOND
 function monsterPower(stage,phase){const step=(stage-1)*3+phase-1;return {hp:1+step*.45,damage:Math.min(16,1+step*.65),speed:Math.min(2.4,1+step*.05),spawn:Math.max(.6,1.9-step*.1)*2,elite:Math.min(.3,step*.02)}}
 function maxMobs(){return Math.min(32,6+Math.floor((game.stage*5+game.phase*4)/2))}
 function difficulty(){let t=(game.stage-1)*3+game.phase-1;return (lang==='en'?['Normal','Medium','Challenging','Hard','Brutal','Nightmare','Cataclysm']:['ปกติ','ปานกลาง','ท้าทาย','ยาก','โหด','ฝันร้าย','มหันตภัย'])[Math.min(6,Math.floor(t/2))]}
-function updateHud(){if(!game)return;$('stageName').textContent=`${lang==='en'?'Stage':'ด่าน'} ${game.stage} · ${lang==='en'?'Phase':'เฟส'} ${game.phase}`;$('difficulty').textContent=`${lang==='en'?beastForStage(game.stage)[0]:beastForStage(game.stage)[1]} · ${difficulty()}   •   Lv.${game.level}`;$('coins').textContent=game.coins;$('phaseBar').style.width=`${(game.elapsed%PHASE_SECONDS)/PHASE_SECONDS*100}%`;$('xpLabel').textContent=`LV. ${game.level}`;$('xpFill').style.width=`${Math.round(100*game.xp/game.nextXP)}%`;const count=MAT_KEYS.reduce((n,k)=>n+game.inv[k],0);$('bagCount').hidden=!count;$('bagCount').textContent=count>99?'99+':count;$('meatCount').hidden=!game.inv.meat;$('meatCount').textContent=game.inv.meat>99?'99+':game.inv.meat;$('levelReady').hidden=game.pendingLevels<1;$('levelReady').textContent=`✨ ${lang==='en'?'Choose skill':'เลือกสกิล'} (+${game.pendingLevels})`;updateOnlineInfo();}
+function updateHud(){if(!game)return;$('stageName').textContent=`${lang==='en'?'Stage':'ด่าน'} ${game.stage} · ${lang==='en'?'Phase':'เฟส'} ${game.phase}${STAGE_DESIGNS[game.stage]?' · '+(lang==='en'?STAGE_DESIGNS[game.stage].name:STAGE_DESIGNS[game.stage].thai):''}`;$('difficulty').textContent=`${lang==='en'?beastForStage(game.stage)[0]:beastForStage(game.stage)[1]} · ${difficulty()}   •   Lv.${game.level}`;$('coins').textContent=game.coins;$('phaseBar').style.width=`${(game.elapsed%PHASE_SECONDS)/PHASE_SECONDS*100}%`;$('xpLabel').textContent=`LV. ${game.level}`;$('xpFill').style.width=`${Math.round(100*game.xp/game.nextXP)}%`;const count=MAT_KEYS.reduce((n,k)=>n+game.inv[k],0);$('bagCount').hidden=!count;$('bagCount').textContent=count>99?'99+':count;$('meatCount').hidden=!game.inv.meat;$('meatCount').textContent=game.inv.meat>99?'99+':game.inv.meat;$('levelReady').hidden=game.pendingLevels<1;$('levelReady').textContent=`✨ ${lang==='en'?'Choose skill':'เลือกสกิล'} (+${game.pendingLevels})`;updateOnlineInfo();}
 const EN_TEXT=[['ตกหลุมน้ำแข็ง!','Fell into a hole!'],['วาร์ปไปที่อื่นแบบสุ่ม · อมตะ 2.5 วิ','Warped to safety · invincible for 2.5 sec'],['กำจัดผู้เล่นแล้ว!','Player defeated!'],['นักล่าคนใหม่เข้าสู่สนาม','A player joined'],['พบกองของตกอยู่แถวนี้!','Loot nearby!'],['ยังไม่มีเนื้อหมี','No meat'],['ยังไม่มีอาหารสำรอง','No food'],['เลือดเต็มแล้ว','Health is full'],['เปลี่ยนอาวุธแล้ว','Weapon changed'],['เก็บแล้ว','collected'],['อัปเกรดแล้ว','upgraded'],['ดาบหล่นลงพื้น','Weapon dropped'],['ได้อาวุธเพิ่ม','Weapons gained'],['ล้มแล้ว','defeated'],['เลเวล','Level'],['ด่าน','Stage'],['เฟส','Phase'],['ระดับความยาก','Difficulty'],['ยินดีต้อนรับ','Welcome'],['ชิ้น','items'],['สะสม','total'],['เหลือ','remaining'],['เก็บ','Collected'],['สำเร็จ','complete'],['สร้าง','Crafted'],['หายาก','Rare'],['ธรรมดา','Common'],['มหากาพย์','Epic'],['ตำนาน','Legendary'],['เรดาร์','Radar'],['รองเท้า','Boots'],['แม่เหล็ก','Magnet'],['เกราะ','Armor'],['หมี','Bear'],['กระเป๋า','Bag'],['เนื้อ','Meat'],['ผลึกน้ำแข็ง','Ice crystal']];
 function translateGameText(value){if(lang!=='en'||typeof value!=='string')return value;let out=value;for(const [th,en] of EN_TEXT)out=out.split(th).join(en);return out}
 function announce(title,sub,duration=2){$('announceTitle').textContent=translateGameText(title);$('announceSub').textContent=translateGameText(sub);$('announce').classList.add('visible');if(game)game.announceTimer=duration}
 function note(text){$('notice').textContent=translateGameText(text);$('notice').classList.add('visible');if(game)game.noticeTimer=2}
 const BEAST_PRESET={'bear': [80, 0.32, 0.22, 'sawtooth', 0.9], 'wolf': [420, 0.22, 0.16, 'sawtooth', 0.2], 'boar': [120, 0.2, 0.18, 'square', 0.3], 'lynx': [900, 0.14, 0.13, 'triangle', 0.2], 'moose': [150, 0.28, 0.17, 'sine', 0.3], 'fox': [1100, 0.12, 0.1, 'triangle', 0.2], 'yak': [95, 0.3, 0.19, 'sawtooth', 0.4], 'owl': [1300, 0.18, 0.11, 'sine', 0.3], 'wolverine': [210, 0.18, 0.2, 'square', 0.3], 'polar': [65, 0.36, 0.24, 'sawtooth', 1]};
 const STAGE_BEASTS=[['bear','หมี','#625c5a','#807773'],['wolf','หมาป่าหิมะ','#738b91','#afc2c4'],['boar','หมูป่าขั้วโลก','#665b51','#a7977d'],['lynx','แมวป่าหิมะ','#8d877c','#c2bba9'],['moose','กวางมูส','#68584c','#a38b70'],['fox','จิ้งจอกอาร์กติก','#ddd9cf','#fff8e8'],['yak','จามรีหิมะ','#514b47','#766d66'],['owl','นกฮูกหิมะ','#b9c5c6','#e8f0ed'],['wolverine','วูล์ฟเวอรีน','#554c4a','#84766d'],['polar','หมีขั้วโลก','#d7e2df','#f6ffff']];
+
+// Stage 4-6: distinct arena identities and boss encounters.
+const STAGE_DESIGNS={
+ 4:{name:'Emerald Jungle',thai:'ป่ามรกต',boss:'ราชาแมวป่าเถาวัลย์',ground:'#a8d689',color:'#66d982',beast:'lynx'},
+ 5:{name:'Storm Valley',thai:'หุบเขาพายุหิมะ',boss:'ราชากวางพายุ',ground:'#8db5d0',color:'#b5eafa',beast:'moose'},
+ 6:{name:'Crystal Kingdom',thai:'อาณาจักรผลึกน้ำแข็ง',boss:'จักรพรรดิจิ้งจอกผลึก',ground:'#9fa0d8',color:'#d3b7ff',beast:'fox'}
+};
+function spawnThemedBoss(stage){
+ const config=STAGE_DESIGNS[stage],g=game;if(!config||!g||g.bossSpawned)return;
+ const ang=rand(0,TAU),dist=rand(430,650),x=clamp(g.p.x+Math.cos(ang)*dist,-half+110,half-110),y=clamp(g.p.y+Math.sin(ang)*dist,-half+110,half-110);
+ const hp={4:4500,5:6000,6:7800}[stage],speed={4:72,5:55,6:82}[stage];
+ const m={id:++g.uid,x,y,hp,maxHp:hp,r:30,speed,themeBaseSpeed:speed,damage:{4:30,5:37,6:44}[stage],elite:true,boss:true,themedBoss:stage,beast:config.beast,
+ dir:1,walk:0,hitTime:0,contact:0,stun:0,flash:0,bleed:0,hits:0,needHits:45,specialCd:3.3};
+ // Replace a far, ordinary enemy if arena reached the entity cap.
+ if(g.mobs.length>=maxMobs()){
+  let index=-1,farthest=-1;
+  for(let i=0;i<g.mobs.length;i++){const q=g.mobs[i];if(q.boss||q.titan)continue;const ds=d2(q.x-g.p.x,q.y-g.p.y);if(ds>farthest){farthest=ds;index=i}}
+  if(index>=0)g.mobs.splice(index,1);
+ }
+ g.mobs.push(m);g.bossSpawned=true;
+ announce('👑 '+config.boss,'บอสประจำด่านปรากฏแล้ว · ระวังท่าโจมตีพิเศษ!',3.4);
+ playSound('warn');sparks(m.x,m.y,config.color,24);
+}
+function updateThemedBosses(dt){
+ if(!game)return;
+ for(const m of game.mobs){
+  if(!m.themedBoss||m.hp<=0)continue;
+  m.specialCd=(m.specialCd||0)-dt;
+  m.speedBoostT=Math.max(0,(m.speedBoostT||0)-dt);
+  m.chargeWarmup=Math.max(0,(m.chargeWarmup||0)-dt);
+  m.chargeT=Math.max(0,(m.chargeT||0)-dt);
+  m.teleportWarmup=Math.max(0,(m.teleportWarmup||0)-dt);
+  m.speed=m.themeBaseSpeed*(m.speedBoostT>0?1.85:m.chargeT>0?2.6:m.chargeWarmup>0?.32:1);
+  if(m.themedBoss===5&&m.chargeReady&&m.chargeWarmup===0){
+   m.chargeReady=false;m.chargeT=1.05;
+   const p=game.p;m.kvx=(p.x-m.x)/(Math.hypot(p.x-m.x,p.y-m.y)||1)*150;m.kvy=(p.y-m.y)/(Math.hypot(p.x-m.x,p.y-m.y)||1)*150;
+   sparks(m.x,m.y,'#d7f5ff',8);
+  }
+  if(m.themedBoss===6&&m.teleportReady&&m.teleportWarmup===0){
+   m.teleportReady=false;
+   const p=game.p,a=rand(0,TAU),r=rand(150,235);
+   sparks(m.x,m.y,'#c7a2ff',12);
+   m.x=clamp(p.x+Math.cos(a)*r,-half+95,half-95);
+   m.y=clamp(p.y+Math.sin(a)*r,-half+95,half-95);
+   resolveObs(m,m.r*.7);sparks(m.x,m.y,'#e6dbff',14);m.flash=.25;
+  }
+  if(m.specialCd>0)continue;
+  if(m.themedBoss===4){m.speedBoostT=1.45;m.specialCd=6;addFloat(m.x,m.y-75,'🌿 พุ่งเร็ว!','#abf0bc')}
+  else if(m.themedBoss===5){m.chargeWarmup=1;m.chargeReady=true;m.specialCd=6.6;addFloat(m.x,m.y-75,'⚠️ เตรียมพุ่งชน','#d8f6ff')}
+  else if(m.themedBoss===6){m.teleportWarmup=.85;m.teleportReady=true;m.specialCd=6.7;addFloat(m.x,m.y-75,'✨ กำลังวาร์ป','#ddc4ff')}
+ }
+}
+
 function beastForStage(stage){return STAGE_BEASTS[(Math.max(1,stage)-1)%STAGE_BEASTS.length]}
 function spawnBear(initial=false){if(!game||game.mobs.length>=maxMobs()||(!initial&&game.bossDefeated))return;let p=game.p,ang=rand(0,TAU),dist=rand(initial?420:900,initial?875:1400),x=clamp(p.x+Math.cos(ang)*dist,-half+65,half-65),y=clamp(p.y+Math.sin(ang)*dist,-half+65,half-65);const strength=monsterPower(game.stage,game.phase),beast=beastForStage(game.stage);const boss=!initial&&(game.stageKills||0)>=34&&!game.bossSpawned;let elite=boss||Math.random()<strength.elite,mult=strength.hp;
  const leaper=beast[0]==='bear'&&(boss||(initial&&!game.mobs.some(m=>m.leaper))||Math.random()<.33);
@@ -814,10 +867,10 @@ function updateSnowDog(dt){
 }
 
 function update(dt){if(mode==='dying'&&game){updateDying(dt);return}if(mode!=='playing'||!game||paused)return;const g=game,p=g.p;now+=dt;g.elapsed+=dt;g.sprint=Math.max(0,(g.sprint||0)-dt);g.sprintCd=Math.max(0,(g.sprintCd||0)-dt);g.growS=clamp(1+(g.weapons.length-1)*.035,1,1.7);g.themeMix=clamp((g.themeMix||0)+(g.stage>=3?dt*.5:-dt*.5),0,1);g.themeFlash=Math.max(0,(g.themeFlash||0)-dt*.8);viewGrow+=(clamp(1+Math.max(0,g.weapons.length-37)*.02,1,10)-viewGrow)*(1-Math.exp(-dt*3));screenScale=baseScale/viewGrow*userZoom;g.announceTimer-=dt;if(g.announceTimer<=0)$('announce').classList.remove('visible');g.noticeTimer=(g.noticeTimer||0)-dt;if(g.noticeTimer<=0)$('notice').classList.remove('visible');
- let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){g.stage=stage;g.phase=phase;if(stage===3)g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,'#e5ffff',22);saveBest()}
+ let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){const newStage=stage!==g.stage;g.stage=stage;g.phase=phase;if(stage===3||newStage&&STAGE_DESIGNS[stage])g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${STAGE_DESIGNS[stage]?.thai||beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,STAGE_DESIGNS[stage]?.color||'#e5ffff',22);if(phase===3&&STAGE_DESIGNS[stage])spawnThemedBoss(stage);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}if(pinchPts.size>=2){dx=0;dy=0}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);if(g.dash){const D=g.dash,el=now-D.t0;p.x=el<D.out?D.x0:D.x1;p.y=el<D.out?D.y0:D.y1;p.inv=Math.max(p.inv,.1);if(el>=D.out+D.inDur){g.dash=null;resolveObs(p,16);sparks(p.x,p.y,'#e5ffff',12)}}p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateSnowDog(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);separateBots();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateSpeedPickup(dt);updateCelestialT();
+ updateSnowDog(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);separateBots();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -897,7 +950,99 @@ function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,TAU);
 function line(x1,y1,x2,y2,width,color){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineWidth=width;ctx.strokeStyle=color;ctx.lineCap='round';ctx.stroke()}
 function poly(points,color){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill()}
 function drawJungleDecor(d){ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);if(d.kind==='tree'){ellipse(4,14,32,11,'#31593a33');roundRect(-6,-38,12,52,4,'#795a38');ellipse(0,-51,27,22,'#287c45');ellipse(-20,-43,20,18,'#399b58');ellipse(19,-44,22,19,'#318e4e');ellipse(0,-61,19,15,'#58b96d');line(10,-50,12,-9,2,'#92d579')}else if(d.kind==='rock'){ellipse(0,4,24,11,'#66896a');ellipse(-3,-1,16,7,'#91b78a')}else if(d.kind==='bush'||d.kind==='ice'){ellipse(0,4,25,10,'#43854f');ellipse(-12,-4,14,11,'#55a65e');ellipse(10,-7,16,13,'#6cbb69')}else{ellipse(0,0,30,11,'#87c87955');line(-8,2,-14,-6,2,'#65a65a');line(3,2,7,-7,2,'#65a65a')}ctx.restore()}
-function drawDecor(d){if(game&&game.stage===4){drawJungleDecor(d);return}if(game&&(game.themeMix||0)>.5){drawObsidian(d.x,d.y,d.scale*1.4);return}ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);if(d.kind==='tree'){ellipse(8,15,33,13,'#32678328');line(0,10,0,-26,11,'#6c797c');for(let i=0;i<3;i++){let top=-70+i*19,rad=24+i*5;poly([[0,top],[-rad,top+39],[rad,top+39]],i===0?'#347d86':i===1?'#3d9095':'#3b7d80');poly([[0,top-2],[-rad+4,top+31],[-8,top+27],[-3,top+22]],'#c9f1ec');line(-rad+4,top+36,rad-5,top+36,2,'#d0f9fb65')}ellipse(0,18,21,5,'#fff9')}
+
+function drawStormDecor(d){
+ ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);
+ if(d.kind==='tree'){
+  ellipse(3,10,30,9,'#557e9e55');line(0,5,0,-43,9,'#53768e');
+  for(let j=0;j<4;j++){const y=-74+j*16,r=12+j*7;
+   poly([[0,y],[-r,y+35],[r,y+35]],j%2?'#3e7187':'#477f91');
+   poly([[0,y],[-r+3,y+29],[3,y+17]],'#e6fbff')}
+ }else if(d.kind==='rock'){
+  poly([[-24,10],[-17,-17],[2,-37],[23,-5],[26,10]],'#6d93ae');
+  poly([[-17,-17],[2,-37],[5,-14]],'#e3f6ff');
+  line(-18,8,21,8,3,'#b6d9e9');
+ }else if(d.kind==='ice'){
+  poly([[-23,10],[-12,-7],[7,-27],[24,-8],[22,10]],'#d7f0fb');
+  poly([[-12,-7],[7,-27],[0,6]],'#91cce4');
+ }else{ellipse(0,3,28,9,'#eaf9ffb0');line(-22,1,16,-1,2,'#a0d2ea')}
+ ctx.restore();
+}
+function drawCrystalDecor(d){
+ ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);
+ if(!lowGraphics()){ctx.shadowColor='#9f82f9';ctx.shadowBlur=8}
+ const tall=d.kind==='tree'||d.kind==='rock';
+ ellipse(1,10,28,11,'#524a9b48');
+ for(let i=tall?0:1;i<3;i++){
+  const xx=(i-1)*14,top=tall?(-68+Math.abs(i-1)*23):(-26+Math.abs(i-1)*6),shade=['#7a7ec8','#a8b2f3','#6f88c7'][i];
+  poly([[xx-9,7],[xx-7,top+16],[xx,top],[xx+9,top+17],[xx+10,8]],shade);
+  poly([[xx-7,top+16],[xx,top],[xx+1,5]],'#edf5ffab');
+  poly([[xx+1,5],[xx+9,top+17],[xx+10,8]],'#6256a599');
+ }
+ ctx.shadowBlur=0;
+ if(d.v>.58)ellipse(0,-10,2.7,3.3,'#e7eeff');
+ ctx.restore();
+}
+function drawStageTerrainFx(minX,maxX,minY,maxY){
+ if(!game||game.stage<4||game.stage>6)return;
+ const stage=game.stage,low=lowGraphics(),count=low?6:17;
+ ctx.save();
+ if(stage===4){
+  for(let i=0;i<count;i++){
+   const x=cam.x+Math.sin(i*21.7)*((maxX-minX)*.46),y=cam.y+Math.cos(i*12.8)*((maxY-minY)*.46);
+   const phase=(now*.5+i*.33)%TAU;
+   ellipse(x,y+Math.sin(phase)*7,low?1.4:2.5,low?1.4:2.5,'rgba(178,255,143,'+(.4+.3*Math.sin(phase)*Math.sin(phase)).toFixed(2)+')');
+  }
+ }else if(stage===5){
+  ctx.lineCap='round';
+  for(let i=0;i<count;i++){
+   const x=minX+((i*191+now*110)%(maxX-minX+220))-110;
+   const y=minY+((i*147+now*32)%(maxY-minY+70));
+   line(x,y,x+45+Math.sin(i)*14,y-9,low?1.2:2.2,'#e0f8ffe0');
+  }
+ }else{
+  for(let i=0;i<count;i++){
+   const x=cam.x+Math.sin(i*22.1)*((maxX-minX)*.44),y=cam.y+Math.cos(i*18.9)*((maxY-minY)*.44);
+   const glow=.4+.3*Math.sin(now*2+i*2.7)**2;
+   ellipse(x,y,3,2,'rgba(220,214,255,'+glow.toFixed(2)+')');
+   if(!low&&i%3===0){line(x-6,y,x+6,y,1,'#d9cbfc80');line(x,y-6,x,y+6,1,'#d9cbfc80')}
+  }
+ }
+ ctx.restore();
+}
+function drawThemedBossAdornment(m){
+ if(!m.themedBoss)return;
+ const stage=m.themedBoss;
+ if(stage===4){
+  // Leaf crown and amber eyes for the jungle lynx.
+  poly([[-21,-39],[-15,-57],[-5,-44],[0,-62],[8,-44],[17,-57],[22,-39]],'#46925b');
+  poly([[-12,-46],[0,-58],[13,-46],[0,-44]],'#b3ed88');
+  ellipse(-8,-28,3,3,'#e6dc77');ellipse(8,-28,3,3,'#e6dc77');
+ }else if(stage===5){
+  // Storm antlers and an icy chest band on the moose.
+  for(const side of [-1,1]){
+   line(side*10,-33,side*23,-65,4,'#d2f4ff');
+   line(side*19,-53,side*33,-62,3,'#edfbff');
+   line(side*20,-58,side*13,-72,3,'#d2f4ff');
+  }
+  roundRect(-17,-9,34,7,3,'#48a8cc');
+  ellipse(0,-8,4,4,'#e2ffff');
+ }else if(stage===6){
+  for(const side of [-1,1]){
+   poly([[side*11,-45],[side*19,-69],[side*26,-45]],'#aaa3f6');
+   poly([[side*19,-69],[side*21,-49],[side*14,-45]],'#e3e0ff');
+  }
+  poly([[-12,-42],[0,-66],[12,-42]],'#9187e8');
+  ellipse(0,-51,4,5,'#f6edff');
+  ellipse(-8,-26,3,3,'#94efff');ellipse(8,-26,3,3,'#94efff');
+ }
+ if(m.chargeWarmup>0||m.teleportWarmup>0){
+  ctx.strokeStyle=stage===5?'#dff8ff':'#e6cfff';
+  ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.arc(0,2,36+3*Math.sin(now*14),0,TAU);ctx.stroke();
+ }
+}
+function drawDecor(d){if(game&&game.stage===4){drawJungleDecor(d);return}if(game?.stage===5){drawStormDecor(d);return}if(game?.stage===6){drawCrystalDecor(d);return}if(game&&(game.themeMix||0)>.5){drawObsidian(d.x,d.y,d.scale*1.4);return}ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);if(d.kind==='tree'){ellipse(8,15,33,13,'#32678328');line(0,10,0,-26,11,'#6c797c');for(let i=0;i<3;i++){let top=-70+i*19,rad=24+i*5;poly([[0,top],[-rad,top+39],[rad,top+39]],i===0?'#347d86':i===1?'#3d9095':'#3b7d80');poly([[0,top-2],[-rad+4,top+31],[-8,top+27],[-3,top+22]],'#c9f1ec');line(-rad+4,top+36,rad-5,top+36,2,'#d0f9fb65')}ellipse(0,18,21,5,'#fff9')}
  else if(d.kind==='rock'){ellipse(3,9,28,11,'#41718f26');poly([[-17,0],[-13,-14],[4,-21],[20,-9],[25,3],[12,11],[-10,9]],'#839da8');poly([[-17,0],[-13,-14],[4,-21],[1,-5]],'#d7edf3');poly([[1,-5],[4,-21],[20,-9],[25,3]],'#a2bac1');line(-11,9,19,9,3,'#e9fdff')}
  else if(d.kind==='bush'){ellipse(4,5,26,11,'#789eb52a');for(let j=-1;j<=1;j++){ellipse(j*11,0,11,9,j===0?'#679ba1':'#72aaab');ellipse(j*11-3,-4,8,4,'#d9f6ef')}}
  else if(d.kind==='ice'){ellipse(0,3,24,9,'#5191ba1e');poly([[-8,8],[-12,-6],[2,-21],[15,-3],[8,9]],'#94d3e4aa');poly([[-8,8],[-12,-6],[2,-21],[0,5]],'#e6ffffa1')}
@@ -913,12 +1058,12 @@ function drawWorldBoundary(minX,maxX,minY,maxY){
  ctx.strokeStyle='#b8ecf2';ctx.lineWidth=4;ctx.beginPath();if(minX< -edge){ctx.moveTo(-edge,minY);ctx.lineTo(-edge,maxY)}if(maxX>edge){ctx.moveTo(edge,minY);ctx.lineTo(edge,maxY)}if(minY< -edge){ctx.moveTo(minX,-edge);ctx.lineTo(maxX,-edge)}if(maxY>edge){ctx.moveTo(minX,edge);ctx.lineTo(maxX,edge)}ctx.stroke();
 }
 function mixHex(a,b,t){const p=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const A=p(a),B=p(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')'}
-function drawGround(){const jungle=game&&game.stage===4,mix=game?(game.themeMix||0):0,hot=!jungle&&mix>.5;ctx.fillStyle=jungle?'#a8d689':mixHex('#d3edf3','#5a1a0e',mix);ctx.fillRect(0,0,w,h);
+function drawGround(){const st=game?.stage||0,jungle=st===4,storm=st===5,crystal=st===6,mix=game?(game.themeMix||0):0,hot=!jungle&&!storm&&!crystal&&mix>.5;ctx.fillStyle=STAGE_DESIGNS[st]?.ground||mixHex('#d3edf3','#5a1a0e',mix);ctx.fillRect(0,0,w,h);
  const scale=screenScale,cx=cam.x,cy=cam.y;ctx.save();ctx.translate(w/2,h/2);ctx.scale(scale,scale);ctx.translate(-cx,-cy);let vw=w/scale,vh=h/scale;
  // Vast snow fields with gentle contour bands.
  let minX=cx-vw/2-120,maxX=cx+vw/2+120,minY=cy-vh/2-120,maxY=cy+vh/2+120;
  const groundStep=180*Math.max(1,Math.ceil(.6/scale));let gx=Math.floor(minX/groundStep)*groundStep,gy=Math.floor(minY/groundStep)*groundStep;
- for(let x=gx;x<maxX;x+=groundStep)for(let y=gy;y<maxY;y+=groundStep){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,jungle?(k>.06?'#c6e8a680':'#6bac6d55'):hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
+ for(let x=gx;x<maxX;x+=groundStep)for(let y=gy;y<maxY;y+=groundStep){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,jungle?(k>.06?'#c6e8a680':'#6bac6d55'):storm?(k>.06?'#ecf8ff8e':'#5689b576'):crystal?(k>.06?'#e1d9ffa0':'#7365b880'):hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
  if(hot&&!lowGraphics()){for(let x=gx;x<maxX;x+=groundStep*2)for(let y=gy;y<maxY;y+=groundStep*2){const j=Math.sin(x*.011+y*.017);ctx.strokeStyle=`rgba(255,150,70,${(.3+.25*Math.sin(now*2+x*.01+y*.01)).toFixed(3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+j*40);ctx.lineTo(x+120,y+60+j*30);ctx.lineTo(x+200,y+20-j*30);ctx.stroke()}}
  if(hot){
   // lava streams slowly crossing the ground
@@ -931,6 +1076,7 @@ function drawGround(){const jungle=game&&game.stage===4,mix=game?(game.themeMix|
  }
  // Organic small dotted snow texture: deterministic cells.
  const detailStep=77*Math.max(1,Math.ceil(.6/scale));for(let x=Math.floor(minX/detailStep)*detailStep;!lowGraphics()&&x<maxX;x+=detailStep)for(let y=Math.floor(minY/detailStep)*detailStep;y<maxY;y+=detailStep){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
+ drawStageTerrainFx(minX,maxX,minY,maxY);
  // Ring around center clears: environmental guide, no border.
  for(let cxCell=Math.floor((minX-85)/DECOR_CELL);cxCell<=Math.floor((maxX+85)/DECOR_CELL);cxCell++)for(let cyCell=Math.floor((minY-90)/DECOR_CELL);cyCell<=Math.floor((maxY+90)/DECOR_CELL);cyCell++){const bucket=decorGrid.get(cxCell+','+cyCell);if(!bucket)continue;for(const d of bucket){if(d.x<minX-85||d.x>maxX+85||d.y<minY-90||d.y>maxY+90)continue;drawDecor(d)}}
  drawWorldBoundary(minX,maxX,minY,maxY);
@@ -957,6 +1103,7 @@ function drawBear(m){const beast=STAGE_BEASTS.find(v=>v[0]===m.beast)||STAGE_BEA
   if(m.jump){ctx.save();ctx.globalAlpha=.6+.18*Math.sin(now*16);
    ctx.strokeStyle='#ffdb86';ctx.lineWidth=2.3;ctx.beginPath();ctx.arc(0,2,32,0,TAU);ctx.stroke();ctx.restore()}
  }
+ drawThemedBossAdornment(m);
  if(m.boss||m.titan){drawCrown();}else if(m.elite){ctx.strokeStyle='#e4a2ad';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-24,-8);ctx.lineTo(-16,-16);ctx.stroke()}
  if(m.flash>0){ellipse(0,-14,27,29,'#ffffff65')}
  ctx.restore();if(m.hp<m.maxHp){let width=m.elite?58:44,pr=clamp(m.hp/m.maxHp,0,1);roundRect(m.x-width/2,m.y-52,width,5,2,'#1b425862');roundRect(m.x-width/2,m.y-52,width*pr,5,2,m.elite?'#ea8d91':'#5ccac0')}}
