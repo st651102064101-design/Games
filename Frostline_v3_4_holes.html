@@ -2321,7 +2321,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawBearShots();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;worldTiltActive=false;ctx.restore();
- drawDayNight();
+ if(!lowGraphics())drawDayNight();
  if(!lowGraphics()){drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial()}
  if(game&&game.themeFlash>0){ctx.save();ctx.fillStyle=`rgba(255,110,40,${(game.themeFlash*.6).toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
  drawEnemyArrows();
