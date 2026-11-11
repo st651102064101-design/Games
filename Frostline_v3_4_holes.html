@@ -240,7 +240,7 @@ function phaseAt(elapsed){const step=Math.floor(Math.max(0,elapsed)/PHASE_SECOND
 function monsterPower(stage,phase){const step=(stage-1)*3+phase-1;return {hp:1+step*.45,damage:Math.min(16,1+step*.65),speed:Math.min(2.4,1+step*.05),spawn:Math.max(.6,1.9-step*.1)*2,elite:Math.min(.3,step*.02)}}
 function maxMobs(){return Math.min(32,6+Math.floor((game.stage*5+game.phase*4)/2))}
 function difficulty(){let t=(game.stage-1)*3+game.phase-1;return ['ปกติ','ปานกลาง','ท้าทาย','ยาก','โหด','ฝันร้าย','มหันตภัย'][Math.min(6,Math.floor(t/2))]}
-function updateHud(){if(!game)return;$('stageName').textContent=`ด่าน ${game.stage} · เฟส ${game.phase}`;$('difficulty').textContent=`${beastForStage(game.stage)[1]} · ${difficulty()}   •   Lv.${game.level}`;$('coins').textContent=game.coins;$('phaseBar').style.width=`${(game.elapsed%PHASE_SECONDS)/PHASE_SECONDS*100}%`;$('xpLabel').textContent=`LV. ${game.level}`;$('xpFill').style.width=`${Math.round(100*game.xp/game.nextXP)}%`;const count=MAT_KEYS.reduce((n,k)=>n+game.inv[k],0);$('bagCount').hidden=!count;$('bagCount').textContent=count>99?'99+':count;$('meatCount').hidden=!game.inv.meat;$('meatCount').textContent=game.inv.meat>99?'99+':game.inv.meat;$('levelReady').hidden=game.pendingLevels<1;$('levelReady').textContent=`✨ เลือกสกิล (+${game.pendingLevels})`;updateOnlineInfo();}
+function updateHud(){if(!game)return;$('stageName').textContent=`ด่าน ${game.stage} · เฟส ${game.phase} · ${timeOfDayLabel()}`;$('difficulty').textContent=`${beastForStage(game.stage)[1]} · ${difficulty()}   •   Lv.${game.level}`;$('coins').textContent=game.coins;$('phaseBar').style.width=`${(game.elapsed%PHASE_SECONDS)/PHASE_SECONDS*100}%`;$('xpLabel').textContent=`LV. ${game.level}`;$('xpFill').style.width=`${Math.round(100*game.xp/game.nextXP)}%`;const count=MAT_KEYS.reduce((n,k)=>n+game.inv[k],0);$('bagCount').hidden=!count;$('bagCount').textContent=count>99?'99+':count;$('meatCount').hidden=!game.inv.meat;$('meatCount').textContent=game.inv.meat>99?'99+':game.inv.meat;$('levelReady').hidden=game.pendingLevels<1;$('levelReady').textContent=`✨ เลือกสกิล (+${game.pendingLevels})`;updateOnlineInfo();}
 function announce(title,sub,duration=2){$('announceTitle').textContent=title;$('announceSub').textContent=sub;$('announce').classList.add('visible');if(game)game.announceTimer=duration}
 function note(text){$('notice').textContent=text;$('notice').classList.add('visible');if(game)game.noticeTimer=2}
 const BEAST_PRESET={'bear': [80, 0.32, 0.22, 'sawtooth', 0.9], 'wolf': [420, 0.22, 0.16, 'sawtooth', 0.2], 'boar': [120, 0.2, 0.18, 'square', 0.3], 'lynx': [900, 0.14, 0.13, 'triangle', 0.2], 'moose': [150, 0.28, 0.17, 'sine', 0.3], 'fox': [1100, 0.12, 0.1, 'triangle', 0.2], 'yak': [95, 0.3, 0.19, 'sawtooth', 0.4], 'owl': [1300, 0.18, 0.11, 'sine', 0.3], 'wolverine': [210, 0.18, 0.2, 'square', 0.3], 'polar': [65, 0.36, 0.24, 'sawtooth', 1]};
@@ -413,6 +413,11 @@ function updateDying(dt){const g=game,p=g.p,t=now-g.deathT0;for(let i=g.mobs.len
 // Falling into a hole: the hero sinks in (0.35s), then warps out of a far hole and rises (0.25s)
 function holeWarp(p){const g=game;let wx,wy;for(let t=0;t<20;t++){wx=rand(-half+200,half-200);wy=rand(-half+200,half-200);if(!g.holes.some(h=>Math.hypot(h.x-wx,h.y-wy)<h.r+120))break}
  g.dash={x0:p.x,y0:p.y,x1:wx,y1:wy,t0:now,out:.35,inDur:.25};playSound('ui',p.x,p.y)}
+// Day/night: 1 real minute = 24 in-game hours
+function gameHour(){return ((game?game.elapsed:0)/60*24)%24}
+function timeOfDayLabel(){const h=gameHour();const hh=Math.floor(h),mm=Math.floor((h-hh)*60);const name=h<6?'กลางคืน':h<11?'เช้า':h<17?'กลางวัน':h<19?'เย็น':'กลางคืน';return `${name} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`}
+function nightDarkness(h){if(h>=20||h<5)return .5;if(h>=5&&h<7)return .5*(1-(h-5)/2);if(h>=18&&h<20)return .5*(h-18)/2;return 0}
+function drawDayNight(){if(!game)return;const d=nightDarkness(gameHour());if(d<=.01)return;ctx.save();ctx.fillStyle=`rgba(8,22,58,${d.toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+52,'#ffffff','900 11px system-ui']);
@@ -745,6 +750,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
+ drawDayNight();
  drawEnemyArrows();
  // snowfall foreground (screen-space particles).
  for(let s of particle){ctx.globalAlpha=.36+.19*Math.sin(s.p+now*2);ellipse(s.x,s.y,s.r,s.r,'#ffffff')}ctx.globalAlpha=1;
