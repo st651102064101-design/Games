@@ -294,6 +294,8 @@ function swordCount(){return 0}
 function swordRange(){return (48+(game.upd.sword-1)*3)*(1+(game.perks.range||0)*.08)*(game.growS||1)}
 function magnetRadius(weaponRange){return weaponRange}
 function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
+// Fixed orbit slots: a dropped blade leaves a gap; the other blades keep their positions and the ring keeps spinning
+function slotOffset(w){const g=game;g.ringSize=g.ringSize||1;const used=allActiveWeapons().filter(x=>x!==w&&x.slot!==undefined).map(x=>x.slot);if(w.slot===undefined||w.slot<0||w.slot>=g.ringSize||used.includes(w.slot)){let j=-1;for(let k=0;k<g.ringSize;k++){if(!used.includes(k)){j=k;break}}if(j<0){j=g.ringSize;g.ringSize++}w.slot=j}return w.slot*TAU/g.ringSize}
 function orbitOffset(index,total){return total>0?index*TAU/total:0}
 function orbitCount(){return swordCount()+Math.min(game.weapons.length,MAX_ACTIVE_EXTRA)}
 function orbitAngle(index){return game.swordPhase+orbitOffset(index,orbitCount())}
@@ -303,7 +305,7 @@ const BLADE_LEN={knife:28,dagger:34,bowie:39,machete:47,shortsword:45,katana:60,
 function bladeLen(w){const t=combatSpec(w);return BLADE_LEN[t.shape]||45}
 function hitWithExtraWeapon(m, w, n, total){
  if(combatSpec(w).gun)return false;
- const g=game, p=g.p,a=orbitAngle(swordCount()+n),reach=swordRange(),L=bladeLen(w)*(g.growS||1),sx=p.x+Math.cos(a)*(reach+L),sy=p.y+Math.sin(a)*(reach+L);
+ const g=game, p=g.p,a=g.swordPhase+slotOffset(w),reach=swordRange(),L=bladeLen(w)*(g.growS||1),sx=p.x+Math.cos(a)*(reach+L),sy=p.y+Math.sin(a)*(reach+L);
  let hit=false;for(const f of [0,.5,1]){const aa=a-spinSpeed()*f/30;const gx=p.x+Math.cos(aa)*reach,gy=p.y+Math.sin(aa)*reach,ex=p.x+Math.cos(aa)*(reach+L),ey=p.y+Math.sin(aa)*(reach+L);if(segmentDistanceSquared(m.x,m.y,gx,gy,ex,ey)<=(m.r+14)**2){hit=true;break}}if(!hit)return false;m.x+=Math.cos(a)*16;m.y+=Math.sin(a)*16;addSlash(m.x,m.y,a);dropOwnBlade(w.id,m.x,m.y);playSound('swing',m.x,m.y,w.type||'');playSound('hit',m.x,m.y);playSound('beast',m.x,m.y,m.beast||'bear');
  let damage=w.damage*PLAYER_DAMAGE_MULTIPLIER*(w.type==='ars09'?2:1)*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
  m.hp-=damage;m.hits=(m.hits||0)+1;if(m.hits>=2)m.hp=0;m.hitTime=.22;m.flash=.25;m.stun=w.type==='ars16'?.75:w.element==='ice'||w.type==='ars18'?.6:.10;if(w.type==='ars06'||w.type==='ars07'){const d=Math.hypot(m.x-p.x,m.y-p.y)||1;m.x+=(m.x-p.x)/d*18;m.y+=(m.y-p.y)/d*18}if(w.type==='ars19')for(const other of g.mobs)if(other!==m&&d2(other.x-m.x,other.y-m.y)<85**2){other.hp-=damage*.75;other.flash=.2}
@@ -589,7 +591,7 @@ function drawWeaponModelBase(x,y,a,weapon){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.length;k++){
- const weapon=extra[k],a=orbitAngle(swordCount()+k),reach=swordRange();
+ const weapon=extra[k],a=game.swordPhase+slotOffset(weapon),reach=swordRange();
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
 function dropLabel(d){if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return spec?.name||'อาวุธ'}if(d.type==='coin')return 'เหรียญ';if(d.type==='plus')return 'เพิ่มอาวุธ';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
@@ -826,7 +828,7 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  updateOnlineInfo();
 }
 function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main',speed:spinSpeed(),count:Math.max(1,orbitCount())});
- allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(orbitOffset(n+k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,24)}
+ allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(slotOffset(w)*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,24)}
 function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp)}}
 function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
