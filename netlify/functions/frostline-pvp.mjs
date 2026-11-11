@@ -7,7 +7,7 @@
  */
 import {getStore} from '@netlify/blobs';
 
-const ROOM = 'arena-v3-5/';
+const ROOM = 'arena-v3-6/';
 const VISIBLE_MS = 14000;
 const CLEANUP_MS = 90000;
 const MAX_PLAYERS = 32;
@@ -41,7 +41,7 @@ export default async function handler(request) {
     if (body.kind !== 'state' || !body.alive || !Array.isArray(body.samples) || !body.samples.length) return respond({error:'Expected player state'},400);
     const now = Date.now();
     const samples = body.samples.slice(-MAX_SAMPLES).map(s=>({
-      t:num(s?.t,now,0,4e12),x:num(s?.x,0,-1800,1800),y:num(s?.y,0,-1800,1800),
+      t:num(s?.t,now,0,4e12),x:num(s?.x,0,-3600,3600),y:num(s?.y,0,-3600,3600),
       vx:num(s?.vx,0,-1200,1200),vy:num(s?.vy,0,-1200,1200),
       s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,60),h:num(s?.h,100,0,10000)
     })).sort((a,b)=>a.t-b.t);
@@ -57,7 +57,7 @@ export default async function handler(request) {
         armor:num(body.look?.armor,1,1,8),furArmor:body.look?.furArmor===true,
         leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
         weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel'},
-      shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-1800,1800),y:num(b.y,0,-1800,1800),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
+      shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-3600,3600),y:num(b.y,0,-3600,3600),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
       clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'main').slice(0,20),t:num(c.t,now,now-5000,now+1000)})):[],
       updatedAt:now
     };
