@@ -394,7 +394,7 @@ function drawPortal(){const D=game.dash;if(!D)return;const el=now-D.t0;ctx.save(
  ctx.restore()}
 // Stage 2: meteor strikes. A warning ring shows, then a big meteor lands and hits everything in the blast
 function updateMeteors(dt){const g=game,p=g.p;g.meteors=g.meteors||[];if(g.stage!==2){g.meteorT=8;return}
- g.meteorT=(g.meteorT??8)-dt;if(g.meteorT<=0){g.meteorT=12;const a=rand(0,TAU),d=rand(260,520);g.meteors.push({x:clamp(p.x+Math.cos(a)*d,-half+120,half-120),y:clamp(p.y+Math.sin(a)*d,-half+120,half-120),t0:now,dur:1.6})}
+ g.meteorT=(g.meteorT??8)-dt;if(g.meteorT<=0){g.meteorT=12;const tg=[{x:p.x+(p.mx||0)*1.2,y:p.y-25+(p.my||0)*1.2}];for(const r of peers.values()){if(r.init&&performance.now()-r.last<1500)tg.push({x:r.x,y:r.y-25})}for(const q of tg)g.meteors.push({x:clamp(q.x,-half+120,half-120),y:clamp(q.y,-half+120,half-120),t0:now,dur:1.6})}
  for(let i=g.meteors.length-1;i>=0;i--){const M=g.meteors[i];if(now-M.t0<M.dur)continue;g.meteors.splice(i,1);
   playSound('explosion',M.x,M.y);g.shake=Math.max(g.shake,16);sparks(M.x,M.y,'#ffd9a0',30);
   if(Math.hypot(p.x-M.x,p.y-M.y)<95&&p.inv<=0){const red=Math.min(.5,(g.upd.armor-1)*.045);const dealt=Math.max(10,Math.round(40*(1-red)));p.hp-=dealt;p.inv=.6;addFloat(p.x,p.y-44,`-${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame('อุกกาบาต')}}
