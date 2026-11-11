@@ -2325,9 +2325,15 @@ function updateDualGesture(){
  const centerY=(p[0].y+p[1].y)*.5,travel=Math.abs(centerY-g.centerY);
  const distance=pinchDist(),spread=Math.abs(distance-g.distance);
  const parallel=d0*d1>0&&Math.min(Math.abs(d0),Math.abs(d1))>7;
+ const dx0=p[0].x-g.points[0].x,dx1=p[1].x-g.points[1].x;
+ const moved0=Math.hypot(dx0,d0),moved1=Math.hypot(dx1,d1);
+ // Touch events arrive one finger at a time: do not mistake the first
+ // vertical move of a synchronized two-finger swipe for a pinch.
+ const bothActive=moved0>7&&moved1>7;
  if(g.mode==='pending'){
   if(parallel&&travel>11&&spread<Math.max(20,travel*.7))g.mode='tilt';
-  else if(spread>17&&(!parallel||spread>travel*1.25))g.mode='zoom';
+  else if(spread>17&&bothActive&&(!parallel||spread>travel*1.25))g.mode='zoom';
+  else if(spread>26&&(Math.abs(dx0)+Math.abs(dx1)>28)&&!parallel)g.mode='zoom';
   else if(parallel&&travel>30)g.mode='tilt';
  }
  if(g.mode==='tilt'){
