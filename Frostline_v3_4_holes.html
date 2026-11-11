@@ -392,6 +392,18 @@ function drawPortal(){const D=game.dash;if(!D)return;const el=now-D.t0;ctx.save(
  if(el<D.out){const k=el/D.out;ctx.globalAlpha=1-k*.5;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x0,D.y0,14+k*34,8+k*18,0,0,TAU);ctx.stroke()}
  else{const k=Math.min(1,(el-D.out)/D.inDur);ctx.globalAlpha=1-k;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x1,D.y1,48-k*34,26-k*18,0,0,TAU);ctx.stroke()}
  ctx.restore()}
+// Stage 2: meteor strikes. A warning ring shows, then a big meteor lands and hits everything in the blast
+function updateMeteors(dt){const g=game,p=g.p;g.meteors=g.meteors||[];if(g.stage!==2){g.meteorT=8;return}
+ g.meteorT=(g.meteorT??8)-dt;if(g.meteorT<=0){g.meteorT=12;const a=rand(0,TAU),d=rand(260,520);g.meteors.push({x:clamp(p.x+Math.cos(a)*d,-half+120,half-120),y:clamp(p.y+Math.sin(a)*d,-half+120,half-120),t0:now,dur:1.6})}
+ for(let i=g.meteors.length-1;i>=0;i--){const M=g.meteors[i];if(now-M.t0<M.dur)continue;g.meteors.splice(i,1);
+  playSound('explosion',M.x,M.y);g.shake=Math.max(g.shake,16);sparks(M.x,M.y,'#ffd9a0',30);
+  if(Math.hypot(p.x-M.x,p.y-M.y)<95&&p.inv<=0){const red=Math.min(.5,(g.upd.armor-1)*.045);const dealt=Math.max(10,Math.round(40*(1-red)));p.hp-=dealt;p.inv=.6;addFloat(p.x,p.y-44,`-${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame('อุกกาบาต')}}
+  for(const m of g.mobs){if(Math.hypot(m.x-M.x,m.y-M.y)<95)m.hp=0}}}
+function drawMeteors(){const g=game;if(!g.meteors)return;for(const M of g.meteors){const el=now-M.t0,k=Math.min(1,el/M.dur);if(!isVisible(M.x,M.y,140))continue;ctx.save();
+ ctx.globalAlpha=.25+.35*k;ctx.fillStyle='#2a3440';ctx.beginPath();ctx.ellipse(M.x,M.y,95*(0.4+0.6*k),40*(0.4+0.6*k),0,0,TAU);ctx.fill();
+ ctx.globalAlpha=1;ctx.strokeStyle='#ff8a5c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(M.x,M.y,95,40,0,0,TAU);ctx.stroke();
+ const fy=M.y-(1-k)*420;ctx.fillStyle='#5b4a44';ctx.beginPath();ctx.arc(M.x,fy,22,0,TAU);ctx.fill();ctx.strokeStyle='#ffb36b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(M.x,fy,26,Math.PI*1.1,Math.PI*1.6);ctx.stroke();
+ ctx.restore()}}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+36,'#ffffff','900 11px system-ui']);
@@ -447,7 +459,7 @@ function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){g.stage=stage;g.phase=phase;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,'#e5ffff',22);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);if(g.dash){const D=g.dash,el=now-D.t0;p.x=el<D.out?D.x0:D.x1;p.y=el<D.out?D.y0:D.y1;p.inv=Math.max(p.inv,.1);if(el>=D.out+D.inDur){g.dash=null;resolveObs(p,16);sparks(p.x,p.y,'#e5ffff',12)}}p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);separateBots();updateSlashes(dt);
+ updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);separateBots();updateSlashes(dt);updateMeteors(dt);
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -634,7 +646,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y,obj:b});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
-  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawSlashes();
+  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  drawEnemyArrows();
