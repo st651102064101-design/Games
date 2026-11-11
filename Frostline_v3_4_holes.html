@@ -149,7 +149,7 @@ function playFootstep(speed){if(!audioCtx||audioCtx.state!=='running')return;if(
 // ===== Procedural rock music =====
 let rockNext=0,rockStep=0,rockDist=null,rockBus=null,rockNoise=null,musicIntense=false;
 // Situational track: intense when HP is low, a boss is alive, or other hunters are close.
-function computeIntense(){const g=game;if(!g)return false;if(g.p.hp/g.p.maxHp<.35)return true;if((g.mobs||[]).some(m=>m.boss))return true;for(const r of peers.values()){if(r.init&&Math.hypot(r.x-g.p.x,r.y-g.p.y)<700)return true}return false}
+function computeIntense(){const g=game;if(!g)return false;if(g.p.hp/g.p.maxHp<.35)return true;if(g.zone&&g.zone.shrinking)return true;if((g.mobs||[]).some(m=>m.boss))return true;for(const r of peers.values()){if(r.init&&Math.hypot(r.x-g.p.x,r.y-g.p.y)<700)return true}return false}
 function rockMusic(){try{rockMusicInner()}catch(e){}}
 function rockMusicInner(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime,vol=audioSettings.music;if(vol<=0.001)return;
  if(!rockBus){rockBus=audioCtx.createGain();rockBus.connect(audioMaster);const n=2048,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/n*2-1;c[i]=Math.tanh(x*7)}rockDist=audioCtx.createWaveShaper();rockDist.curve=c;rockDist.oversample='2x';const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;rockDist.connect(lp);lp.connect(rockBus);const len=audioCtx.sampleRate;rockNoise=audioCtx.createBuffer(1,len,audioCtx.sampleRate);const d=rockNoise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1}
@@ -226,7 +226,7 @@ function initDecor(){rngSeed=2112;for(let i=0;i<1600*25;i++){let x=(seeded()-.5)
 function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?22:graphicsMode==='ultra'?160:graphicsMode==='high'?110:85,Math.floor(w*h/(graphicsMode==='ultra'?5500:9500)));i++)particle.push({x:rand(0,w),y:rand(0,h),r:rand(.6,2.4),vx:rand(-18,-4),vy:rand(14,36),p:rand(0,TAU)})}
 function newGame(){
  audioInitialize();setWind(true);playSound('ui');
- let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
+ let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0,br:true};
  game.obstacles=makeObstacles();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];for(let i=0;i<5;i++)game.bots.push(spawnBot(i));for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
@@ -356,7 +356,7 @@ function addBounceFloat(text,color){const p=game.p;game.float.push({x:p.x,y:p.y-
 const BOT_LOOK={boots:1,bag:1,armor:1,furArmor:false,leatherPack:false,level:1};
 function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(450,900);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),items:2+Math.floor(rand(0,7)),fleeing:false}}
 function updateBots(dt){const g=game,p=g.p;for(const b of g.bots||[]){
- if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp}continue}
+ if(b.dead>0){if(!game.br){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp}}continue}
  b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if(g.weapons.length>b.items&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}
  b.retarget-=dt;if(!b.fleeing&&(b.retarget<=0||Math.hypot(b.tx-b.x,b.ty-b.y)<12)){b.retarget=rand(2.5,5);const a=rand(0,TAU),d=rand(120,700);b.tx=clamp(b.x+Math.cos(a)*d,-half+80,half-80);b.ty=clamp(b.y+Math.sin(a)*d,-half+80,half-80)}
  const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy)||1,sp=b.fleeing?118:105;const ox=b.x,oy=b.y;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
@@ -374,6 +374,17 @@ function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
 // Menu ambience: soft chord pad that plays only on the menu.
 function menuPad(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden||mode!=='menu')return;for(const hz of [196,246.9,293.7])playSound('menuTone',null,null,String(hz))}
 setInterval(menuPad,2000);
+// ===== Blue Zone: shrinking safe circle; last survivor or final circle ends the round =====
+const ZONE_PLAN=[{wait:60,to:5000,dur:60},{wait:30,to:2500,dur:40},{wait:25,to:1000,dur:30},{wait:20,to:400,dur:20}];
+function updateZone(dt){const g=game,p=g.p;const z=g.zone||(g.zone={i:0,t:0,r:9000,from:9000,shrinking:false});const st=ZONE_PLAN[z.i];
+ if(st){z.t+=dt;if(!z.shrinking){if(z.t>=st.wait){z.shrinking=true;z.t=0;z.from=z.r;playSound('warn');announce('วงบีบเริ่มหด!','รีบเข้าไปในวงปลอดภัย',2.4)}}
+  else{const k=Math.min(1,z.t/st.dur);z.r=z.from+(st.to-z.from)*k;if(k>=1){z.shrinking=false;z.i++;z.t=0;z.r=st.to}}}
+ if(Math.hypot(p.x,p.y)>z.r){p.hp-=8*dt;g.hitFlash=Math.max(g.hitFlash,.3);if(p.hp<=0){p.hp=0;endGame('วงบีบ')}}}
+function drawZone(){const g=game,z=g.zone;if(!z)return;ctx.save();ctx.beginPath();ctx.rect(-40000,-40000,80000,80000);ctx.arc(0,0,z.r,0,TAU,true);ctx.fillStyle='rgba(40,90,200,.22)';ctx.fill('evenodd');ctx.beginPath();ctx.arc(0,0,z.r,0,TAU);ctx.strokeStyle='rgba(90,160,255,.9)';ctx.lineWidth=8;ctx.stroke();ctx.restore()}
+function checkVictory(){const g=game;if(!g||mode!=='playing'||!g.br||g.elapsed<5)return;const bots=(g.bots||[]).filter(b=>!b.dead).length;const others=[...peers.values()].filter(r=>r.init&&performance.now()-r.last<6500).length;if(bots+others>0)return;
+ mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;addCoins(10);saveBest();saveProgress();
+ $('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · BLUE ZONE</div><h2 style="margin-top:12px">🏆 ชนะ! คนสุดท้ายในวงบีบ</h2><p class="lead">รับ +10 🟡 · กำจัดหมี ${g.kills} ตัว</p><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame}
+
 // ===== Random pop-up holes =====
 const HOLE_COUNT=20;
 function spawnHole(initial=false){const g=game,p=g.p;let x,y;for(let t=0;t<20;t++){const a=rand(0,TAU),d=rand(initial?260:500,initial?1500:2400);x=clamp(p.x+Math.cos(a)*d,-half+120,half-120);y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<350))break}g.holes.push({x,y,r:rand(46,66),age:0,life:rand(22,40)})}
@@ -400,7 +411,7 @@ function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){g.stage=stage;g.phase=phase;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,'#e5ffff',22);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);resolveObs(p,16);p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);
+ updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);updateZone(dt);checkVictory();
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -577,7 +588,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- drawHoles();
+ drawHoles();drawZone();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp')d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
