@@ -2827,7 +2827,9 @@ function pinchEnd(e){
    }
   }else lastTwoFingerTap=valid?{at:t,x:g.tapCenter.x,y:g.tapCenter.y}:null;
  }
- if(pinchPts.size!==2)dualGesture=null;
+ // Keep pair data until BOTH fingers are released: the first pointerup
+ // must not erase the candidate before the second pointerup arrives.
+ if(pinchPts.size===0)dualGesture=null;
  input.pointerId=null;input.dx=input.dy=0;
 }
 canvas.addEventListener('pointerup',pinchEnd);
