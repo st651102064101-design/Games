@@ -341,11 +341,12 @@ function addBounceFloat(text,color){const p=game.p;game.float.push({x:p.x,y:p.y-
 
 // ===== Practice bots: 5 roaming fighters, named Bot 1..5 =====
 const BOT_LOOK={boots:1,bag:1,armor:1,furArmor:false,leatherPack:false,level:1};
-function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(450,900);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU)}}
+function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(450,900);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),items:2+Math.floor(rand(0,7)),fleeing:false}}
 function updateBots(dt){const g=game,p=g.p;for(const b of g.bots||[]){
  if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp}continue}
- b.retarget-=dt;if(b.retarget<=0||Math.hypot(b.tx-b.x,b.ty-b.y)<12){b.retarget=rand(2.5,5);const a=rand(0,TAU),d=rand(120,700);b.tx=clamp(b.x+Math.cos(a)*d,-half+80,half-80);b.ty=clamp(b.y+Math.sin(a)*d,-half+80,half-80)}
- const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy)||1,sp=105;const ox=b.x,oy=b.y;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
+ b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if(g.weapons.length>b.items&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}
+ b.retarget-=dt;if(!b.fleeing&&(b.retarget<=0||Math.hypot(b.tx-b.x,b.ty-b.y)<12)){b.retarget=rand(2.5,5);const a=rand(0,TAU),d=rand(120,700);b.tx=clamp(b.x+Math.cos(a)*d,-half+80,half-80);b.ty=clamp(b.y+Math.sin(a)*d,-half+80,half-80)}
+ const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy)||1,sp=b.fleeing?118:105;const ox=b.x,oy=b.y;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
  b.mx=(b.x-ox)/Math.max(dt,1e-4);b.my=(b.y-oy)/Math.max(dt,1e-4);b.walk+=dt*11;if(Math.abs(dx)>4)b.dir=Math.sign(dx);
  b.x=clamp(b.x,-half+50,half-50);b.y=clamp(b.y,-half+50,half-50);resolveObs(b,18);b.s+=dt*2.6;b.hitCd=Math.max(0,b.hitCd-dt);
  // player's melee blades can wound bots
