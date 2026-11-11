@@ -441,10 +441,11 @@ function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p
  if(m.hp<=0){kill(m);g.mobs.splice(i,1)}
  }
  for(let i=g.mobs.length-1;i>=0;i--){let m=g.mobs[i];if(Math.abs(m.x-p.x)>1600||Math.abs(m.y-p.y)>1600)g.mobs.splice(i,1)}
+ const _bl=ownBlades().filter(a=>!combatSpec({type:a.type}).gun).map(a=>{const aa=g.swordPhase+a.o;return [p.x+Math.cos(aa)*20,p.y+Math.sin(aa)*20,p.x+Math.cos(aa)*a.reach,p.y+Math.sin(aa)*a.reach]});
  for(let i=g.drops.length-1;i>=0;i--){let d=g.drops[i];d.t+=dt;d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt;const damp=Math.exp(-dt*6);d.vx*=damp;d.vy*=damp;
  let vx=p.x-d.x,vy=p.y-d.y,ds=Math.hypot(vx,vy),magnet=magnetRadius(swordRange());
  if(d.age>.18&&ds<magnet&&ds>1){let v=clamp((magnet-ds)/magnet,0,1),pull=320+1250*v;d.x+=vx/ds*pull*dt;d.y+=vy/ds*pull*dt;d.vx=d.vy=0}
- if(d.age>.18&&ds<23){collect(d);g.drops.splice(i,1)}else if(d.type!=='weapon'&&d.age>140)g.drops.splice(i,1);
+ if(d.age>.18&&(ds<23||_bl.some(q=>segmentDistanceSquared(d.x,d.y,q[0],q[1],q[2],q[3])<18*18))){collect(d);g.drops.splice(i,1)}else if(d.type!=='weapon'&&d.age>140)g.drops.splice(i,1);
  }
  for(let i=g.corpses.length-1;i>=0;i--){g.corpses[i].life-=dt;if(g.corpses[i].life<=0)g.corpses.splice(i,1)}
  for(let i=g.fx.length-1;i>=0;i--){let f=g.fx[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=Math.exp(-dt*3);f.vy*=Math.exp(-dt*3);if(f.life<=0)g.fx.splice(i,1)}
