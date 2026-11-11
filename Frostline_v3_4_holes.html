@@ -1038,7 +1038,9 @@ function drawEmotionBubble(a){
 function drawEmotionsOverlay(){
  if(!game)return;
  let count=drawEmotionBubble(game.p)?1:0,max=lowGraphics()?4:9;
- for(const b of game.bots||[]){if(count>=max)break;if(!b.dead&&isVisible(b.x,b.y,130)&&drawEmotionBubble(b))count++}
+ for(const b of game.bots||[]){if(count>=max)break;
+  // Let the little 🥺 bubble finish even after a bot has been eliminated.
+  if((!b.dead||b.dead>3.6)&&isVisible(b.x,b.y,130)&&drawEmotionBubble(b))count++}
  for(const r of peers.values()){if(count>=max)break;if(r.init&&performance.now()-r.last<6500&&isVisible(r.x,r.y,130)&&drawEmotionBubble(r))count++}
 }
 
