@@ -333,7 +333,7 @@ function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!is
  const L=10+t*16;for(const pts of h.bolts){for(const pass of [0,1]){ctx.strokeStyle=pass?'rgba(255,60,90,'+a+')':'rgba(5,0,8,'+a+')';ctx.lineWidth=pass?2:6*a+1.5;ctx.beginPath();ctx.moveTo(0,0);for(const q of pts)ctx.lineTo(q[0]*L,q[1]*L);ctx.stroke()}}
  if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,10*(1-t/.25)+3,0,TAU);ctx.fill()}
  ctx.restore()}}
-function drawYouLabel(p){labelQ.push(['You',p.x,p.y+36,'#ffe28a','900 12px system-ui'])}
+function drawYouLabel(p){labelQ.push(['You',p.x,p.y+52,'#ffe28a','900 12px system-ui'])}
 function drawWeaponCount(p){const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
 
 // ===== Loot racks: 2 rows x 6 columns, or random scatter =====
@@ -415,7 +415,7 @@ function holeWarp(p){const g=game;let wx,wy;for(let t=0;t<20;t++){wx=rand(-half+
  g.dash={x0:p.x,y0:p.y,x1:wx,y1:wy,t0:now,out:.35,inDur:.25};playSound('ui',p.x,p.y)}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
- ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+36,'#ffffff','900 11px system-ui']);
+ ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+52,'#ffffff','900 11px system-ui']);
  roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore()}
 
 
@@ -1006,7 +1006,7 @@ function drawRemotePlayers(){const ts=performance.now();for(const r of peers.val
  if(!isVisible(r.x,r.y,260))continue;
  drawPlayer(r,r.look); // exact same character/gear renderer as local player
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';
- labelQ.push([r.name,r.x,r.y+36,'#ffffff','900 11px system-ui']);
+ labelQ.push([r.name,r.x,r.y+52,'#ffffff','900 11px system-ui']);
  roundRect(r.x-22,r.y-54,44,5,2,'#243e55');
  roundRect(r.x-22,r.y-54,44*clamp(r.hp/r.maxHp,0,1),5,2,'#ed7785');
  ctx.restore();
