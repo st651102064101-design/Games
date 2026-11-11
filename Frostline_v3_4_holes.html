@@ -948,6 +948,100 @@ function playStreakSound(count){
   o.connect(gain);gain.connect(audioMaster);streakOsc=o;o.onended=()=>{o.disconnect();gain.disconnect();if(streakOsc===o)streakOsc=null};o.start(t);o.stop(t+steps*.085+.17)
  }catch{}
 }
+
+// FROSTLINE CUTE EMOTIONS · 27 illustrated reactions (24 core + 3 bonus).
+// Single screen-space Canvas pass: no per-frame DOM or sprite downloads.
+const EMOTIONS={
+ idle:['😊',1,1.65,16,'#e7f7fb'],walk:['😄',1,1.45,10,'#e4f9ec'],
+ sprint:['😎💨',3,1.5,6,'#d4f1ff'],warp:['😲✨',6,1.7,2,'#e7dfff'],
+ gift:['🤩🎁',4,1.75,3,'#ffe7cf'],weapon:['😍⚔️',5,1.85,3,'#fbe0e8'],
+ level:['🥳',9,2.35,0,'#fff2ba'],pet:['🥰🐶',3,2,10,'#ffe2f1'],
+ enemy:['😳',3,1.4,9,'#ffebda'],attack:['😤',2,1.3,6,'#fbead5'],
+ crit:['😈⚡',7,1.8,5,'#e3dbff'],hurt:['😣',7,1.5,2,'#ffdfe5'],
+ heavy:['😵‍💫',10,2.25,3,'#e9e1ff'],lowhp:['😰💦',8,2,8,'#e8eeff'],
+ heal:['😌💚',8,1.8,2,'#dcf9de'],dodge:['😏✨',5,1.55,5,'#dff9ef'],
+ first:['😎',8,2,0,'#d9efff'],double:['🤩',9,2,0,'#dff8c9'],
+ triple:['😱',10,2,0,'#ffdfbe'],quad:['🤯',11,2.2,0,'#ffd7eb'],
+ penta:['👑🥳',12,2.5,0,'#e9ddff'],boss:['😨👑',9,2.2,6,'#f7dcff'],
+ hole:['😵',5,1.5,8,'#e6e7ff'],torch:['🥹🔥',2,2,35,'#ffedc9'],
+ win:['🏆🥳',12,2.6,0,'#fff3ca'],defeat:['🥺',13,2.3,0,'#ffe4ee'],
+ rare:['😍🌟',7,2,4,'#eff1ff']
+};
+function showEmotion(a,key,force=false){
+ if(!game||!a||!EMOTIONS[key])return false;
+ const s=EMOTIONS[key],t=game.elapsed,last=a.emoLast||(a.emoLast=Object.create(null));
+ if(t-(last[key]??-1e5)<s[3])return false;
+ const prior=a.emotion;
+ if(!force&&prior&&prior.until>t&&(prior.key===key||EMOTIONS[prior.key]?.[1]>s[1]))return false;
+ last[key]=t;a.emotion={key,at:t,until:t+s[2]};a.emoSerial=(a.emoSerial||0)+1;
+ return true;
+}
+function updateEmotions(dt,prevHp){
+ if(!game||mode!=='playing')return;
+ const g=game,p=g.p;
+ if(p.hp<prevHp)showEmotion(p,(prevHp-p.hp)/Math.max(1,p.maxHp)>=.16?'heavy':'hurt',true);
+ else if(p.hp>prevHp+1)showEmotion(p,'heal');
+ if(p.hp/Math.max(1,p.maxHp)<.25)showEmotion(p,'lowhp');
+ p.emoScan=(p.emoScan||0)-dt;if(p.emoScan>0)return;
+ p.emoScan=.38;
+ const speed=Math.hypot(p.mx||0,p.my||0);
+ p.emoIdle=speed<8?(p.emoIdle||0)+.38:0;
+ if(g.sprint>0)showEmotion(p,'sprint');
+ else if(speed>12)showEmotion(p,'walk');
+ else if(p.emoIdle>8)showEmotion(p,'idle');
+ if(g.dog&&p.emoIdle>2&&Math.hypot(g.dog.x-p.x,g.dog.y-p.y)<100)showEmotion(p,'pet');
+ let threat=false,attacking=false;
+ for(const m of g.mobs){
+  const dd=d2(m.x-p.x,m.y-p.y);
+  if(dd<225*225)threat=true;
+  if(dd<115*115&&m.hitTime>0)attacking=true;
+  if(m.boss&&dd<420*420)showEmotion(p,'boss');
+ }
+ if(threat)showEmotion(p,'enemy');
+ if(attacking)showEmotion(p,'attack');
+ for(const h of g.holes||[])if(Math.hypot(h.x-p.x,h.y-p.y)<h.r+65){showEmotion(p,'hole');break}
+ if(torchIsLit())showEmotion(p,'torch');
+ for(const b of g.bots||[]){
+  if(b.dead>0||!isVisible(b.x,b.y,130))continue;
+  if(b.hp/Math.max(1,b.maxHp)<.26)showEmotion(b,'lowhp');
+  else if(b.fleeing)showEmotion(b,'enemy');
+  else if(d2(b.x-p.x,b.y-p.y)<175*175)showEmotion(b,'attack');
+  else if(Math.hypot(b.mx||0,b.my||0)>80)showEmotion(b,'walk');
+ }
+}
+function emotionAccent(a){
+ const skin=a?.skin||a?.look?.skin||'scout';
+ return skin==='berry'?'#ff91ad':skin==='ninja'||skin==='wraith'?'#be9cff':
+ ['king','emperor'].includes(skin)?'#eec574':skin==='crimson'?'#ff8d9e':
+ ['aurora','dragon'].includes(skin)?'#8ee8f2':'#b5e6fc';
+}
+function drawEmotionBubble(a){
+ const e=a?.emotion,s=e&&EMOTIONS[e.key];if(!s||!game)return false;
+ const age=game.elapsed-e.at,remain=e.until-game.elapsed;
+ if(remain<=0||age<-.1)return false;
+ const x=w*.5+(a.x-cam.x)*screenScale;
+ const y=h*.5+(a.y-cam.y)*screenScale*cameraPitchScale()-clamp(116*screenScale,79,175);
+ if(x<30||x>w-30||y<108||y>h-30)return false;
+ const p=clamp(age/.17,0,1),scale=.65+.35*(1-(1-p)**3)+.1*Math.sin(p*Math.PI);
+ const fade=clamp(remain/.29,0,1),accent=emotionAccent(a),low=lowGraphics();
+ ctx.save();ctx.globalAlpha=fade;ctx.translate(x,y-Math.min(age*5,9)-Math.sin(age*5+a.x*.02)*1.7);ctx.scale(scale,scale);
+ if(!low){ctx.shadowColor=accent;ctx.shadowBlur=10}
+ roundRect(-27,-21,54,45,15,s[4]);ctx.shadowBlur=0;
+ ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-27,-21,54,45,15);ctx.stroke();
+ ctx.fillStyle=s[4];ctx.beginPath();ctx.moveTo(-7,23);ctx.lineTo(0,30);ctx.lineTo(7,23);ctx.closePath();ctx.fill();
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.font=(s[0].length>3?'23':'29')+'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif';
+ ctx.fillText(s[0],0,1);
+ if(!low){ctx.globalAlpha=fade*(.6+.4*Math.sin(age*6)**2);ctx.font='13px system-ui';ctx.fillStyle=accent;ctx.fillText('✦',-27,-15);ctx.fillText('✧',25,20)}
+ ctx.restore();return true;
+}
+function drawEmotionsOverlay(){
+ if(!game)return;
+ let count=drawEmotionBubble(game.p)?1:0,max=lowGraphics()?4:9;
+ for(const b of game.bots||[]){if(count>=max)break;if(!b.dead&&isVisible(b.x,b.y,130)&&drawEmotionBubble(b))count++}
+ for(const r of peers.values()){if(count>=max)break;if(r.init&&performance.now()-r.last<6500&&isVisible(r.x,r.y,130)&&drawEmotionBubble(r))count++}
+}
+
 function recordPlayerKill(){
  if(!game||mode!=='playing')return;
  const k=game.killCombo||(game.killCombo={total:0,count:0,last:-Infinity});
@@ -2325,6 +2419,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  if(!lowGraphics()){drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial()}
  if(game&&game.themeFlash>0){ctx.save();ctx.fillStyle=`rgba(255,110,40,${(game.themeFlash*.6).toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
  drawEnemyArrows();
+ drawEmotionsOverlay();
  // snowfall foreground (screen-space particles).
  if(!lowGraphics())for(let s of particle){ctx.globalAlpha=.36+.19*Math.sin(s.p+now*2);ellipse(s.x,s.y,s.r,s.r,'#ffffff')}ctx.globalAlpha=1;
  if(game.hitFlash>0){ctx.fillStyle=`rgba(222,78,95,${game.hitFlash*.16})`;ctx.fillRect(0,0,w,h)}
