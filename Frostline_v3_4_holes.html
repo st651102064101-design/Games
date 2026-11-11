@@ -959,8 +959,37 @@ function damageBotFromMonster(bot,damage){
  if(bot.hp<=0){const count=Math.max(0,Math.min(4,bot.blades||0));bot.dead=6;bot.blades=4;bot.hits=0;for(let i=0;i<count;i++)spawnDrop(bot.x,bot.y,'weapon',1,randWeapon(false))}
  return true;
 }
+const WARP_COOLDOWN_SECONDS=7;
+// Choose a nearby threat at a modest interval instead of scanning on every frame.
+function botWarpThreat(b){
+ let threat=null,best=260*260;
+ const p=game.p,dp=(p.x-b.x)**2+(p.y-b.y)**2;
+ if(dp<best){best=dp;threat=p}
+ for(const m of game.mobs){if(m.hp<=0)continue;const d=(m.x-b.x)**2+(m.y-b.y)**2;if(d<best){best=d;threat=m}}
+ return threat;
+}
+function tryBotWarp(b,threat){
+ if(!threat||(b.warpCd||0)>0||b.dead>0||b.warp)return false;
+ const base=Math.atan2(b.y-threat.y,b.x-threat.x);
+ for(let i=0;i<7;i++){
+  const angle=base+(i===0?0:(i%2?1:-1)*Math.ceil(i/2)*.4),distance=240;
+  const dest={x:clamp(b.x+Math.cos(angle)*distance,-half+65,half-65),y:clamp(b.y+Math.sin(angle)*distance,-half+65,half-65)};
+  resolveObs(dest,18);dest.x=clamp(dest.x,-half+65,half-65);dest.y=clamp(dest.y,-half+65,half-65);
+  if((dest.x-b.x)**2+(dest.y-b.y)**2<80**2)continue;
+  if((game.holes||[]).some(h=>Math.hypot(dest.x-h.x,dest.y-h.y)<h.r+38))continue;
+  const blocked=obsNear(dest.x,dest.y).some(o=>{const hx=OBS_W*.5,hy=OBS_H*.5,cx=clamp(dest.x,o.x-hx,o.x+hx),cy=clamp(dest.y,o.y-hy-22,o.y+hy);return (dest.x-cx)**2+(dest.y-cy)**2<18**2});
+  if(blocked)continue;
+  b.warp={x0:b.x,y0:b.y,x1:dest.x,y1:dest.y,t0:now,out:.2,inDur:.25};
+  b.warpCd=WARP_COOLDOWN_SECONDS;b.inv=Math.max(b.inv||0,.45);b.kvx=b.kvy=0;
+  if(isVisible(b.x,b.y,180)||isVisible(dest.x,dest.y,180)){warpFx.push({x0:b.x,y0:b.y,x1:dest.x,y1:dest.y,t0:now});if(warpFx.length>20)warpFx.shift();sparks(b.x,b.y,'#c8f5ff',8);playSound('ui',b.x,b.y)}
+  return true;
+ }
+ return false;
+}
 function updateBots(dt){const g=game,p=g.p;if(performance.now()>=(g.nextBotBalance||0)){g.nextBotBalance=performance.now()+1000;reconcileBots()}for(const b of g.bots||[]){
- b.inv=Math.max(0,(b.inv||0)-dt);if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp;b.hits=0;b.dead=0;b.inv=0}continue}
+ b.inv=Math.max(0,(b.inv||0)-dt);b.warpCd=Math.max(0,(b.warpCd||0)-dt);if(b.dead>0){b.warp=null;b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp;b.hits=0;b.dead=0;b.inv=0;b.warpCd=0}continue}
+ if(b.warp){const d=b.warp,elapsed=now-d.t0;if(elapsed>=d.out){b.x=d.x1;b.y=d.y1}b.inv=Math.max(b.inv,.1);if(elapsed>=d.out+d.inDur){b.warp=null;resolveObs(b,18)}continue}
+ b.warpThink=(b.warpThink||0)-dt;if(b.warpThink<=0){b.warpThink=.35+Math.random()*.25;if((b.warpCd||0)<=0&&tryBotWarp(b,botWarpThreat(b)))continue}
  b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if((g.weapons.length>b.items||b.blades<2)&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}else if(fear<380){b.tx=p.x;b.ty=p.y;b.retarget=.3}
  b.retarget-=dt;if(!b.fleeing&&(b.retarget<=0||Math.hypot(b.tx-b.x,b.ty-b.y)<12)){b.retarget=rand(2.5,5);const a=rand(0,TAU),d=rand(120,700);b.tx=clamp(b.x+Math.cos(a)*d,-half+80,half-80);b.ty=clamp(b.y+Math.sin(a)*d,-half+80,half-80)}
  const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy)||1,sp=b.fleeing?118:(fear<380?125:105);const ox=b.x,oy=b.y;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
@@ -1111,7 +1140,7 @@ function drawCelestial(){const g=game;if(!g||!g.celestial)return;const el=now-g.
  if(g.celestial.moon){ctx.fillStyle='#e8eefc';ctx.shadowColor='#c8d8ff';ctx.shadowBlur=24;ctx.beginPath();ctx.arc(x,y,26,0,TAU);ctx.fill();ctx.fillStyle='#16233a';ctx.beginPath();ctx.arc(x+10,y-4,22,0,TAU);ctx.fill()}
  else{ctx.fillStyle='#ffd45e';ctx.shadowColor='#ffb347';ctx.shadowBlur=30;ctx.beginPath();ctx.arc(x,y,28,0,TAU);ctx.fill()}
  ctx.restore()}
-function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
+function drawBot(b){ctx.save();if(b.warp){const el=now-b.warp.t0,k=el<b.warp.out?1-el/b.warp.out:(el-b.warp.out)/b.warp.inDur;ctx.globalAlpha=clamp(k,.08,1)}drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+52,'#ffffff','900 11px system-ui']);
  roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore()}
@@ -1694,7 +1723,7 @@ function syncBattleMusic(){const want=mode==='playing'&&!paused&&!!game;const vo
  try{const track=battleMusic;if(!want||vol<=.001){if(!track.paused)track.pause();return}track.volume=vol;track.playbackRate=musicIntense?1.08:1;if(track.paused)track.play().catch(()=>{})}catch(e){}}
 setInterval(syncBattleMusic,300);
 const pauseGame=on=>{if(on&&(mode!=='playing'||!game))return;paused=on;$('pauseMenu').hidden=!on;if(on)clearInput()};$('pauseBtn').onclick=()=>pauseGame(!paused);$('resumeBtn').onclick=()=>pauseGame(false);$('homeBtn').onclick=()=>{try{saveBest();saveProgress()}catch{}location.reload()};document.addEventListener('keydown',e=>{if(mode==='playing'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){e.preventDefault();pauseGame(!paused)}});setInterval(()=>{const on=mode==='playing'&&!!game;$('pauseBtn').hidden=!on;if(!on&&paused){paused=false;$('pauseMenu').hidden=true}},200);
-let lastTap={t:0,x:0,y:0};document.addEventListener('pointerdown',e=>{if(mode!=='playing'||!game||paused||(e.target.closest&&e.target.closest('#pauseBtn,#pauseMenu,button,#shopPanel,#sprintHud')))return;const t=performance.now();if(t-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<50){lastTap.t=0;if((game.sprintCd||0)<=0){teleportHero(e.clientX,e.clientY);game.sprintCd=7}}else lastTap={t,x:e.clientX,y:e.clientY}});setInterval(()=>{const hud=$('sprintHud');if(!hud)return;const on=mode==='playing'&&!!game&&!paused;hud.hidden=!on;if(!on)return;const g=game,sp=g.sprint>0,cd=g.sprintCd>0;hud.classList.toggle('on',sp);const frac=sp?g.sprint/1.5:cd?(7-g.sprintCd)/7:1;$('sprintRing').style.strokeDashoffset=(113.1*(1-frac)).toFixed(1);$('sprintNum').textContent=sp?Math.ceil(g.sprint):cd?Math.ceil(g.sprintCd):'⚡'},100);
+let lastTap={t:0,x:0,y:0};document.addEventListener('pointerdown',e=>{if(mode!=='playing'||!game||paused||(e.target.closest&&e.target.closest('#pauseBtn,#pauseMenu,button,#shopPanel,#sprintHud')))return;const t=performance.now();if(t-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<50){lastTap.t=0;if((game.sprintCd||0)<=0){teleportHero(e.clientX,e.clientY);game.sprintCd=WARP_COOLDOWN_SECONDS}}else lastTap={t,x:e.clientX,y:e.clientY}});setInterval(()=>{const hud=$('sprintHud');if(!hud)return;const on=mode==='playing'&&!!game&&!paused;hud.hidden=!on;if(!on)return;const g=game,sp=g.sprint>0,cd=g.sprintCd>0;hud.classList.toggle('on',sp);const frac=sp?g.sprint/1.5:cd?(7-g.sprintCd)/7:1;$('sprintRing').style.strokeDashoffset=(113.1*(1-frac)).toFixed(1);$('sprintNum').textContent=sp?Math.ceil(g.sprint):cd?Math.ceil(g.sprintCd):'⚡'},100);
 
 const UI_EN={'ร้านสกินตัวละคร':'Character skins','ตัวละคร':'characters','ร้านค้า':'Shop','อัตโนมัติ':'Auto','ประหยัด':'Low','ปกติ':'Normal','สถิติสูงสุด:':'Best:','นาที':'min','ด่าน':'Stage','เฟส':'Phase','ฆ่าผู้เล่นอื่นรับ':'Defeat a player to earn','ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า':'Buy weapons for your next game','เล่นได้ทั้งมือถือและคอมพิวเตอร์':'Play on mobile or desktop','ไม่ต้องเชื่อมต่ออินเทอร์เน็ต':'Offline play available','อาวุธ':'Weapons','สกิน':'Skins','ปิด':'Close','เลือก':'Choose','หยุดชั่วคราว':'Paused','เล่นต่อ':'Resume','หน้าหลัก':'Home','กด P หรือ Esc เพื่อเล่นต่อ':'Press P or Esc to resume','เก่งมาก!':'Great job!','พร้อมออกผจญภัยอีกครั้งไหม?':'Ready for another adventure?','เล่นอีกครั้ง':'Play again','เวลา':'Time','กำจัด':'Defeated','กระเป๋าวัตถุดิบ':'Materials','กระเป๋าและใช้ไอเทม':'Inventory & items','ใช้เนื้อฟื้นเลือด':'Eat meat','ใช้อาหารสำรอง':'Use food','ไปคราฟต์อุปกรณ์':'Craft equipment','อัปเกรดอุปกรณ์':'Upgrade equipment','อัปเกรด':'Upgrade','คราฟต์':'Craft','สร้างแล้ว':'Crafted','เหรียญ':'coins','เลเวล':'Level','ฟรี':'Free','สวมใส่':'Equip','ใช้อยู่':'Equipped','ขาด':'Need','รับฟรี':'Claim free','ของตกแต่ง ไม่มีโบนัสพลังโจมตี':'Cosmetic only, no attack bonus','เลือกเพื่อดูตัวอย่าง · ซื้อครั้งเดียวใช้ได้ถาวร · สวมใส่แล้วมีผลในเกมรอบถัดไป':'Preview · Buy once · Equip for your next game','ซื้อได้ทุกชิ้น · ราคาตามความหายาก · ของที่ซื้อจะใช้ตอนเริ่มเกมครั้งถัดไป':'Buy weapons for your next game','รายชื่อ':'Players','ความสามารถ':'Ability','เนื้อหมี':'Meat','หนังหมี':'Hide','กระดูกหมี':'Bone','กรงเล็บ':'Claw','ผลึกน้ำแข็ง':'Ice crystal','เสื้อหนังหมี':'Fur armor','กระเป๋าหนัง':'Leather pack','อาหารสำรอง':'Food','ดาบคู่':'Twin blades','คมดาบ':'Sharp blade','ดาบยักษ์':'Long reach','ฟันเร็ว':'Fast spin','วิ่งไว':'Speed','ยืนหยัด':'Guard','ฟื้นฟู':'Regeneration','นักล่าชีวิต':'Lifesteal','คลื่นดาบ':'Blade wave','เรดาร์':'Radar','รองเท้า':'Boots','เกราะ':'Armor','แม่เหล็ก':'Magnet','กระเป๋า':'Bag'};
 const uiEnglishEntries=Object.entries(UI_EN).sort((a,b)=>b[0].length-a[0].length),uiOriginal=new WeakMap();
