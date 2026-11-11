@@ -381,6 +381,8 @@ function pushBodies(p){const R=34;const bodies=[];for(const r of peers.values())
  for(const q of bodies){const ox=p.x-q.x,oy=p.y-q.y,d=Math.hypot(ox,oy);if(d<R){const nx=d>1e-6?ox/d:1,ny=d>1e-6?oy/d:0;p.x=q.x+nx*R;p.y=q.y+ny*R}}}
 // Dash/warp trail: a streak from the start point to the new spot, with a fading afterimage
 function drawWarpFx(){warpFx=warpFx.filter(f=>now-f.t0<.38);for(const f of warpFx){const k=Math.max(0,1-(now-f.t0)/.38);ctx.save();ctx.lineCap='round';ctx.globalAlpha=k*.7;ctx.strokeStyle='#e6fbff';ctx.lineWidth=12*k+2;ctx.beginPath();ctx.moveTo(f.x0,f.y0-10);ctx.lineTo(f.x1,f.y1-10);ctx.stroke();ctx.globalAlpha=k*.3;ctx.strokeStyle='#8fe3ff';ctx.lineWidth=28*k+4;ctx.stroke();ctx.globalAlpha=k*.4;ctx.fillStyle='#bfeeff';ctx.beginPath();ctx.arc(f.x0,f.y0-10,18*(0.6+0.4*k),0,TAU);ctx.fill();ctx.restore()}}
+// Bots do not overlap each other: pairs closer than 34 units are pushed apart
+function separateBots(){const L=(game.bots||[]).filter(b=>!b.dead);for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],c=L[j],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy),R=34;if(d<R){const nx=d>1e-6?dx/d:1,ny=d>1e-6?dy/d:0,k=(R-d)/2;a.x-=nx*k;a.y-=ny*k;c.x+=nx*k;c.y+=ny*k}}}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+36,'#ffffff','900 11px system-ui']);
@@ -434,7 +436,7 @@ function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){g.stage=stage;g.phase=phase;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,'#e5ffff',22);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);updateSlashes(dt);
+ updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);separateBots();updateSlashes(dt);
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
