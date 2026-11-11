@@ -607,7 +607,66 @@ function holeWarp(p){const g=game;let wx,wy;for(let t=0;t<20;t++){wx=rand(-half+
 function gameHour(){return ((game?game.elapsed:0)/60*24)%24}
 function timeOfDayLabel(){const h=gameHour();const hh=Math.floor(h),mm=Math.floor((h-hh)*60);const name=h<6?'กลางคืน':h<11?'เช้า':h<17?'กลางวัน':h<19?'เย็น':'กลางคืน';return `${name} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`}
 function nightDarkness(h){if(h>=20||h<5)return .5;if(h>=5&&h<7)return .5*(1-(h-5)/2);if(h>=18&&h<20)return .5*(h-18)/2;return 0}
-function drawDayNight(){if(!game)return;const d=nightDarkness(gameHour())*(game.stage===4?.48:1);if(d<=.01)return;ctx.save();ctx.fillStyle=`rgba(8,22,58,${d.toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
+// Night lighting is composed on a separate transparent layer. Erasing the
+// layer around each torch reveals the ORIGINAL scene rather than merely
+// putting an orange tint over scenery that is still dark.
+const torchShadeCanvas=document.createElement('canvas');
+const torchShadeCtx=torchShadeCanvas.getContext('2d',{alpha:true});
+function torchLightHolders(){
+ if(!game)return [];
+ const result=[game.p],time=performance.now();
+ for(const r of peers.values()){
+  if(result.length>=7)break; // Bound both rendering time and light count.
+  if(r.init&&time-r.last<1600&&isVisible(r.x,r.y,380))result.push(r);
+ }
+ return result;
+}
+function torchScreenPosition(p){
+ const face=(p.dir||1)<0?-1:1;
+ return {
+  x:w/2+(p.x+face*24-cam.x)*screenScale,
+  y:h/2+(p.y-47-cam.y)*screenScale,
+  radius:clamp(270*screenScale,155,410)
+ };
+}
+function drawDayNight(){
+ if(!game)return;
+ const darkness=nightDarkness(gameHour())*(game.stage===4?.48:1);
+ if(darkness<=.01)return;
+ if(!torchIsLit()||!torchShadeCtx){
+  ctx.save();ctx.fillStyle='rgba(8,22,58,'+darkness.toFixed(3)+')';
+  ctx.fillRect(0,0,w,h);ctx.restore();return;
+ }
+ // Half-resolution for low quality prevents unnecessarily large buffers.
+ const quality=lowGraphics()?.5:1;
+ const bw=Math.max(1,Math.ceil(w*quality)),bh=Math.max(1,Math.ceil(h*quality));
+ if(torchShadeCanvas.width!==bw||torchShadeCanvas.height!==bh){
+  torchShadeCanvas.width=bw;torchShadeCanvas.height=bh;
+ }
+ const mask=torchShadeCtx;
+ mask.setTransform(quality,0,0,quality,0,0);
+ mask.globalCompositeOperation='source-over';
+ mask.clearRect(0,0,w,h);
+ mask.fillStyle='rgba(8,22,58,'+darkness.toFixed(3)+')';
+ mask.fillRect(0,0,w,h);
+ // Remove night darkness gradually around actual held flames.
+ mask.globalCompositeOperation='destination-out';
+ for(const p of torchLightHolders()){
+  const pos=torchScreenPosition(p),x=pos.x,y=pos.y,r=pos.radius;
+  if(x+r<0||x-r>w||y+r<0||y-r>h)continue;
+  const rPulse=r*(.99+.015*Math.sin(now*14+p.x*.1));
+  const g=mask.createRadialGradient(x,y,rPulse*.01,x,y,rPulse);
+  g.addColorStop(0,'rgba(0,0,0,1)');
+  g.addColorStop(.24,'rgba(0,0,0,1)');
+  g.addColorStop(.46,'rgba(0,0,0,.88)');
+  g.addColorStop(.7,'rgba(0,0,0,.39)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  mask.fillStyle=g;
+  mask.fillRect(x-rPulse,y-rPulse,rPulse*2,rPulse*2);
+ }
+ mask.globalCompositeOperation='source-over';
+ ctx.save();ctx.drawImage(torchShadeCanvas,0,0,w,h);ctx.restore();
+}
 // Magma map: trees and ice become volcanic rock shards
 function drawObsidian(x,y,sc){ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);poly([[-14,6],[-6,-18],[4,-10],[14,6]],'#2a1d1d');poly([[-6,-18],[4,-10],[0,6]],'#4a3030');ctx.restore()}
 // Bears can strike from range: a claw wave travels toward the hero and hits on contact
@@ -923,18 +982,13 @@ function drawTorchInHand(p){
 // Add warm light after the existing night tint has been drawn.
 function drawNightTorchLights(){
  if(!torchIsLit())return;
- const brightness=clamp(nightDarkness(gameHour())/.5,0,1),time=performance.now();
- const holders=[game.p];
- for(const r of peers.values()){
-  if(holders.length>=7)break;
-  if(r.init&&time-r.last<1600&&isVisible(r.x,r.y,200))holders.push(r);
- }
+ const brightness=clamp(nightDarkness(gameHour())/.5,0,1);
+ const holders=torchLightHolders();
  ctx.save();ctx.globalCompositeOperation='screen';
  for(const p of holders){
-  const face=(p.dir||1)<0?-1:1;
-  const sx=w/2+(p.x+face*24-cam.x)*screenScale;
-  const sy=h/2+(p.y-54-cam.y)*screenScale;
-  const radius=clamp(190*screenScale,105,280);
+  const pos=torchScreenPosition(p);
+  const sx=pos.x,sy=pos.y;
+  const radius=pos.radius*.83;
   if(sx+radius<0||sx-radius>w||sy+radius<0||sy-radius>h)continue;
   const pulse=.94+.06*Math.sin(now*16+p.x*.2);
   const g=ctx.createRadialGradient(sx,sy,2,sx,sy,radius);
