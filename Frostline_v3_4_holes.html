@@ -521,7 +521,10 @@ function newGame(){
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
 function spawnGroundWeapon(near=false,forcedType=null){if(!game||!game._bossDropContext)return;let p=game.p,x,y;if(near){let a=rand(0,TAU),d=rand(100,380);x=clamp(p.x+Math.cos(a)*d,-half+90,half-90);y=clamp(p.y+Math.sin(a)*d,-half+90,half-90)}else{x=rand(-half+80,half-80);y=rand(-half+80,half-80)}spawnDrop(x,y,'weapon',1,randWeapon(game.stage>2,forcedType));}
-function clearInput(){input.up=input.down=input.left=input.right=false;input.pointerId=null;input.dx=input.dy=0}
+const movementKeys=new Set();
+function clearInput(){movementKeys.clear();input.up=input.down=input.left=input.right=false;input.pointerId=null;input.dx=input.dy=0}
+function movementCode(e){const physical={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};const code=e.code;if(physical[code])return code;const fallback={w:'KeyW',s:'KeyS',a:'KeyA',d:'KeyD',arrowup:'ArrowUp',arrowdown:'ArrowDown',arrowleft:'ArrowLeft',arrowright:'ArrowRight'};return fallback[(e.key||'').toLowerCase()]||''}
+function syncMovement(){input.up=movementKeys.has('KeyW')||movementKeys.has('ArrowUp');input.down=movementKeys.has('KeyS')||movementKeys.has('ArrowDown');input.left=movementKeys.has('KeyA')||movementKeys.has('ArrowLeft');input.right=movementKeys.has('KeyD')||movementKeys.has('ArrowRight')}
 const PHASE_SECONDS=15;
 function phaseAt(elapsed){const step=Math.floor(Math.max(0,elapsed)/PHASE_SECONDS);return {stage:Math.floor(step/3)+1,phase:step%3+1}}
 function monsterPower(stage,phase){const step=(stage-1)*3+phase-1;return {hp:1+step*.45,damage:Math.min(16,1+step*.65),speed:Math.min(2.4,1+step*.05),spawn:Math.max(.6,1.9-step*.1)*2,elite:Math.min(.3,step*.02)}}
@@ -1598,9 +1601,19 @@ function setPointer(e){if(input.pointerId===null)return;input.x=e.clientX;input.
 canvas.addEventListener('pointerdown',e=>{if(audioCtx&&audioCtx.state!=='running')audioInitialize();if(mode!=='playing'||input.pointerId!==null)return;input.pointerId=e.pointerId;input.ox=e.clientX;input.oy=e.clientY;input.x=e.clientX;input.y=e.clientY;input.dx=input.dy=0;try{canvas.setPointerCapture(e.pointerId)}catch{}},{passive:true});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId===input.pointerId)setPointer(e)},{passive:true});
 function releasePointer(e){if(e.pointerId===input.pointerId){input.pointerId=null;input.dx=input.dy=0}}
-canvas.addEventListener('pointerup',releasePointer);canvas.addEventListener('pointercancel',releasePointer);window.addEventListener('blur',clearInput);document.addEventListener('visibilitychange',()=>{if(!audioCtx)return;if(document.hidden)audioCtx.suspend().catch(()=>{});else if(mode==='playing')audioCtx.resume().catch(()=>{})});
-window.addEventListener('keydown',e=>{if(audioCtx&&audioCtx.state!=='running')audioInitialize();let key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();if(e.repeat&&['b','escape','i','h','l'].includes(key))return;if(key==='l'){showLevelChoice();return;}if(key==='b'){if(mode==='shop')closeShop();else openShop();return}if(key==='i'){if(mode==='inventory')closeInventory();else openInventory();return}if(key==='h'){if(mode==='playing')useMeat();return}if(key==='escape'){closeActivePanel();return}if(key==='p')return;if(key==='w'||key==='arrowup')input.up=true;if(key==='s'||key==='arrowdown')input.down=true;if(key==='a'||key==='arrowleft')input.left=true;if(key==='d'||key==='arrowright')input.right=true});
-window.addEventListener('keyup',e=>{let key=e.key.toLowerCase();if(key==='w'||key==='arrowup')input.up=false;if(key==='s'||key==='arrowdown')input.down=false;if(key==='a'||key==='arrowleft')input.left=false;if(key==='d'||key==='arrowright')input.right=false});
+canvas.addEventListener('pointerup',releasePointer);canvas.addEventListener('pointercancel',releasePointer);window.addEventListener('blur',clearInput);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInput();if(!audioCtx)return;if(document.hidden)audioCtx.suspend().catch(()=>{});else if(mode==='playing')audioCtx.resume().catch(()=>{})});
+window.addEventListener('keydown',e=>{
+ const el=e.target;if(el&&(el.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)))return;
+ if(audioCtx&&audioCtx.state!=='running')audioInitialize();
+ const move=movementCode(e);
+ if(move){if(mode==='playing'&&!paused){e.preventDefault();movementKeys.add(move);syncMovement()}return}
+ const key=(e.key||'').toLowerCase();
+ if(e.repeat&&['b','escape','i','h','l'].includes(key))return;
+ if(key==='l'){showLevelChoice();return}if(key==='b'){if(mode==='shop')closeShop();else openShop();return}
+ if(key==='i'){if(mode==='inventory')closeInventory();else openInventory();return}
+ if(key==='h'){if(mode==='playing'&&!paused)useMeat();return}if(key==='escape'){closeActivePanel();return}
+});
+window.addEventListener('keyup',e=>{const move=movementCode(e);if(move){movementKeys.delete(move);syncMovement()}});
 
 
 let warpFx=[];
