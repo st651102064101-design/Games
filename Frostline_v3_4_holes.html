@@ -611,6 +611,15 @@ function drawGround(){const mix=game?(game.themeMix||0):0,hot=mix>.5;ctx.fillSty
  let gx=Math.floor(minX/180)*180,gy=Math.floor(minY/180)*180;
  for(let x=gx;x<maxX;x+=180)for(let y=gy;y<maxY;y+=180){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
  if(hot){for(let x=gx;x<maxX;x+=360)for(let y=gy;y<maxY;y+=360){const j=Math.sin(x*.011+y*.017);ctx.strokeStyle=`rgba(255,150,70,${(.3+.25*Math.sin(now*2+x*.01+y*.01)).toFixed(3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+j*40);ctx.lineTo(x+120,y+60+j*30);ctx.lineTo(x+200,y+20-j*30);ctx.stroke()}}
+ if(hot){
+  // lava streams slowly crossing the ground
+  for(let i=0;i<6;i++){const bx=cx-vw*.5+((i*211+now*18)%(vw*1.1)),by=cy-vh*.5+((i*137)%vh);
+   ctx.save();ctx.lineCap='round';ctx.globalAlpha=.55*mix;ctx.strokeStyle='#ff7a22';ctx.lineWidth=12;ctx.beginPath();
+   for(let k=0;k<10;k++){const x=bx+k*30,y=by+Math.sin(now*1.5+k*.8+i)*8+k*6;k?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+   ctx.globalAlpha=.9*mix;ctx.strokeStyle='#ffd27a';ctx.lineWidth=4;ctx.stroke();ctx.restore()}
+  // rising smoke from vents
+  for(let i=0;i<14;i++){const t=(now*.08+i*.37)%1;const x=cx+Math.sin(i*12.9)*vw*.5,y=cy+vh*.3-t*vh*.9,r=20+t*44;ctx.save();ctx.globalAlpha=(1-t)*.25*mix;ctx.fillStyle='#5a4a4a';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();ctx.restore()}
+ }
  // Organic small dotted snow texture: deterministic cells.
  for(let x=Math.floor(minX/77)*77;!lowGraphics()&&x<maxX;x+=77)for(let y=Math.floor(minY/77)*77;y<maxY;y+=77){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
  // Ring around center clears: environmental guide, no border.
