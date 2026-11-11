@@ -2754,6 +2754,10 @@ function showTiltNotice(){
 let userZoom=1;
 const pinchPts=new Map();
 let dualGesture=null;
+// Two deliberate simultaneous two-finger taps end the current run;
+// slides, pinch zoom, tilts and prolonged holds never count.
+let lastTwoFingerTap=null;
+const twoFingerDownAt=new Map();
 function pinchDist(){
  const p=[...pinchPts.values()];
  return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;
@@ -2765,6 +2769,11 @@ function startDualGesture(){
  dualGesture={mode:'pending',points:p.map(v=>({...v})),
   distance:Math.max(1,pinchDist()),centerY:(p[0].y+p[1].y)*.5,
   startTilt:cameraTiltTarget,startZoom:userZoom};
+ const down=[...twoFingerDownAt.values()];
+ dualGesture.tapStart=Math.min(...down);
+ dualGesture.tapTogether=Math.max(...down)-dualGesture.tapStart<=130;
+ dualGesture.tapCenter={x:(p[0].x+p[1].x)*.5,y:(p[0].y+p[1].y)*.5};
+ dualGesture.tapValid=dualGesture.tapTogether;
  input.pointerId=null;input.dx=input.dy=0;
 }
 function updateDualGesture(){
@@ -2779,6 +2788,7 @@ function updateDualGesture(){
  // Touch events arrive one finger at a time: do not mistake the first
  // vertical move of a synchronized two-finger swipe for a pinch.
  const bothActive=moved0>7&&moved1>7;
+ if(moved0>13||moved1>13)g.tapValid=false;
  if(g.mode==='pending'){
   if(parallel&&travel>11&&spread<Math.max(20,travel*.7))g.mode='tilt';
   else if(spread>17&&bothActive&&(!parallel||spread>travel*1.25))g.mode='zoom';
@@ -2793,22 +2803,36 @@ function updateDualGesture(){
 canvas.addEventListener('pointerdown',e=>{
  if(mode!=='playing'||paused||e.pointerType==='mouse')return;
  pinchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ twoFingerDownAt.set(e.pointerId,performance.now());
  if(pinchPts.size===2){
   startDualGesture();try{canvas.setPointerCapture(e.pointerId)}catch{}
- }else if(pinchPts.size>2){dualGesture=null;input.pointerId=null;input.dx=input.dy=0}
+ }else if(pinchPts.size>2){dualGesture=null;lastTwoFingerTap=null;input.pointerId=null;input.dx=input.dy=0}
 },{passive:true});
 canvas.addEventListener('pointermove',e=>{
  if(!pinchPts.has(e.pointerId))return;
  pinchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});updateDualGesture();
 },{passive:true});
 function pinchEnd(e){
- pinchPts.delete(e.pointerId);
+ const g=dualGesture,current=pinchPts.get(e.pointerId),t=performance.now();
+ if(g&&current&&Math.hypot(e.clientX-current.x,e.clientY-current.y)>13)g.tapValid=false;
+ if(e.type==='pointercancel'&&g)g.tapValid=false;
+ pinchPts.delete(e.pointerId);twoFingerDownAt.delete(e.pointerId);
+ if(g&&pinchPts.size===0){
+  const valid=g.mode==='pending'&&g.tapValid&&g.tapTogether&&t-g.tapStart<260;
+  if(valid&&lastTwoFingerTap&&t-lastTwoFingerTap.at<410&&
+     Math.hypot(g.tapCenter.x-lastTwoFingerTap.x,g.tapCenter.y-lastTwoFingerTap.y)<85){
+   lastTwoFingerTap=null;
+   if(mode==='playing'&&!paused&&game){
+    game.p.hp=0;endGame(); // intentional self-elimination; no PvP kill credit
+   }
+  }else lastTwoFingerTap=valid?{at:t,x:g.tapCenter.x,y:g.tapCenter.y}:null;
+ }
  if(pinchPts.size!==2)dualGesture=null;
  input.pointerId=null;input.dx=input.dy=0;
 }
 canvas.addEventListener('pointerup',pinchEnd);
 canvas.addEventListener('pointercancel',pinchEnd);
-window.addEventListener('blur',()=>{pinchPts.clear();dualGesture=null});
+window.addEventListener('blur',()=>{pinchPts.clear();twoFingerDownAt.clear();dualGesture=null;lastTwoFingerTap=null});
 
 function writeMeta(patch){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');Object.assign(o,patch);localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch{}}
 function isGod(){return String(PLAYER_NAME||'').trim().toLowerCase()==='god'}
