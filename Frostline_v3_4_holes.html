@@ -345,7 +345,7 @@ function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.le
  note('🎁 พบกองของตกอยู่แถวนี้!')}
 
 // ===== Printer walls: horizontal rows, mirrored alternately, block player and bears =====
-function makeObstacles(){const list=[],walls=34;for(let k=0;k<walls;k++){let cx,cy,tries=0;do{cx=rand(-half+400,half-400);cy=rand(-half+400,half-400);tries++}while(tries<30&&Math.hypot(cx-game.p.x,cy-game.p.y)<420);
+function makeObstacles(){const list=[],walls=340;for(let k=0;k<walls;k++){let cx,cy,tries=0;do{cx=rand(-half+400,half-400);cy=rand(-half+400,half-400);tries++}while(tries<30&&Math.hypot(cx-game.p.x,cy-game.p.y)<420);
  const n=3+Math.floor(Math.random()*3),step=OBS_W*.92;for(let i=0;i<n;i++){list.push({x:cx+(i-(n-1)/2)*step,y:cy,flip:(i+k)%2===1})}}return list}
 function resolveObs(e,r){const obs=game.obstacles;if(!obs)return;const hx=OBS_W*.4,hy=OBS_H*.28;for(const o of obs){if(Math.abs(e.x-o.x)>hx+r+20||Math.abs(e.y-o.y)>hy+r+20)continue;
  const cx=clamp(e.x,o.x-hx,o.x+hx),cy=clamp(e.y,o.y-hy,o.y+hy),dx=e.x-cx,dy=e.y-cy,d2v=dx*dx+dy*dy;
