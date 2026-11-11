@@ -2312,6 +2312,8 @@ function pinchDist(){
  return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;
 }
 function startDualGesture(){
+ // A two-finger gesture is never a double-tap teleport.
+ lastTap.t=0;
  const p=[...pinchPts.values()];
  dualGesture={mode:'pending',points:p.map(v=>({...v})),
   distance:Math.max(1,pinchDist()),centerY:(p[0].y+p[1].y)*.5,
