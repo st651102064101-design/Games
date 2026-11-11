@@ -70,6 +70,8 @@ body{background:#b7dfed;touch-action:none;user-select:none}
 body.low-graphics .stage,body.low-graphics #coinBtn,body.low-graphics .hudAction,body.low-graphics #overlay,body.low-graphics #shop,body.low-graphics .dialogScreen{backdrop-filter:none;box-shadow:none}
 body.low-graphics #xpDock{filter:none}
 #graphicsMode{font:inherit;color:#275970;background:#fff;border:1px solid #9fcbd8;border-radius:8px;padding:6px}
+#bagBtn,#eatBtn{display:none!important}
+#bottomHud{justify-content:center}
 </style>
 </head>
 <body>
@@ -86,7 +88,7 @@ body.low-graphics #xpDock{filter:none}
 <div id="shop" hidden role="dialog" aria-modal="true" aria-label="ร้านอัปเกรด">
  <div class="shopPanel"><div class="shopHead"><div><h2>อัปเกรดอุปกรณ์</h2><p>ใช้เหรียญจากการกำจัดหมีและเก็บของ</p></div><button class="close" id="closeShop" aria-label="ปิดร้าน">×</button></div>
  <div id="shopBalance">🟡 เหรียญ 0</div><div id="shopTabs"><button id="tabUpgrade" class="active">⚔️ อัปเกรด</button><button id="tabCraft">🔨 คราฟต์</button></div><div id="upgrades"></div><div id="craftList" hidden></div>
- <div class="shopFoot">ทุกชิ้นส่งผลต่อการเล่นจริง · กด B หรือ Esc เพื่อกลับสู่สนาม</div></div>
+ <button id="shopInventory" class="secondary" style="width:100%;margin-top:8px">🎒 กระเป๋าและใช้ไอเทม</button><div class="shopFoot">ทุกชิ้นส่งผลต่อการเล่นจริง · กด B หรือ Esc เพื่อกลับสู่สนาม</div></div>
 </div>
 <div id="inventory" class="dialogScreen" hidden role="dialog" aria-modal="true" aria-label="กระเป๋าวัตถุดิบ"><div class="dialogPanel"><div class="dialogTitle"><div><h2>🎒 กระเป๋าวัตถุดิบ</h2><p>ของที่เก็บจากหมีใช้คราฟต์และพัฒนาตัวละครได้</p></div><button class="close" id="closeBag" aria-label="ปิดกระเป๋า">×</button></div><div id="materialList" class="matGrid"></div><div id="equipmentInfo" class="recipeNote"></div><div class="recipeNote" id="weaponCountLabel"></div><div id="weaponBagList"></div><div id="weaponSelect" class="tabBar" style="margin:8px 0"></div><button id="useRation" class="secondary" style="width:100%;margin:5px 0 8px">🍲 ใช้อาหารสำรอง</button><button id="useMeat" class="primary" style="margin-top:8px">🥩 ใช้เนื้อฟื้นเลือด</button><button id="fromBagShop" class="secondary" style="width:100%;margin-top:9px">🔨 ไปคราฟต์อุปกรณ์</button></div></div>
 <div id="levelChoice" class="dialogScreen" hidden role="dialog" aria-modal="true" aria-label="เลือกความสามารถเมื่อเลเวลเพิ่ม"><div class="dialogPanel"><div class="logoTop">❄ FROSTLINE · LEVEL UP</div><div class="dialogTitle" style="margin-top:8px"><div><h2 id="levelHeading">เลเวล 2</h2><p>เลือกพลังใหม่ 1 อย่างเพื่อใช้ในการเล่นรอบนี้</p></div><div style="font-size:34px">✨</div></div><div class="perkList" id="perkChoices"></div></div></div>
@@ -209,6 +211,7 @@ function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่�
 function swingDamage(){let base=16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0);return base*(1+(game.perks.sharp||0)*.2)}
 function swordCount(){return Math.min(7,1+(game.upd.sword>=3?1:0)+(game.upd.sword>=5?1:0)+(game.perks.twin||0))}
 function swordRange(){return (75+(game.upd.sword-1)*5)*(1+(game.perks.range||0)*.12)}
+function magnetRadius(weaponRange,bagLevel,pack,perk){return weaponRange+(bagLevel-1)*48+(pack?42:0)+perk*48}
 function allActiveWeapons(){return game.weapons.slice(0,MAX_ACTIVE_EXTRA)}
 function orbitOffset(index,total){return total>0?index*TAU/total:0}
 function orbitCount(){return swordCount()+Math.min(game.weapons.length,MAX_ACTIVE_EXTRA)}
@@ -242,8 +245,8 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
  }
  for(let i=g.mobs.length-1;i>=0;i--){let m=g.mobs[i];if(Math.abs(m.x-p.x)>1600||Math.abs(m.y-p.y)>1600)g.mobs.splice(i,1)}
  for(let i=g.drops.length-1;i>=0;i--){let d=g.drops[i];d.t+=dt;d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt;const damp=Math.exp(-dt*6);d.vx*=damp;d.vy*=damp;
- let vx=p.x-d.x,vy=p.y-d.y,ds=Math.hypot(vx,vy),magnet=75+(g.upd.bag-1)*48+(g.craft.leatherPack?42:0)+(g.perks.magnet||0)*48;
- if(d.type!=='weapon'&&d.age>.18&&ds<magnet&&ds>1){let v=clamp((magnet-ds)/magnet,0,1),pull=175+800*v;d.x+=vx/ds*pull*dt;d.y+=vy/ds*pull*dt;d.vx=d.vy=0}
+ let vx=p.x-d.x,vy=p.y-d.y,ds=Math.hypot(vx,vy),magnet=magnetRadius(swordRange(),g.upd.bag,g.craft.leatherPack,g.perks.magnet||0);
+ if(d.age>.18&&ds<magnet&&ds>1){let v=clamp((magnet-ds)/magnet,0,1),pull=320+1250*v;d.x+=vx/ds*pull*dt;d.y+=vy/ds*pull*dt;d.vx=d.vy=0}
  if(d.age>.18&&ds<23){collect(d);g.drops.splice(i,1)}else if(d.type!=='weapon'&&d.age>140)g.drops.splice(i,1);
  }
  for(let i=g.corpses.length-1;i>=0;i--){g.corpses[i].life-=dt;if(g.corpses[i].life<=0)g.corpses.splice(i,1)}
@@ -402,7 +405,7 @@ function releasePointer(e){if(e.pointerId===input.pointerId){input.pointerId=nul
 canvas.addEventListener('pointerup',releasePointer);canvas.addEventListener('pointercancel',releasePointer);window.addEventListener('blur',clearInput);
 window.addEventListener('keydown',e=>{let key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();if(e.repeat&&['b','escape','i','h','l'].includes(key))return;if(key==='l'){showLevelChoice();return;}if(key==='b'){if(mode==='shop')closeShop();else openShop();return}if(key==='i'){if(mode==='inventory')closeInventory();else openInventory();return}if(key==='h'){if(mode==='playing')useMeat();return}if(key==='escape'){closeActivePanel();return}if(key==='p')return;if(key==='w'||key==='arrowup')input.up=true;if(key==='s'||key==='arrowdown')input.down=true;if(key==='a'||key==='arrowleft')input.left=true;if(key==='d'||key==='arrowright')input.right=true});
 window.addEventListener('keyup',e=>{let key=e.key.toLowerCase();if(key==='w'||key==='arrowup')input.up=false;if(key==='s'||key==='arrowdown')input.down=false;if(key==='a'||key==='arrowleft')input.left=false;if(key==='d'||key==='arrowright')input.right=false});
-$('levelReady').onclick=showLevelChoice; $('playBtn').onclick=newGame;$('coinBtn').onclick=()=>openShop();$('closeShop').onclick=closeShop;$('tabUpgrade').onclick=()=>{shopTab='upgrade';renderShop()};$('tabCraft').onclick=()=>{shopTab='craft';renderShop()};$('bagBtn').onclick=openInventory;$('eatBtn').onclick=()=>{if(mode==='playing')useMeat()};$('closeBag').onclick=closeInventory;$('useMeat').onclick=useMeat;$('useRation').onclick=useRation;$('fromBagShop').onclick=()=>openShop('craft');$('shop').addEventListener('click',e=>{if(e.target===$('shop'))closeShop()});$('inventory').addEventListener('click',e=>{if(e.target===$('inventory'))closeInventory()});
+$('levelReady').onclick=showLevelChoice; $('playBtn').onclick=newGame;$('coinBtn').onclick=()=>openShop();$('closeShop').onclick=closeShop;$('shopInventory').onclick=()=>{closeShop();openInventory()};$('tabUpgrade').onclick=()=>{shopTab='upgrade';renderShop()};$('tabCraft').onclick=()=>{shopTab='craft';renderShop()};$('bagBtn').onclick=openInventory;$('eatBtn').onclick=()=>{if(mode==='playing')useMeat()};$('closeBag').onclick=closeInventory;$('useMeat').onclick=useMeat;$('useRation').onclick=useRation;$('fromBagShop').onclick=()=>openShop('craft');$('shop').addEventListener('click',e=>{if(e.target===$('shop'))closeShop()});$('inventory').addEventListener('click',e=>{if(e.target===$('inventory'))closeInventory()});
 let b=readBest();$('bestText').textContent=b.time?`สถิติสูงสุด: ${Math.floor(b.time/60)}:${String(b.time%60).padStart(2,'0')} นาที · ด่าน ${b.stage}`:'เล่นได้ทั้งมือถือและคอมพิวเตอร์ · ไม่ต้องเชื่อมต่ออินเทอร์เน็ต';
 initDecor();resize();requestAnimationFrame(tick);
 
