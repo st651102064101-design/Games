@@ -409,6 +409,9 @@ function drawMeteors(){const g=game;if(g.craters){g.craters=g.craters.filter(c=>
 function spawnTitan(){const p=game.p,a=rand(0,TAU),d=rand(500,800),x=clamp(p.x+Math.cos(a)*d,-half+120,half-120),y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);const mk=(ox,oy,t)=>{game.mobs.push({id:++game.uid,x:x+ox,y:y+oy,hp:t?4000:300,maxHp:t?4000:300,r:t?52:26,speed:t?34:70,damage:t?30:12,dir:1,walk:0,flash:0,stun:0,hitTime:0,contact:0,bleed:0,hits:0,needHits:t?30:10,beast:'bear',elite:true,titan:!!t,boss:false})};mk(0,0,true);for(let i=0;i<4;i++){const q=i*TAU/4;mk(Math.cos(q)*90,Math.sin(q)*90,false)}}
 // On death: nearby animals gather around the hero, then fall where they stand
 function updateDying(dt){const g=game,p=g.p,t=now-g.deathT0;for(let i=g.mobs.length-1;i>=0;i--){const m=g.mobs[i];if(Math.hypot(m.x-p.x,m.y-p.y)>600)continue; if(!m.d0){m.d0={x:m.x,y:m.y};const ang=Math.atan2(m.y-p.y,m.x-p.x);m.dT={x:p.x+Math.cos(ang)*70,y:p.y+Math.sin(ang)*70}} const k=clamp(t/.6,0,1),e=k*k*(3-2*k);m.x=m.d0.x+(m.dT.x-m.d0.x)*e;m.y=m.d0.y+(m.dT.y-m.d0.y)*e; if(t>.6&&!m.fell){m.fell=true;m.hp=0;g.mobs.splice(i,1);kill(m)}}}
+// Falling into a hole: the hero sinks in (0.35s), then warps out of a far hole and rises (0.25s)
+function holeWarp(p){const g=game;let wx,wy;for(let t=0;t<20;t++){wx=rand(-half+200,half-200);wy=rand(-half+200,half-200);if(!g.holes.some(h=>Math.hypot(h.x-wx,h.y-wy)<h.r+120))break}
+ g.dash={x0:p.x,y0:p.y,x1:wx,y1:wy,t0:now,out:.35,inDur:.25};playSound('ui',p.x,p.y)}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+36,'#ffffff','900 11px system-ui']);
@@ -448,7 +451,7 @@ g.holeCd=Math.max(0,g.holeCd-dt);
  for(let i=g.holes.length-1;i>=0;i--){const o=g.holes[i];o.age+=dt;if(o.age>=o.life){g.holes.splice(i,1);spawnHole()}}
  while(g.holes.length<HOLE_COUNT)spawnHole();
  for(const o of g.holes){const grow=Math.min(1,o.age/1.2)*Math.min(1,(o.life-o.age)/1.2);o.k=grow;
-  if(g.holeCd<=0&&grow>.6&&Math.hypot(p.x-o.x,p.y-o.y)<o.r*.7){teleportTo(p,200);cam.x=p.x;cam.y=p.y;g.holeCd=3;p.inv=Math.max(p.inv,2.5);g.holeBlink=2.5;g.shake=Math.max(g.shake,8);announce('ตกหลุมน้ำแข็ง!','วาร์ปไปที่อื่นแบบสุ่ม · อมตะ 2.5 วิ',2);break}
+  if(g.holeCd<=0&&grow>.6&&Math.hypot(p.x-o.x,p.y-o.y)<o.r*.7){holeWarp(p);g.holeCd=3;p.inv=Math.max(p.inv,2.5);g.holeBlink=2.5;g.shake=Math.max(g.shake,8);announce('ตกหลุมน้ำแข็ง!','วาร์ปไปที่อื่นแบบสุ่ม · อมตะ 2.5 วิ',2);break}
   for(const m of g.mobs){if(!m.boss&&!(m.holeCd>0)&&grow>.6&&Math.hypot(m.x-o.x,m.y-o.y)<o.r*.6){teleportTo(m,100);m.holeCd=4}}}
  for(const m of g.mobs)if(m.holeCd>0)m.holeCd-=dt}
 function drawHoles(){const g=game;for(const o of g.holes){if(!isVisible(o.x,o.y,o.r+80))continue;const k=o.k===undefined?1:o.k,r=o.r*k,pulse=1+Math.sin(now*3+o.x)*.04;
