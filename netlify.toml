@@ -16,3 +16,8 @@
   from = "/survival_hub_same_folder_6_games"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/frostline_v3_3"
+  to = "/Frostline_v3_3.html"
+  status = 200

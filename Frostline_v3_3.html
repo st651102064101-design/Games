@@ -141,7 +141,7 @@ let rngSeed=219907;function seeded(){rngSeed=(Math.imul(rngSeed,1664525)+1013904
 function initDecor(){rngSeed=2112;for(let i=0;i<840;i++){let x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded(),kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch',scale=.65+seeded()*.85;if(d2(x,y)<270*270&&kind!=='patch')continue;decor.push({x,y,kind,scale,v:seeded(),id:i})}decor.sort((a,b)=>a.y-b.y)}
 function initParticles(){particle.length=0;for(let i=0;i<Math.min(85,Math.floor(w*h/9500));i++)particle.push({x:rand(0,w),y:rand(0,h),r:rand(.6,2.4),vx:rand(-18,-4),vy:rand(14,36),p:rand(0,TAU)})}
 function newGame(){
- let saved=loadSave();game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:8,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0};
+ let saved=loadSave();game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:8,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0};
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);for(let i=0;i<5;i++)spawnGroundWeapon(true);for(let i=0;i<14;i++)spawnGroundWeapon(false);announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -197,7 +197,7 @@ function swordCount(){return Math.min(7,1+(game.upd.sword>=3?1:0)+(game.upd.swor
 function swordRange(){return (75+(game.upd.sword-1)*5)*(1+(game.perks.range||0)*.12)}
 function allActiveWeapons(){return game.weapons.slice(0,MAX_ACTIVE_EXTRA)}
 function hitWithExtraWeapon(m, w, n, total){
- const g=game, p=g.p,a=(g.swordAngle*(w.rate||1)+n*2.3999)%TAU,reach=w.reach*(1+(g.perks.range||0)*.08),sx=p.x+Math.cos(a)*reach,sy=p.y+Math.sin(a)*reach;
+ const g=game, p=g.p,a=(g.swordPhase*(w.rate||1)+n*2.3999)%TAU,reach=w.reach*(1+(g.perks.range||0)*.08),sx=p.x+Math.cos(a)*reach,sy=p.y+Math.sin(a)*reach;
  if(m.hitTime>0||d2(sx-m.x,sy-m.y)>(m.r+24)**2)return false;
  let damage=w.damage*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
  m.hp-=damage;m.hitTime=.22;m.flash=.25;m.stun=w.element==='ice'?.6:.10;
@@ -212,7 +212,7 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.weaponSpawnTimer-=dt;if(g.weaponSpawnTimer<=0){spawnGroundWeapon(true);g.weaponSpawnTimer=rand(13,23)}
  g.spawning-=dt;if(g.spawning<=0){spawnBear();g.spawning=clamp(2.45-(stage-1)*.14-(phase-1)*.16,.55,2.4)}
- let a0=g.swordAngle;g.swordAngle=(a0+dt*(5.25+g.upd.sword*.48)*(1+(g.perks.haste||0)*.16))%TAU;if(g.perks.regen)g.p.hp=Math.min(g.p.maxHp,g.p.hp+(g.perks.regen||0)*.7*dt);
+ const spinStep=dt*spinSpeed();g.swordAngle=(g.swordAngle+spinStep)%TAU;g.swordPhase+=spinStep;if(g.perks.regen)g.p.hp=Math.min(g.p.maxHp,g.p.hp+(g.perks.regen||0)*.7*dt);
  for(let i=g.mobs.length-1;i>=0;i--){let m=g.mobs[i],vx=p.x-m.x,vy=p.y-m.y,dist=Math.max(1,Math.hypot(vx,vy)),near=dist<m.r+16;
  if(dist>m.r+15){let scale=m.stun>0?.14:1;m.x+=vx/dist*m.speed*dt*scale;m.y+=vy/dist*m.speed*dt*scale}m.dir=vx<0?-1:1;m.walk+=dt*m.speed*.14;m.hitTime=Math.max(0,m.hitTime-dt);m.stun=Math.max(0,m.stun-dt);m.flash=Math.max(0,m.flash-dt*3);m.contact-=dt;if(m.bleed>0){m.bleed-=dt;m.hp-=(m.bleedPower||3)*dt;if(frame%18===0)sparks(m.x,m.y,'#e7687d',2)}
  if(near&&m.contact<=0&&p.inv<=0){let hit=Math.max(1,Math.round(m.damage*(1-(g.upd.armor-1)*.07-(g.perks.guard||0)*.08-(g.craft.furArmor?.13:0))));p.hp-=hit;p.inv=.84;m.contact=1.25;g.hitFlash=.5;g.shake=7;addFloat(p.x,p.y-45,`-${hit}`,'#ff9b9b');sparks(p.x,p.y,'#ffe8ed',9);if(p.hp<=0){p.hp=0;endGame();break}}
@@ -234,7 +234,7 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
  for(let i=g.float.length-1;i>=0;i--){let f=g.float[i];f.life-=dt;f.y+=f.vy*dt;if(f.life<=0)g.float.splice(i,1)}
  updatePeers(dt);sendMyState(dt);if(performance.now()>cloudNextSync&&!cloudInFlight)syncCloud();if(frame%6===0)updateHud();if(frame%360===0)saveProgress();if((network==='offline'||network==='local')&&performance.now()>nextNetworkRetry&&navigator.onLine!==false)connectOnline();
 }
-function endGame(killerName=null,killerId=null){if(mode==='dead')return;if(killerId)publishNet('kill',{to:killerId,by:CLIENT_ID,victim:PLAYER_NAME,killId:CLIENT_ID+'_'+Date.now()});publishNet('state',{alive:false,name:PLAYER_NAME,x:game.p.x,y:game.p.y});saveBest();saveProgress();mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;$('announce').classList.remove('visible');let min=Math.floor(game.elapsed/60),sec=Math.floor(game.elapsed%60);$('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · RUN COMPLETE</div><h2 style="margin-top:12px">การเดินทางสิ้นสุดแล้ว</h2><p class="lead">${killerName?`⚔️ คุณถูก ${escapeHTML(killerName)} กำจัดในสนาม PvP`:'หมีบนภูเขาหิมะหยุดคุณได้ในครั้งนี้ แต่การเดินทางครั้งใหม่เริ่มได้ทันที'}</p><div class="keyline" style="font-size:15px"><b>ด่าน ${game.stage} · เฟส ${game.phase}</b><br>⏱️ รอดชีวิต ${min}:${String(sec).padStart(2,'0')} นาที<br>🐻 กำจัดหมี ${game.kills} ตัว · เลเวล ${game.level}</div><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame;}
+function endGame(killerName=null,killerId=null){if(mode==='dead')return;if(killerId)publishNet('kill',{to:killerId,by:CLIENT_ID,victim:PLAYER_NAME,killId:CLIENT_ID+'_'+Date.now()});publishNet('state',{alive:false,name:PLAYER_NAME,x:game.p.x,y:game.p.y});if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}saveBest();saveProgress();mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;$('announce').classList.remove('visible');let min=Math.floor(game.elapsed/60),sec=Math.floor(game.elapsed%60);$('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · RUN COMPLETE</div><h2 style="margin-top:12px">การเดินทางสิ้นสุดแล้ว</h2><p class="lead">${killerName?`⚔️ คุณถูก ${escapeHTML(killerName)} กำจัดในสนาม PvP`:'หมีบนภูเขาหิมะหยุดคุณได้ในครั้งนี้ แต่การเดินทางครั้งใหม่เริ่มได้ทันที'}</p><div class="keyline" style="font-size:15px"><b>ด่าน ${game.stage} · เฟส ${game.phase}</b><br>⏱️ รอดชีวิต ${min}:${String(sec).padStart(2,'0')} นาที<br>🐻 กำจัดหมี ${game.kills} ตัว · เลเวล ${game.level}</div><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame;}
 const upgrades=[
 {id:'sword',icon:'🗡️',name:'ดาบพายุหิมะ',desc:'เพิ่มพลังโจมตีและระยะฟัน · Lv.3 ดาบคู่ · Lv.5 ดาบสาม',base:35,max:8},
 {id:'boots',icon:'🥾',name:'รองเท้านักล่า',desc:'เดินและหลบหมีเร็วขึ้น +27 ต่อระดับ',base:30,max:8},
@@ -347,7 +347,7 @@ function drawWeaponModel(x,y,a,weapon){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.length;k++){
- const weapon=extra[k],a=game.swordAngle*weapon.rate+k*2.3999,reach=weapon.reach*(1+(game.perks.range||0)*.08);
+ const weapon=extra[k],a=game.swordPhase*weapon.rate+k*2.3999,reach=weapon.reach*(1+(game.perks.range||0)*.08);
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);let rare=r==='claw'||r==='frost';
@@ -397,79 +397,105 @@ const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 function updateOnlineInfo(){const el=$('onlineInfo');if(!game||mode==='menu'){el.hidden=true;return}el.hidden=false;const connected=peers.size>0;const status=connected?'🟢 เชื่อมต่อกับผู้เล่นแล้ว':cloudReady?'🌐 เซิร์ฟเวอร์พร้อม · รอคู่ต่อสู้':network==='ready'?'🟡 WebRTC กำลังค้นหาผู้เล่น':network==='connecting'?'🟡 กำลังเชื่อมต่อ':cloudError?'🔴 เซิร์ฟเวอร์ไม่พร้อม':network==='local'?'🔵 เฉพาะแท็บในเครื่องนี้':'⚪ ออฟไลน์';el.textContent=`${status} · ผู้เล่น ${peers.size+1} · ${PLAYER_NAME} · ⚔️ ${pvpKills}${connected?` · 🎯 ${closestPeerDirection()}`:` · 📍 ${Math.round(game.p.x)},${Math.round(game.p.y)}`}`;el.style.color=connected?'#226a45':cloudReady?'#2d6c77':'#835b38';}
 function closestPeerDirection(){if(!game||!peers.size)return '';let p=game.p,closest=[...peers.values()].sort((a,b)=>d2(a.x-p.x,a.y-p.y)-d2(b.x-p.x,b.y-p.y))[0];let dx=closest.x-p.x,dy=closest.y-p.y,angle=Math.atan2(dy,dx);const arrows=['➡','↘','⬇','↙','⬅','↖','⬆','↗'];let index=(Math.round(angle/(Math.PI/4))+8)%8;return `${arrows[index]} ${Math.round(Math.hypot(dx,dy))}`;}
 function publishNet(kind,payload){const event={kind,id:CLIENT_ID,...payload};try{localChannel?.postMessage(event)}catch{}try{if(kind==='state')sendStateFn?.send?.(event);else if(kind==='kill')sendKillFn?.send?.(event)}catch{}}
+// ---- Realtime sync: timestamped samples + snapshot interpolation (remote players render slightly in the past, always smooth) ----
+const SEND_INTERVAL=.05,MAX_BUF=48;
+let mySamples=[],cloudSentT=0,lastMetaKey='',lastMetaAt=0;
+const nowMs=()=>Date.now();
+function spinSpeed(){return (5.25+game.upd.sword*.48)*(1+(game.perks.haste||0)*.16)}
+function normSample(s){if(!s||typeof s!=='object')return null;const t=Number(s.t);if(!Number.isFinite(t))return null;return {t,x:clean(s.x,0,-half,half),y:clean(s.y,0,-half,half),vx:clean(s.vx,0,-1200,1200),vy:clean(s.vy,0,-1200,1200),s:clean(s.s,0,-1e9,1e9),w:clean(s.w,6,0,60),h:clean(s.h,100,0,10000)}}
+function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)return buf[0];const last=buf[n-1];
+ if(rt>=last.t){const e=Math.min(rt-last.t,250)/1000;return {x:clamp(last.x+last.vx*e,-half+50,half-50),y:clamp(last.y+last.vy*e,-half+50,half-50),s:last.s+last.w*e}}
+ for(let i=n-1;i>0;i--){const a=buf[i-1],c=buf[i];if(rt>=a.t){const f=(rt-a.t)/Math.max(1,c.t-a.t);if(Math.hypot(c.x-a.x,c.y-a.y)>450)return f<1?a:c;return {x:lerp(a.x,c.x,f),y:lerp(a.y,c.y,f),s:lerp(a.s,c.s,f)}}}
+ return buf[0]}
+function remoteBlades(r){return r.bl?r.bl.map(b=>({a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity})):[]}
 function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_ID||typeof event.id!=='string'||event.id.length>100)return;
  if(event.kind==='kill'){if(event.to===CLIENT_ID){if(event.killId&&seenKills.has(event.killId))return;if(event.killId){seenKills.add(event.killId);if(seenKills.size>250)seenKills.clear()}pvpKills++;if(game)note(`⚔️ กำจัดผู้เล่นแล้ว! รวม ${pvpKills}`);updateOnlineInfo()}return}
  if(event.kind!=='state')return;
  if(event.alive===false){peers.delete(event.id);updateOnlineInfo();return}
- if(!event.alive)return;
- const x=clean(event.x,0),y=clean(event.y,0),id=event.id,seq=clean(event.seq,0,0,1e12);
- let peer=peers.get(id);
- // HTTP snapshots can arrive after newer WebRTC updates. Never rewind the avatar.
- if(peer&&seq&&peer.seq&&seq<=peer.seq)return;
- if(!peer){peer={id,x,y,tx:x,ty:y,vx:0,vy:0,mx:0,my:0,walk:0,inv:0,name:'นักล่า',last:0,seq:0,hp:100,maxHp:100,count:1,angle:0,reach:80,damage:18,blades:null,look:null};peers.set(id,peer);if(game)note('🌐 นักล่าคนใหม่เข้าสู่สนาม')}
- if(Math.hypot(x-peer.x,y-peer.y)>450){peer.x=x;peer.y=y;peer.walk=0} // respawn, not a long interpolation
- peer.tx=x;peer.ty=y;peer.seq=seq||peer.seq;peer.vx=clean(event.vx,0,-480,480);peer.vy=clean(event.vy,0,-480,480);
- peer.name=String(event.name||'นักล่า').slice(0,25).replace(/[<>]/g,'');peer.hp=clean(event.hp,100,0,10000);peer.maxHp=clean(event.maxHp,125,1,10000);
- peer.angle=clean(event.angle,0,-100000,100000);peer.count=clean(event.count,1,1,24);peer.reach=clean(event.reach,80,40,220);peer.damage=clean(event.damage,15,3,100);
- peer.blades=Array.isArray(event.blades)?event.blades.slice(0,24).map(b=>({a:clean(b.a,0,-100000,100000),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:'main',rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'})):null;
- const l=event.look||{};peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'};
- peer.last=performance.now();updateOnlineInfo();
+ if(!event.alive&&!Array.isArray(event.samples)&&event.t===undefined)return;
+ const arrive=nowMs(),raw=Array.isArray(event.samples)&&event.samples.length?event.samples.slice(-16):[event],list=[];
+ for(const s of raw){const n=normSample(s&&s.t===undefined?{...s,t:arrive,s:s.angle}:s);if(n)list.push(n)}
+ if(!list.length)return;list.sort((a,b)=>a.t-b.t);
+ let peer=peers.get(event.id);
+ if(!peer){const f=list[list.length-1];peer={id:event.id,x:f.x,y:f.y,mx:0,my:0,walk:0,inv:0,name:'นักล่า',last:performance.now(),hp:100,maxHp:125,bl:null,look:null,buf:[],off:null,delay:220,gap:90,lastArr:0,s:f.s,init:0};peers.set(event.id,peer);if(game)note('🌐 นักล่าคนใหม่เข้าสู่สนาม')}
+ // Samples can arrive twice (WebRTC + HTTP) or out of order; merge by sender timestamp.
+ const known=new Set(peer.buf.map(b=>b.t));let added=0;
+ for(const n of list){if(known.has(n.t))continue;if(peer.buf.length&&n.t<peer.buf[0].t-1500)continue;known.add(n.t);peer.buf.push(n);added++}
+ if(!added)return;
+ peer.buf.sort((a,b)=>a.t-b.t);if(peer.buf.length>MAX_BUF)peer.buf.splice(0,peer.buf.length-MAX_BUF);
+ const newest=peer.buf[peer.buf.length-1];peer.hp=newest.h;
+ // Clock offset: follows the lowest latency quickly and drifts up slowly, so playback delay stays constant.
+ const o=arrive-newest.t;peer.off=peer.off===null?o:peer.off+(o-peer.off)*(o<peer.off?.3:.03);
+ const tp=performance.now();if(peer.lastArr)peer.gap=lerp(peer.gap,Math.min(tp-peer.lastArr,1500),.2);peer.lastArr=tp;peer.last=tp;
+ peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
+ if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
+ if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:b.type==='main'||WEAPON_TYPES.some(t=>t.id===b.type)?b.type:'main',rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
+ if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'}}
+ updateOnlineInfo();
 }
-function ownBladePositions(){let blades=[];for(let k=0;k<swordCount();k++)blades.push({a:game.swordAngle+k*TAU/swordCount(),reach:swordRange(),damage:swingDamage(),type:'main'});for(let [k,w] of allActiveWeapons().entries())blades.push({a:game.swordAngle*w.rate+k*2.3999,reach:w.reach*(1+(game.perks.range||0)*.08),damage:w.damage,type:w.type,rarity:w.rarity});return blades.slice(0,24)}
-function ownNetworkState(){return {seq:++stateSequence,name:PLAYER_NAME,x:Math.round(game.p.x),y:Math.round(game.p.y),vx:Math.round(game.p.mx),vy:Math.round(game.p.my),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},hp:Math.round(game.p.hp),maxHp:Math.round(game.p.maxHp),angle:game.swordAngle,count:swordCount()+Math.min(MAX_ACTIVE_EXTRA,game.weapons.length),reach:Math.round(Math.max(swordRange(),...allActiveWeapons().map(w=>w.reach))),damage:Math.round(swingDamage()),blades:ownBladePositions(),alive:true};}
-function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=.12;publishNet('state',ownNetworkState());}
-// Cross-device HTTP fallback: server tracks anonymous players when public P2P signaling is blocked.
-async function syncCloud(){if(!game||mode!=='playing'||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),6000);
- try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,...ownNetworkState()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?750:3000);updateOnlineInfo();}
+function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({o:Math.round(k*TAU/n*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main'});
+ allActiveWeapons().forEach((w,k)=>list.push({o:Math.round(k*2.3999*1e4)/1e4,m:Math.round((w.rate||1)*1e3)/1e3,reach:Math.round(w.reach*(1+(game.perks.range||0)*.08)),damage:Math.round(w.damage),type:w.type,rarity:w.rarity}));return list.slice(0,24)}
+function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},blades:ownBlades()}}
+function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp)}}
+function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
+ const sample=ownSample();mySamples.push(sample);if(mySamples.length>40)mySamples.shift();
+ if(!localChannel&&!sendStateFn)return;
+ const msg={alive:true,seq:++stateSequence,...sample},meta=ownMeta(),key=JSON.stringify(meta),tp=performance.now();
+ // Gear/blade layout rarely changes: send it on change and once per second, not at 20 Hz.
+ if(key!==lastMetaKey||tp-lastMetaAt>1000){Object.assign(msg,meta);lastMetaKey=key;lastMetaAt=tp}
+ publishNet('state',msg);
+}
+// Cross-device HTTP relay: posts every sample since the last success, so remote players still get a smooth path.
+async function syncCloud(){if(!game||mode!=='playing'||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),5000);
+ const fresh=mySamples.filter(s=>s.t>cloudSentT),batch=(fresh.length?fresh:mySamples.slice(-1)).slice(-14);if(!batch.length){cloudInFlight=false;clearTimeout(timer);cloudNextSync=performance.now()+100;return}
+ try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,...ownMeta()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?150:2500);updateOnlineInfo();}
  catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(30000,cloudRetryMs*1.5);updateOnlineInfo();}
  finally{clearTimeout(timer);cloudInFlight=false;}
 }
-function updatePeers(dt){const ts=performance.now();for(const [id,r] of peers){
+function updatePeers(dt){const ts=performance.now(),wall=nowMs();for(const [id,r] of peers){
  if(ts-r.last>6500){peers.delete(id);if(network==='p2p'&&peers.size===0)network='ready';updateOnlineInfo();continue}
- // Continuous velocity prediction bridges the gap between 8 Hz P2P packets and slower HTTP polling.
- const age=Math.max(0,(ts-r.last)/1000),lead=Math.min(age,.85);
- const targetX=clamp(r.tx+r.vx*lead,-half+50,half-50),targetY=clamp(r.ty+r.vy*lead,-half+50,half-50);
- const prevX=r.x,prevY=r.y,alpha=1-Math.exp(-dt*(age<.35?14:9));
- r.x=lerp(r.x,targetX,alpha);r.y=lerp(r.y,targetY,alpha);
+ // Playback delay follows how often packets really arrive (about 125 ms over WebRTC, more over the HTTP relay).
+ r.delay+=(clamp(r.gap*1.5+55,110,700)-r.delay)*(1-Math.exp(-dt*1.2));
+ const rt=wall-(r.off||0)-r.delay,sm=sampleBuf(r.buf,rt),prevX=r.x,prevY=r.y;
+ if(sm){if(!r.init||Math.hypot(sm.x-r.x,sm.y-r.y)>450){r.x=sm.x;r.y=sm.y;r.init=1;r.walk=0}else{const a=1-Math.exp(-dt*24);r.x=lerp(r.x,sm.x,a);r.y=lerp(r.y,sm.y,a)}r.s=sm.s;
+  while(r.buf.length>3&&r.buf[1].t<rt-300)r.buf.shift()}
  r.mx=dt>0?(r.x-prevX)/dt:0;r.my=dt>0?(r.y-prevY)/dt:0;
  const pace=Math.hypot(r.mx,r.my);if(pace>2)r.walk+=dt*Math.min(15,Math.max(3,pace/23));
  // The recipient still validates approximate hits locally; this is casual PvP.
  if(!game||mode!=='playing'||game.p.inv>0)continue;
  const p=game.p,dist=Math.hypot(r.x-p.x,r.y-p.y);if(dist>230)continue;
- const blades=r.blades?.length?r.blades:[...Array(r.count)].map((_,k)=>({a:r.angle+k*TAU/r.count,reach:r.reach,damage:r.damage}));
- const struck=blades.find(b=>d2((r.x+Math.cos(b.a)*b.reach)-p.x,(r.y+Math.sin(b.a)*b.reach)-p.y)<42*42);
+ const struck=remoteBlades(r).find(b=>d2((r.x+Math.cos(b.a)*b.reach)-p.x,(r.y+Math.sin(b.a)*b.reach)-p.y)<42*42);
  if(struck){const reduction=Math.min(.55,(game.upd.armor-1)*.045+(game.perks.guard||0)*.04);const dealt=Math.max(3,Math.round(Math.min(34,struck.damage*.5)*(1-reduction)));p.hp-=dealt;p.inv=.75;game.hitFlash=.30;game.shake=5;sparks(p.x,p.y,'#f9a4ba',8);addFloat(p.x,p.y-44,`⚔️ -${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame(r.name,id)}break}
 }
 }
 function drawRemotePlayers(){const ts=performance.now();for(const r of peers.values()){
- if(ts-r.last>6500)continue;
+ if(ts-r.last>6500||!r.init)continue;
  drawPlayer(r,r.look); // exact same character/gear renderer as local player
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';
  ctx.strokeText(r.name,r.x,r.y-61);ctx.fillText(r.name,r.x,r.y-61);
  roundRect(r.x-22,r.y-54,44,5,2,'#243e55');
  roundRect(r.x-22,r.y-54,44*clamp(r.hp/r.maxHp,0,1),5,2,'#ed7785');
  ctx.restore();
- for(const b of (r.blades?.length?r.blades:[...Array(Math.min(r.count,24))].map((_,k)=>({a:r.angle+k*TAU/r.count,reach:r.reach,type:'main'})))){
-  const type=b.type||'main';
-  if(type==='main')drawSwordModel(r.x+Math.cos(b.a)*(b.reach-45),r.y+Math.sin(b.a)*(b.reach-45),b.a,r.look?.weapon||'steel');
-  else drawWeaponModel(r.x+Math.cos(b.a)*b.reach,r.y+Math.sin(b.a)*b.reach,b.a,{type,rarity:b.rarity||'common'});
+ for(const b of remoteBlades(r)){
+  if(b.type==='main')drawSwordModel(r.x+Math.cos(b.a)*(b.reach-45),r.y+Math.sin(b.a)*(b.reach-45),b.a,r.look?.weapon||'steel');
+  else drawWeaponModel(r.x+Math.cos(b.a)*b.reach,r.y+Math.sin(b.a)*b.reach,b.a,{type:b.type,rarity:b.rarity||'common'});
  }
 }}
 async function connectOnline(){if(network==='connecting'||network==='p2p'||network==='ready')return;
  // Offline and cross-tab fallback are always available, even if CDN or relay is blocked.
  if(!localChannel&&typeof BroadcastChannel!=='undefined'){
-  try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-3-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
+  try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-4-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
  }
  if(typeof navigator!=='undefined'&&navigator.onLine===false){updateOnlineInfo();return}
  network='connecting';updateOnlineInfo();
  try{
   const {joinRoom}=await Promise.race([import('https://esm.sh/trystero@0.26.0?bundle'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('network timeout')),8500))]);
   if(!game)return;
-  onlineRoom=joinRoom({appId:'games.frostline.survival.pvp.v3.3.public'},ROOM_ID);
+  onlineRoom=joinRoom({appId:'games.frostline.survival.pvp.v3.4.public'},ROOM_ID);
   const stateAction=onlineRoom.makeAction('state'),killAction=onlineRoom.makeAction('kill');
   stateAction.onMessage=(event)=>handleNet(event);killAction.onMessage=(event)=>handleNet(event);
   sendStateFn=stateAction;sendKillFn=killAction;
-  onlineRoom.onPeerJoin=()=>{network='p2p';lastNetworkSend=0;updateOnlineInfo()};
+  onlineRoom.onPeerJoin=()=>{network='p2p';lastNetworkSend=0;lastMetaAt=0;updateOnlineInfo()};
   onlineRoom.onPeerLeave=()=>{if(peers.size===0)network='ready';updateOnlineInfo()};
   // Joining a room does not guarantee WebRTC discovery, so expose initial 'connecting'.
   network='ready';updateOnlineInfo();
