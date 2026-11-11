@@ -352,7 +352,7 @@ function makeObstacles(){const list=[],walls=3400;for(let k=0;k<walls;k++){let c
 function buildObsGrid(){const grid=new Map();for(const o of game.obstacles){const k=Math.floor(o.x/200)+','+Math.floor(o.y/200);let arr=grid.get(k);if(!arr){arr=[];grid.set(k,arr)}arr.push(o)}game.obsGrid=grid}
 function obsNear(x,y){const out=[];if(!game.obsGrid)return game.obstacles||[];const cx=Math.floor(x/200),cy=Math.floor(y/200);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const arr=game.obsGrid.get((cx+i)+','+(cy+j));if(arr)for(const o of arr)out.push(o)}return out}
 function resolveObs(e,r){const obs=obsNear(e.x,e.y);if(!obs)return;const hx=OBS_W*.5,hy=OBS_H*.5;for(const o of obs){if(Math.abs(e.x-o.x)>hx+r+20||Math.abs(e.y-o.y)>hy+r+20)continue;
- const cx=clamp(e.x,o.x-hx,o.x+hx),cy=clamp(e.y,o.y-hy,o.y+hy),dx=e.x-cx,dy=e.y-cy,d2v=dx*dx+dy*dy;
+ const cx=clamp(e.x,o.x-hx,o.x+hx),cy=clamp(e.y,o.y-hy-22,o.y+hy),dx=e.x-cx,dy=e.y-cy,d2v=dx*dx+dy*dy;
  if(d2v>=r*r)continue;
  if(d2v>1e-6){const d=Math.sqrt(d2v),k=(r-d)/d;e.x+=dx*k;e.y+=dy*k}else{const ox=hx+r-Math.abs(e.x-o.x),oy=hy+r-Math.abs(e.y-o.y);if(ox<oy)e.x+=(e.x>=o.x?ox:-ox);else e.y+=(e.y>=o.y?oy:-oy)}}}
 function drawObstacle(o){ctx.save();ctx.fillStyle='#2e7d9c36';ctx.beginPath();ctx.ellipse(o.x,o.y+OBS_H*.42,OBS_W*.42,9,0,0,TAU);ctx.fill();ctx.translate(o.x,o.y);if(o.flip)ctx.scale(-1,1);if(printerImg.complete&&printerImg.naturalWidth)ctx.drawImage(printerImg,-OBS_W/2,-OBS_H/2,OBS_W,OBS_H);ctx.restore()}
