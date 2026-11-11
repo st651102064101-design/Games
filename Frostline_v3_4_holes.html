@@ -566,7 +566,7 @@ function drawPlayer(p,look=null){const gear=look||{boots:game.upd.boots,armor:ga
  // Backpack visibly grows when upgraded, providing item magnet radius.
  let pack=gear.bag;roundRect(-16,-19,32+(gear.leatherPack?5:0),14,7,gear.leatherPack?'#bb7f57':pack>3?'#b28748':'#7b6c4b');roundRect(-12,-20,24,5,2,'#dcc095');line(-9,-11,-9,-4,3,'#d6b47e');line(9,-11,9,-4,3,'#d6b47e');
  ellipse(0,-20,16,16,'#426377');ellipse(0,-23,12,13,'#e3d3c2');ellipse(0,-28,15,7,'#295266');ellipse(0,-36,7,5,'#e8f4f6');
- line(-15,-12,14,-7,6,'#c9635f');poly([[12,-8],[26,-4],[17,-1]],'#dd6962');
+ ctx.save();ctx.scale(-1,1);line(-15,-12,14,-7,6,'#c9635f');poly([[12,-8],[26,-4],[17,-1]],'#dd6962');ctx.restore();
  ellipse(-4,-23,1.2,1.5,'#45535f');ellipse(4,-23,1.2,1.5,'#45535f');
  // Fast wind slash at higher speed.
  if(gear.boots>=3&&Math.hypot(p.mx,p.my)>100){line(-17,17,15,21,1.4,'#eaffffae')}
