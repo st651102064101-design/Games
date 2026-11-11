@@ -405,8 +405,8 @@ const emptyCraft=()=>({boneBlade:false,furArmor:false,leatherPack:false,iceBlade
 const CHARACTER_SKINS=[
  {id:'scout',name:'Snow Scout',th:'นักสำรวจหิมะ',rarity:'Common',price:0,coat:'#3a6479',trim:'#f3dfc2',face:'#ead3b9',accent:'#d65f63'},
  {id:'sprout',name:'Forest Sprout',th:'นักสำรวจใบไม้',rarity:'Common',price:0,coat:'#399b70',trim:'#d9f5c4',face:'#efd1aa',accent:'#ffcf57'},
- {id:'berry',name:'Berry Explorer',th:'นักผจญภัยเบอร์รี่',rarity:'Common',price:0,coat:'#bb638c',trim:'#ffe0ee',face:'#f2d4bb',accent:'#ffe47a'},
- {id:'sunny',name:'Sunny Penguin',th:'เพื่อนซันนี่',rarity:'Common',price:0,coat:'#dfaa3f',trim:'#fff1bc',face:'#f2d4b6',accent:'#72c9d0'},
+ {id:'berry',name:'Berry Explorer',th:'นักผจญภัยเบอร์รี่',rarity:'Common',price:35,coat:'#bb638c',trim:'#ffe0ee',face:'#f2d4bb',accent:'#ffe47a'},
+ {id:'sunny',name:'Sunny Penguin',th:'เพื่อนซันนี่',rarity:'Common',price:45,coat:'#dfaa3f',trim:'#fff1bc',face:'#f2d4b6',accent:'#72c9d0'},
  {id:'fox',name:'Arctic Fox',th:'จิ้งจอกหิมะ',rarity:'Common',price:50,coat:'#f7f2e7',trim:'#b9d6e8',face:'#f5d8b3',accent:'#f3aa79'},
  {id:'penguin',name:'Penguin Soldier',th:'ทหารเพนกวิน',rarity:'Common',price:75,coat:'#2b5367',trim:'#fff5db',face:'#f5dfb6',accent:'#ffb35a'},
  {id:'crimson',name:'Crimson Hunter',th:'นักล่าผ้าคลุมแดง',rarity:'Rare',price:100,coat:'#a93646',trim:'#f4beb5',face:'#eed4bc',accent:'#f5d39f'},
@@ -452,29 +452,30 @@ function selectShopTab(tab){
 }
 function renderSkinStore(){
  selectShopTab('skins');
- const m=loadSave(),god=isGod(),owned=Array.isArray(m.skinOwned)?m.skinOwned:[],equipped=safeSkinId(m.skinEquipped);
+ const m=loadSave(),equipped=safeSkinId(m.skinEquipped);
  skinPreviewId=safeSkinId(skinPreviewId);
- $('shopWallet').textContent=god?'∞':m.coins;
- $('walletCoins').textContent=god?'∞':m.coins;
+ // Skin purchases use the actual saved coin balance even in 'god' player-name mode.
+ $('shopWallet').textContent=m.coins;
+ $('walletCoins').textContent=m.coins;
  $('skinPreviewName').textContent=(lang==='en'?characterById(skinPreviewId).name:characterById(skinPreviewId).th)+' · '+rarityDisplayName(characterById(skinPreviewId).rarity);
  $('skinPreviewDetails').textContent=lang==='en'?(characterById(skinPreviewId).price?characterById(skinPreviewId).price+' coins':'Free')+' · Cosmetic only':characterById(skinPreviewId).th+' · '+(characterById(skinPreviewId).price?characterById(skinPreviewId).price+' เหรียญ':'ฟรี')+' · ของตกแต่ง ไม่มีโบนัสพลังโจมตี';
- $('shopNote').textContent=lang==='en'?'Preview · Buy once · Equip for the next game':'เลือกเพื่อดูตัวอย่าง · ซื้อครั้งเดียวใช้ได้ถาวร · สวมใส่แล้วมีผลในเกมรอบถัดไป';
+ $('shopNote').textContent=lang==='en'?'2 free skins · 13 coin skins · Buy once to keep forever':'ฟรี 2 ตัว · ใช้เหรียญซื้อ 13 ตัว · ซื้อครั้งเดียวเป็นเจ้าของถาวร';
  $('shopList').innerHTML=CHARACTER_SKINS.map(c=>{
   const isOwned=characterOwned(m,c.id),active=equipped===c.id,cost=c.price;
-  const text=active?(lang==='en'?'✓ Equipped':'✓ ใช้อยู่'):isOwned?(lang==='en'?'Equip':'สวมใส่'):god?(lang==='en'?'Free':'รับฟรี'):m.coins<cost?(lang==='en'?'Need ':'ขาด ')+(cost-m.coins):'🪙 '+cost;
+  const text=active&&isOwned?(lang==='en'?'✓ Equipped':'✓ ใช้อยู่'):isOwned?(lang==='en'?'Equip':'สวมใส่'):m.coins<cost?(lang==='en'?'Need ':'ขาด ')+(cost-m.coins):lang==='en'?'Buy '+cost+' 🪙':'ซื้อ 🪙 '+cost;
   return '<div class="skinCard '+(skinPreviewId===c.id?'is-preview':'')+'" data-skin-preview="'+c.id+'">'+
    '<img src="'+skinImage(c.id)+'" alt="'+c.name+'">'+
-   '<div class="skinCardText"><b>'+(lang==='en'?c.name:c.th)+'</b><small>'+rarityDisplayName(c.rarity)+'</small></div>'+
-   '<button type="button" data-skin-action="'+c.id+'" '+(active||(!isOwned&&!god&&m.coins<cost)?'disabled':'')+' class="'+(active?'is-equipped':'')+'">'+text+'</button></div>';
+   '<div class="skinCardText"><b>'+(lang==='en'?c.name:c.th)+'</b><small>'+rarityDisplayName(c.rarity)+' · '+(cost?'🪙 '+cost+(lang==='en'?' coins':' เหรียญ'):(lang==='en'?'FREE':'ฟรี'))+'</small></div>'+
+   '<button type="button" data-skin-action="'+c.id+'" '+((active&&isOwned)||(!isOwned&&m.coins<cost)?'disabled':'')+' class="'+(active&&isOwned?'is-equipped':'')+'">'+text+'</button></div>';
  }).join('');
  skinPreviewRender(skinPreviewId);
 }
 function buyOrEquipSkin(id){
  const skin=CHARACTER_SKINS.find(c=>c.id===id);if(!skin)return;
- const m=loadSave(),god=isGod(),owned=characterOwned(m,id);
- if(!owned&&!god&&m.coins<skin.price)return;
+ const m=loadSave(),owned=characterOwned(m,id);
+ if(!owned&&m.coins<skin.price)return;
  const skinOwned=Array.from(new Set([...(Array.isArray(m.skinOwned)?m.skinOwned:[]),id])).filter(x=>CHARACTER_SKINS.some(c=>c.id===x&&c.id!=='scout'));
- const coins=owned||god?m.coins:m.coins-skin.price;
+ const coins=owned?m.coins:m.coins-skin.price;
  writeMeta({coins,skinOwned,skinEquipped:id});
  if(game){game.p.skin=id;game.coins=coins}
  skinPreviewId=id;renderShop();
@@ -569,7 +570,7 @@ function drawCosmeticPlayer(p,look,id){
  if(level>=3){const a=now*2.7;ellipse(p.x+Math.cos(a)*29,p.y-27+Math.sin(a)*9,3,4,'#9dfaff')}
 }
 
-function loadSave(){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||'{}');return {coins:clamp(Number(o.coins)||0,0,999999),inv:Object.fromEntries(MAT_KEYS.map(k=>[k,clamp(Number(o.inv?.[k])||0,0,99999)])),upd:{sword:clamp(Number(o.upd?.sword)||1,1,8),boots:clamp(Number(o.upd?.boots)||1,1,8),bag:clamp(Number(o.upd?.bag)||1,1,8),armor:clamp(Number(o.upd?.armor)||1,1,8)},craft:{...emptyCraft(),...o.craft},weapon:['steel','bone','ice','blood'].includes(o.weapon)?o.weapon:'steel',weapons:safeWeapons(o.weapons).filter(w=>!WEAPON_TYPES.find(t=>t.id===w.type)?.gun),shopBought:Array.isArray(o.shopBought)?o.shopBought.filter(x=>ARSENAL.some(a=>a.id===x)):[],shopTotal:clamp(Number(o.shopTotal)||0,0,999999),shopOwned:(o.shopOwned&&typeof o.shopOwned==='object')?o.shopOwned:{},skinOwned:Array.isArray(o.skinOwned)?o.skinOwned.filter(x=>CHARACTER_SKINS.some(c=>c.id===x)).slice(0,12):[],skinEquipped:safeSkinId(o.skinEquipped)}}catch{return {coins:0,inv:emptyInv(),upd:{sword:1,boots:1,bag:1,armor:1},craft:emptyCraft(),weapon:'steel',weapons:[]}}}
+function loadSave(){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||'{}');return {coins:clamp(Number(o.coins)||0,0,999999),inv:Object.fromEntries(MAT_KEYS.map(k=>[k,clamp(Number(o.inv?.[k])||0,0,99999)])),upd:{sword:clamp(Number(o.upd?.sword)||1,1,8),boots:clamp(Number(o.upd?.boots)||1,1,8),bag:clamp(Number(o.upd?.bag)||1,1,8),armor:clamp(Number(o.upd?.armor)||1,1,8)},craft:{...emptyCraft(),...o.craft},weapon:['steel','bone','ice','blood'].includes(o.weapon)?o.weapon:'steel',weapons:safeWeapons(o.weapons).filter(w=>!WEAPON_TYPES.find(t=>t.id===w.type)?.gun),shopBought:Array.isArray(o.shopBought)?o.shopBought.filter(x=>ARSENAL.some(a=>a.id===x)):[],shopTotal:clamp(Number(o.shopTotal)||0,0,999999),shopOwned:(o.shopOwned&&typeof o.shopOwned==='object')?o.shopOwned:{},skinOwned:Array.isArray(o.skinOwned)?o.skinOwned.filter(x=>CHARACTER_SKINS.some(c=>c.id===x)).slice(0,CHARACTER_SKINS.length):[],skinEquipped:characterOwned({skinOwned:o.skinOwned},o.skinEquipped)?safeSkinId(o.skinEquipped):'scout'}}catch{return {coins:0,inv:emptyInv(),upd:{sword:1,boots:1,bag:1,armor:1},craft:emptyCraft(),weapon:'steel',weapons:[]}}}
 function saveProgress(){if(!game)return;try{writeMeta({coins:game.coins,inv:game.inv,upd:game.upd,craft:game.craft,weapon:game.weapon,weapons:game.weapons})}catch{}}
 
 function readBest(){try{return JSON.parse(localStorage.getItem(BEST_KEY)||'{}')}catch{return {}}}
@@ -824,7 +825,8 @@ function recordPlayerKill(){
  const banner=$('killBanner');$('streakNumber').textContent=String(n);$('streakText').textContent=names[n-1];
  banner.classList.remove('show');void banner.offsetWidth;banner.classList.add('show');playStreakSound(n);
 }
-function kill(m){if(mode==='playing'&&m.lastPlayerHit!==undefined&&m.killCause!=='hazard')recordPlayerKill();if(m.speciesId)wildlifeDiscover(m.speciesId);playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;if(m.boss)g.bossDefeated=true;g.stageKills=(g.stageKills||0)+1;g.corpses.push({x:m.x,y:m.y,elite:m.elite,boss:m.boss,leaper:!!m.leaper,speciesId:m.speciesId||null,beast:m.beast,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
+function kill(m){ // Monster and wildlife defeats never contribute to First/Double/Triple/4/5 Kill.
+if(m.speciesId)wildlifeDiscover(m.speciesId);playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;if(m.boss)g.bossDefeated=true;g.stageKills=(g.stageKills||0)+1;g.corpses.push({x:m.x,y:m.y,elite:m.elite,boss:m.boss,leaper:!!m.leaper,speciesId:m.speciesId||null,beast:m.beast,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
  // Reward distribution is intentionally varied, with XP guaranteed.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
  if(Math.random()<(m.elite?.55:.16))spawnDrop(m.x,m.y,'ability',1,{id:choose(FIELD_ITEMS).id});
