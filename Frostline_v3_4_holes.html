@@ -278,7 +278,7 @@ function collect(d){if(d.type==='weapon'&&WEAPON_TYPES.find(t=>t.id===d.weapon?.
 function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่มีเนื้อหมี');return}if(game.p.hp>=game.p.maxHp){note('เลือดเต็มแล้ว');return}game.inv.meat--;const heal=Math.min(game.p.maxHp-game.p.hp,35+game.level*2);game.p.hp+=heal;sparks(game.p.x,game.p.y,'#9ff9ba',14);addFloat(game.p.x,game.p.y-35,`+${Math.ceil(heal)} ♥`,'#a6ffca');saveProgress();updateHud();if(mode==='inventory')renderInventory()}
 function swingDamage(){let base=(16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0))*PLAYER_DAMAGE_MULTIPLIER;return base*(1+(game.perks.sharp||0)*.2)}
 function swordCount(){return 0}
-function swordRange(){return (48+(game.upd.sword-1)*3)*(1+(game.perks.range||0)*.08)}
+function swordRange(){return (48+(game.upd.sword-1)*3)*(1+(game.perks.range||0)*.08)*(game.growS||1)}
 function magnetRadius(weaponRange,bagLevel,pack,perk){return weaponRange+(bagLevel-1)*48+(pack?42:0)+perk*48}
 function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
 function orbitOffset(index,total){return total>0?index*TAU/total:0}
@@ -356,7 +356,7 @@ function drawHoles(){const g=game;for(const o of g.holes){if(!isVisible(o.x,o.y,
  ctx.strokeStyle='rgba(190,240,255,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,r*.55*(1+Math.sin(now*4)*.1),r*.36,0,0,TAU);ctx.stroke();
  if(o.life-o.age<4&&Math.floor(now*6)%2){ctx.globalAlpha=.5;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,r,r*.66,0,0,TAU);ctx.fill()}
  ctx.restore()}}
-function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p;now+=dt;g.elapsed+=dt;g.announceTimer-=dt;if(g.announceTimer<=0)$('announce').classList.remove('visible');g.noticeTimer=(g.noticeTimer||0)-dt;if(g.noticeTimer<=0)$('notice').classList.remove('visible');
+function update(dt){if(mode!=='playing'||!game||paused)return;const g=game,p=g.p;now+=dt;g.elapsed+=dt;g.growS=clamp(1+(g.weapons.length-1)*.035,1,1.7);g.announceTimer-=dt;if(g.announceTimer<=0)$('announce').classList.remove('visible');g.noticeTimer=(g.noticeTimer||0)-dt;if(g.noticeTimer<=0)$('notice').classList.remove('visible');
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){g.stage=stage;g.phase=phase;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);sparks(p.x,p.y,'#e5ffff',22);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);resolveObs(p,16);p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
@@ -491,7 +491,9 @@ function drawPlayer(p,look=null){const gear=look||{boots:game.upd.boots,armor:ga
  if(gear.level>=3){let a=now*2.7;ellipse(p.x+Math.cos(a)*29,p.y-27+Math.sin(a)*9,3,4,'#9dfaff')}
 }
 // Main and remote players share the same blade artwork; no simplified PvP avatar.
-function drawSwordModel(x,y,a,wc='steel'){
+let bladeScale=1;
+function drawSwordModel(x,y,a,wc='steel'){if(bladeScale===1)return drawSwordModelBase(x,y,a,wc);ctx.save();ctx.translate(x,y);ctx.scale(bladeScale,bladeScale);ctx.translate(-x,-y);drawSwordModelBase(x,y,a,wc);ctx.restore()}
+function drawSwordModelBase(x,y,a,wc='steel'){
  ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);
  ellipse(0,0,7,8,'#1e4c62a0');roundRect(-3,-7,6,19,3,'#654c4c');line(-12,-11,12,-11,5,'#2b5168');
  ctx.shadowBlur=lowGraphics()?0:wc==='ice'?13:wc==='blood'?9:wc==='bone'?4:0;ctx.shadowColor=wc==='ice'?'#4bdeff':wc==='blood'?'#ef5269':'#ffffff';
@@ -500,7 +502,8 @@ function drawSwordModel(x,y,a,wc='steel'){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawSwords(p){for(let k=0;k<swordCount();k++){const a=orbitAngle(k),rad=swordRange();drawSwordModel(p.x+Math.cos(a)*(rad-45),p.y+Math.sin(a)*(rad-45),a,game.weapon)}}
-function drawWeaponModel(x,y,a,weapon){
+function drawWeaponModel(x,y,a,weapon){if(bladeScale===1)return drawWeaponModelBase(x,y,a,weapon);ctx.save();ctx.translate(x,y);ctx.scale(bladeScale,bladeScale);ctx.translate(-x,-y);drawWeaponModelBase(x,y,a,weapon);ctx.restore()}
+function drawWeaponModelBase(x,y,a,weapon){
  const {t,r}=weaponInfo(weapon);if(t.id.startsWith('ars')){drawArsenalModel(x,y,a,weapon,t,r);return}
  ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.shadowBlur=lowGraphics()?0:9;ctx.shadowColor=r.color;
  line(0,8,0,-20,5,'#415566');line(-8,-7,8,-7,4,'#734b48');
@@ -539,8 +542,8 @@ function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(M
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
- let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});for(const o of game.obstacles)if(isVisible(o.x,o.y,OBS_W))arr.push({kind:'obs',y:o.y,obj:o});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;drawPlayer(a.obj);ctx.globalAlpha=1}}
-  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;drawSwords(game.p);drawExtraWeapons(game.p);ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
+ let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});for(const o of game.obstacles)if(isVisible(o.x,o.y,OBS_W))arr.push({kind:'obs',y:o.y,obj:o});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p&&(game.growS||1)>1){ctx.save();ctx.translate(a.obj.x,a.obj.y);ctx.scale(game.growS,game.growS);ctx.translate(-a.obj.x,-a.obj.y);drawPlayer(a.obj);ctx.restore()}else drawPlayer(a.obj);ctx.globalAlpha=1}}
+  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  drawEnemyArrows();
