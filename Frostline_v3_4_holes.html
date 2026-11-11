@@ -453,8 +453,8 @@ function beastForStage(stage){return STAGE_BEASTS[(Math.max(1,stage)-1)%STAGE_BE
 function spawnBear(initial=false){if(!game||game.mobs.length>=maxMobs()||(!initial&&game.bossDefeated))return;let p=game.p,ang=rand(0,TAU),dist=rand(initial?420:900,initial?875:1400),x=clamp(p.x+Math.cos(ang)*dist,-half+65,half-65),y=clamp(p.y+Math.sin(ang)*dist,-half+65,half-65);const strength=monsterPower(game.stage,game.phase),beast=beastForStage(game.stage);const boss=!initial&&(game.stageKills||0)>=34&&!game.bossSpawned;let elite=boss||Math.random()<strength.elite,mult=strength.hp;
  if(boss)game.bossSpawned=true;playSound('bear',x,y);game.mobs.push({id:++game.uid,x,y,hp:(boss?520:elite?100:34)*mult*5,maxHp:(boss?520:elite?100:34)*mult*5,r:22,speed:((boss?62:elite?53:65)+Math.random()*12)*strength.speed,damage:Math.round((boss?52:elite?28:18)*strength.damage),elite,boss,beast:beast[0],dir:1,walk:rand(0,TAU),hitTime:0,contact:0,stun:0,flash:0});}
 function spawnDrop(x,y,type,amt=1,weapon=null){const fk=game?1+Math.min(1.2,game.weapons.length*.03):1;if(type==='weapon'&&WEAPON_TYPES.find(t=>t.id===weapon?.type)?.gun&&!weapon.fromBoss)return;const MIN=56,x0=x,y0=y;const inHole=()=>(game.holes||[]).some(h=>Math.hypot(h.x-x,h.y-y)<h.r+34)||obsNear(x,y).some(o=>Math.hypot(o.x-x,o.y-y)<OBS_W*.6+18);for(let t=0;t<16&&(game.drops.some(o=>Math.hypot(o.x-x,o.y-y)<MIN)||inHole());t++){const an=rand(0,TAU),dd=rand(MIN,MIN*1.8);x=x0+Math.cos(an)*dd;y=y0+Math.sin(an)*dd}if(game.drops.length>2100)game.drops.shift();game.drops.push({id:++game.uid,x,y,type,amt,weapon,t:0,glow:rand(0,TAU),vx:rand(-150,150)*fk,vy:rand(-185,90)*fk,bounce:rand(.2,.55),age:0});}
-function addFloat(x,y,text,color='#fff'){game.float.push({x,y,text,color,life:1.05,vy:-29});if(game.float.length>55)game.float.shift()}
-function sparks(x,y,color,count=7){if(lowGraphics())count=Math.ceil(count*.4);for(let i=0;i<count;i++){let a=rand(0,TAU),s=rand(40,165);game.fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.18,.48),max:.48,color,r:rand(1.5,4)})}if(game.fx.length>165)game.fx.splice(0,game.fx.length-165)}
+function addFloat(x,y,text,color='#fff'){if(lowGraphics())return;game.float.push({x,y,text,color,life:1.05,vy:-29});if(game.float.length>55)game.float.shift()}
+function sparks(x,y,color,count=7){if(lowGraphics())count=Math.min(2,Math.ceil(count*.2));for(let i=0;i<count;i++){let a=rand(0,TAU),s=rand(40,165);game.fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.18,.48),max:.48,color,r:rand(1.5,4)})}if(game.fx.length>165)game.fx.splice(0,game.fx.length-165)}
 function kill(m){playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;if(m.boss)g.bossDefeated=true;g.stageKills=(g.stageKills||0)+1;g.corpses.push({x:m.x,y:m.y,elite:m.elite,boss:m.boss,beast:m.beast,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
  // Reward distribution is intentionally varied, with XP guaranteed.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
@@ -538,7 +538,7 @@ function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!is
  if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,10*(1-t/.25)+3,0,TAU);ctx.fill()}
  ctx.restore()}}
 function drawYouLabel(p){labelQ.push(['You',p.x,p.y+52,'#ffe28a','900 12px system-ui'])}
-function drawWeaponCount(p){const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
+function drawWeaponCount(p){if(lowGraphics())return;const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
 
 // ===== Loot racks: 2 rows x 6 columns, or random scatter =====
 function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.length>=3)g.racks.shift();
@@ -582,7 +582,7 @@ function updateBots(dt){const g=game,p=g.p;for(const b of g.bots||[]){
 }}let labelQ=[];
 // Ultra only: sun glow from the top-right and faint light shafts (screen space)
 function drawSunlight(){ctx.save();ctx.globalCompositeOperation='screen';const g=ctx.createRadialGradient(w*.85,-h*.1,10,w*.85,-h*.1,Math.max(w,h)*.9);g.addColorStop(0,'rgba(255,236,190,.22)');g.addColorStop(.5,'rgba(255,220,160,.07)');g.addColorStop(1,'rgba(255,220,160,0)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.globalCompositeOperation='lighter';for(let i=0;i<4;i++){const x0=w*(.55+i*.12);ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0+h*.35,h);ctx.lineTo(x0+h*.35+w*.09,h);ctx.lineTo(x0+w*.09,0);ctx.closePath();ctx.fillStyle='rgba(255,240,200,.05)';ctx.fill()}ctx.restore()}
-function flushLabels(){for(const L of labelQ){ctx.save();ctx.textAlign='center';ctx.font=L[4];ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle=L[3];ctx.strokeText(L[0],L[1],L[2]);ctx.fillText(L[0],L[1],L[2]);ctx.restore()}labelQ.length=0}
+function flushLabels(){if(lowGraphics()){labelQ.length=0;return}for(const L of labelQ){ctx.save();ctx.textAlign='center';ctx.font=L[4];ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle=L[3];ctx.strokeText(L[0],L[1],L[2]);ctx.fillText(L[0],L[1],L[2]);ctx.restore()}labelQ.length=0}
 // Hero pose: grows with weapons; while dying the hero tips over and fades
 function drawHeroPose(p){const dying=mode==='dying';const t=dying?Math.min(1,(now-game.deathT0)/1.0):0;const gs=game.growS||1;ctx.save();ctx.translate(p.x,p.y);const D=game.dash;if(D){const el=now-D.t0,ds=el<D.out?Math.max(.02,1-el/D.out):Math.min(1,(el-D.out)/D.inDur);ctx.scale(ds,ds);ctx.globalAlpha*=ds}if(dying){ctx.translate(0,t*12);ctx.rotate(t*1.6*(p.dir||1)*-1);ctx.globalAlpha=Math.max(.15,1-t*.85)}if(gs>1)ctx.scale(gs,gs);ctx.translate(-p.x,-p.y);drawPlayer(p);ctx.restore()}
 // Bodies do not overlap: the hero is pushed out of other hunters and bots
@@ -955,9 +955,9 @@ function drawSnowDog(d){
  ctx.restore();ctx.restore();
  // Text is drawn separately so it never mirrors with the character.
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
- roundRect(d.x-18,d.y-35,36,12,6,'#234a60d6');
+ if(!lowGraphics())roundRect(d.x-18,d.y-35,36,12,6,'#234a60d6');
  ctx.font='bold 8px system-ui,sans-serif';ctx.fillStyle='#fff8e4';
- ctx.fillText('🐾 โมจิ',d.x,d.y-29);
+ if(!lowGraphics())ctx.fillText('🐾 โมจิ',d.x,d.y-29);
  ctx.restore();
 }
 
@@ -995,7 +995,7 @@ function drawTorchInHand(p){
 }
 // Add warm light after the existing night tint has been drawn.
 function drawNightTorchLights(){
- if(!torchIsLit())return;
+ if(lowGraphics()||!torchIsLit())return;
  const brightness=clamp(nightDarkness(gameHour())/.5,0,1);
  const holders=torchLightHolders();
  ctx.save();ctx.globalCompositeOperation='screen';
@@ -1064,7 +1064,7 @@ function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.
 function dropLabel(d){if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return spec?.name||'อาวุธ'}if(d.type==='coin')return 'เหรียญ';if(d.type==='plus')return 'เพิ่มอาวุธ';if(d.type==='speed')return 'วิ่งเร็ว';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);ctx.scale(1.2,1.2);let rare=r==='claw'||r==='frost';
  ellipse(0,11,12,4,'#2e7d9c36');
- {const BR={coin:[0,13],xp:[-2,17],meat:[0,15],hide:[0,16],bone:[0,16],claw:[-2,18],frost:[-2,19],ability:[-3,25],weapon:[-3,24]}[r]||[0,16],by=BR[0],br=BR[1]+Math.sin(now*2.4+d.glow)*.6;
+ if(!lowGraphics()){const BR={coin:[0,13],xp:[-2,17],meat:[0,15],hide:[0,16],bone:[0,16],claw:[-2,18],frost:[-2,19],ability:[-3,25],weapon:[-3,24]}[r]||[0,16],by=BR[0],br=BR[1]+Math.sin(now*2.4+d.glow)*.6;
  ctx.fillStyle='rgba(205,242,255,.22)';ctx.beginPath();ctx.arc(0,by,br,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.6;ctx.stroke();
  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,by,br-3.5,Math.PI*1.1,Math.PI*1.45);ctx.stroke();
  if(d.amt>1&&r!=='weapon'&&r!=='ability'){const t='+'+d.amt;ctx.font='900 10px system-ui';const tw=ctx.measureText(t).width+10;roundRect(-tw/2,by+br-5,tw,15,7,'#173b50ee');ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffe28a';ctx.fillText(t,0,by+br+2.5)}}if(rare){ctx.globalAlpha=.23+.12*Math.sin(now*5+d.glow);ellipse(0,0,19,19,r==='frost'?'#6defff':'#ffdc88');ctx.globalAlpha=1}
@@ -1079,7 +1079,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
  else if(r==='claw'){ctx.shadowBlur=lowGraphics()?0:12;ctx.shadowColor='#ffe193';for(let i=-1;i<=1;i++){ctx.save();ctx.translate(i*6,0);ctx.rotate(i*.18);poly([[-3,8],[-4,-4],[0,-14],[4,-3],[3,8]],'#e9cfb2');poly([[0,-14],[4,-3],[2,-1]],'#ffe9b9');ctx.restore()}}
  else if(r==='weapon'&&d.weapon){const {r:rarity}=weaponInfo(d.weapon);ctx.shadowBlur=lowGraphics()?0:10;ctx.shadowColor=rarity.color;ellipse(0,-3,20,20,'rgba(255,255,255,.14)');ctx.shadowBlur=0;ctx.strokeStyle=rarity.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-3,20,0,TAU);ctx.stroke();ctx.save();ctx.translate(0,9);ctx.scale(.47,.47);drawWeaponModel(0,0,-Math.PI/2,d.weapon);ctx.restore();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 9px system-ui';ctx.fillStyle='#1c3b50';}
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
- ctx.shadowBlur=0;ctx.restore();if(d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
+ ctx.shadowBlur=0;ctx.restore();if(!lowGraphics()&&d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  for(const o of game.obstacles)if(isVisible(o.x,o.y,OBS_W))drawObstacle(o);
  drawHoles();
@@ -1097,7 +1097,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  if(game&&game.themeFlash>0){ctx.save();ctx.fillStyle=`rgba(255,110,40,${(game.themeFlash*.6).toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
  drawEnemyArrows();
  // snowfall foreground (screen-space particles).
- for(let s of particle){ctx.globalAlpha=.36+.19*Math.sin(s.p+now*2);ellipse(s.x,s.y,s.r,s.r,'#ffffff')}ctx.globalAlpha=1;
+ if(!lowGraphics())for(let s of particle){ctx.globalAlpha=.36+.19*Math.sin(s.p+now*2);ellipse(s.x,s.y,s.r,s.r,'#ffffff')}ctx.globalAlpha=1;
  if(game.hitFlash>0){ctx.fillStyle=`rgba(222,78,95,${game.hitFlash*.16})`;ctx.fillRect(0,0,w,h)}
 }
 function drawEnemyArrows(){if(!game?.radar)return;const current=performance.now(),margin=35,cx=w/2,cy=h/2;for(const r of peers.values()){if(!r.init||current-r.last>6500)continue;const dx=r.x-cam.x,dy=r.y-cam.y;if(Math.abs(dx)*screenScale<cx-margin&&Math.abs(dy)*screenScale<cy-margin)continue;const angle=Math.atan2(dy,dx),factor=Math.min((cx-margin)/(Math.abs(dx)||.001),(cy-margin)/(Math.abs(dy)||.001)),x=cx+dx*factor,y=cy+dy*factor;ctx.save();ctx.translate(x,y);ctx.rotate(angle);poly([[15,0],[-10,-9],[-6,0],[-10,9]],'#f5655f');ctx.restore()}}
