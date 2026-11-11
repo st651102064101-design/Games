@@ -333,7 +333,7 @@ const STR={th:{master:'หลัก',combat:'เสียงต่อสู้',
 let paused=false,game=null,mode='menu',input={up:false,down:false,left:false,right:false,pointerId:null,ox:0,oy:0,x:0,y:0,dx:0,dy:0};
 // Legacy embedded Zebra printer image removed; procedural fantasy props need no downloads.
 const OBS_W=52,OBS_H=54;
-const world=7200*1.875,half=world/2,decor=[],particle=[],petals=[]; // map expanded by 50% per side: 9,000 -> 13,500 world units; coast/props scale with world
+const world=7200*2.8125,half=world/2,decor=[],particle=[],petals=[]; // 13,500 -> 20,250 world units per side, less crowded props
 
 // FROSTLINE Natural World: one deterministic curved coastline shared by ALL stages,
 // network clients, wildlife, bot AI, drops, holes and teleport targets.
@@ -658,7 +658,35 @@ function resize(){w=window.innerWidth;h=window.innerHeight;dpr=Math.min(window.d
 window.addEventListener('resize',resize,{passive:true});
 let rngSeed=219907;function seeded(){rngSeed=(Math.imul(rngSeed,1664525)+1013904223)|0;return (rngSeed>>>0)/4294967296}
 const DECOR_CELL=900,decorGrid=new Map();
-function initDecor(){rngSeed=2112;const decorCount=Math.max(600,Math.round(1600*25*(world/(7200*5))**2));for(let i=0;i<decorCount;i++){let x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded(),kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch',scale=.65+seeded()*.85;if((d2(x,y)<270*270&&kind!=='patch')||!insideCoast(x,y,-100)||inWater(x,y,-55))continue;decor.push({x,y,kind,scale,v:seeded(),id:i})}decor.sort((a,b)=>a.y-b.y);for(const d of decor){const key=Math.floor(d.x/DECOR_CELL)+','+Math.floor(d.y/DECOR_CELL);let bucket=decorGrid.get(key);if(!bucket){bucket=[];decorGrid.set(key,bucket)}bucket.push(d)}}
+function initDecor(){
+ rngSeed=2112;
+ // Grow decorative density more slowly than map area: real extra walking room.
+ const decorCount=Math.max(600,Math.round(5625*Math.sqrt(world/13500)));
+ const gapCell=140,minDecorGap=126,placed=new Map();
+ for(let i=0;i<decorCount;i++){
+  const x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded();
+  const kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch';
+  const scale=.65+seeded()*.85;
+  if((d2(x,y)<270*270&&kind!=='patch')||!insideCoast(x,y,-100)||inWater(x,y,-55))continue;
+  if(kind!=='patch'){
+   const gx=Math.floor(x/gapCell),gy=Math.floor(y/gapCell);let crowded=false;
+   for(let dx=-1;dx<=1&&!crowded;dx++)for(let dy=-1;dy<=1&&!crowded;dy++){
+    const bucket=placed.get((gx+dx)+','+(gy+dy));if(!bucket)continue;
+    for(const q of bucket)if(d2(q.x-x,q.y-y)<minDecorGap*minDecorGap){crowded=true;break}
+   }
+   if(crowded)continue;
+   const key=gx+','+gy;if(!placed.has(key))placed.set(key,[]);
+   placed.get(key).push({x,y});
+  }
+  decor.push({x,y,kind,scale,v:seeded(),id:i});
+ }
+ decor.sort((a,b)=>a.y-b.y);
+ for(const d of decor){
+  const key=Math.floor(d.x/DECOR_CELL)+','+Math.floor(d.y/DECOR_CELL);
+  let bucket=decorGrid.get(key);if(!bucket){bucket=[];decorGrid.set(key,bucket)}
+  bucket.push(d);
+ }
+}
 function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?22:graphicsMode==='ultra'?160:graphicsMode==='high'?110:85,Math.floor(w*h/(graphicsMode==='ultra'?5500:9500)));i++)particle.push({x:rand(0,w),y:rand(0,h),r:rand(.6,2.4),vx:rand(-18,-4),vy:rand(14,36),p:rand(0,TAU)})}
 function newGame(){
  $('killBanner').classList.remove('show');
@@ -1068,32 +1096,50 @@ function cutePropType(o,stage){
  return pool[Math.abs(Math.floor((o.seed||0)*1e6+stage*7919))%pool.length];
 }
 function makeObstacles(){
- const list=[],clusters=Math.round(3250*(world/(7200*5))**2);
+ // Physical decorations have walkable spacing, including between clusters.
+ const list=[],clusters=Math.round(457*Math.sqrt(world/13500));
+ const minSpacing=112,cell=140,occupied=new Map();
+ function place(o){
+  if(!insideCoast(o.x,o.y,130)||inWater(o.x,o.y,-90))return false;
+  const gx=Math.floor(o.x/cell),gy=Math.floor(o.y/cell);
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+   const bucket=occupied.get((gx+dx)+','+(gy+dy));
+   if(bucket&&bucket.some(p=>d2(p.x-o.x,p.y-o.y)<minSpacing*minSpacing))return false;
+  }
+  const cx=Math.floor(o.x/DECOR_CELL),cy=Math.floor(o.y/DECOR_CELL);
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+   const bucket=decorGrid.get((cx+dx)+','+(cy+dy));if(!bucket)continue;
+   if(bucket.some(d=>d.kind!=='patch'&&d2(d.x-o.x,d.y-o.y)<100*100))return false;
+  }
+  const key=gx+','+gy;if(!occupied.has(key))occupied.set(key,[]);
+  occupied.get(key).push(o);list.push(o);return true;
+ }
  for(let k=0;k<clusters;k++){
   let cx,cy,tries=0;
   do{
    cx=rand(-half+400,half-400);cy=rand(-half+400,half-400);tries++;
-  }while(tries<30&&Math.hypot(cx-game.p.x,cy-game.p.y)<420);
-  const n=3+Math.floor(Math.random()*4),rotation=rand(0,TAU);
+  }while(tries<30&&Math.hypot(cx-game.p.x,cy-game.p.y)<460);
+  const n=3+Math.floor(Math.random()*3),rotation=rand(0,TAU);
   for(let i=0;i<n;i++){
-   const a=rotation+i*TAU/n+rand(-.21,.21);
-   const r=i===0?0:rand(47,88);
-   list.push({x:clamp(cx+Math.cos(a)*r,-half+80,half-80),
+   const a=rotation+i*TAU/n+rand(-.13,.13),r=i===0?0:rand(126,184);
+   place({x:clamp(cx+Math.cos(a)*r,-half+80,half-80),
     y:clamp(cy+Math.sin(a)*r,-half+80,half-80),
     seed:Math.random(),phase:rand(0,TAU),variant:Math.floor(Math.random()*4),
     size:rand(.84,1.08),flip:Math.random()<.5,bumpAt:-100});
   }
  }
- // A small discoverable set of all six props near spawn; clear of the hero.
+ // Guarantee a varied set of discoverable types around the spawn area.
  const a0=rand(0,TAU);
  for(let i=0;i<CUTE_PROP_NAMES.length;i++){
-  const a=a0+i*TAU/CUTE_PROP_NAMES.length,r=470+(i%2)*48;
-  list.push({x:clamp(game.p.x+Math.cos(a)*r,-half+90,half-90),
-    y:clamp(game.p.y+Math.sin(a)*r,-half+90,half-90),
-    seed:i/6,phase:i,variant:i%4,size:1,flip:!!(i%2),
-    bumpAt:-100,showcaseType:CUTE_PROP_NAMES[i]});
+  for(let attempt=0;attempt<28;attempt++){
+   const a=a0+i*TAU/CUTE_PROP_NAMES.length+attempt*.37;
+   const r=475+(i%2)*50+Math.floor(attempt/5)*75;
+   const loc=worldSpot(game.p.x+Math.cos(a)*r,game.p.y+Math.sin(a)*r,165);
+   if(place({x:loc.x,y:loc.y,seed:i/6,phase:i,variant:i%4,size:1,
+    flip:!!(i%2),bumpAt:-100,showcaseType:CUTE_PROP_NAMES[i]}))break;
+  }
  }
- return list.filter(o=>insideCoast(o.x,o.y,130)&&!inWater(o.x,o.y,-90));
+ return list;
 }
 // Spatial collision grid for whimsical props.
 function buildObsGrid(){const grid=new Map();for(const o of game.obstacles){const k=Math.floor(o.x/200)+','+Math.floor(o.y/200);let arr=grid.get(k);if(!arr){arr=[];grid.set(k,arr)}arr.push(o)}game.obsGrid=grid}
