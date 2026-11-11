@@ -211,11 +211,12 @@ function kill(m){playSound('hit',m.x,m.y);const g=game;g.kills++;g.stageKills=(g
  // Reward distribution is intentionally varied, with XP guaranteed.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
  if(Math.random()<(m.elite?.55:.16))spawnDrop(m.x,m.y,'ability',1,{id:choose(FIELD_ITEMS).id});
- if(Math.random()<.28)spawnDrop(m.x,m.y,'meat');
- if(Math.random()<(m.elite?.66:.29))spawnDrop(m.x,m.y,'hide');
- if(Math.random()<(m.elite?.62:.30))spawnDrop(m.x,m.y,'bone');
- if(m.elite||Math.random()<.028)spawnDrop(m.x,m.y,'claw');
- if(Math.random()<(m.elite?.25:.09))spawnDrop(m.x,m.y,'frost');
+ const cap=clamp(Math.round(4+g.elapsed/20),4,40),roll=(c=cap)=>1+Math.floor(Math.pow(Math.random(),1.6)*c);
+ if(Math.random()<.28)spawnDrop(m.x,m.y,'meat',roll(Math.ceil(cap/2)));
+ if(Math.random()<(m.elite?.66:.29))spawnDrop(m.x,m.y,'hide',roll());
+ if(Math.random()<(m.elite?.62:.30))spawnDrop(m.x,m.y,'bone',roll());
+ if(m.elite||Math.random()<.028)spawnDrop(m.x,m.y,'claw',roll(Math.ceil(cap/4)));
+ if(Math.random()<(m.elite?.25:.09))spawnDrop(m.x,m.y,'frost',roll(Math.ceil(cap/4)));
  if(m.boss){g.bossDefeated=true;const gun=choose(ARSENAL.filter(t=>t.gun));spawnDrop(m.x,m.y,'weapon',1,{...randWeapon(true,gun.id),fromBoss:true});for(let i=0;i<3;i++)spawnDrop(m.x+rand(-36,36),m.y+rand(-32,32),choose(['xp','coin','hide','bone']),i===0?24:2)}
  if(g.perks.vamp)g.p.hp=Math.min(g.p.maxHp,g.p.hp+g.perks.vamp*5);
 }
@@ -442,7 +443,11 @@ function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.
 }}
 function dropLabel(d){if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return spec?.name||'อาวุธ'}if(d.type==='coin')return 'เหรียญ';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);let rare=r==='claw'||r==='frost';
- ellipse(0,11,12,4,'#2e7d9c36');if(rare){ctx.globalAlpha=.23+.12*Math.sin(now*5+d.glow);ellipse(0,0,19,19,r==='frost'?'#6defff':'#ffdc88');ctx.globalAlpha=1}
+ ellipse(0,11,12,4,'#2e7d9c36');
+ {const BR={coin:[0,13],xp:[-2,17],meat:[0,15],hide:[0,16],bone:[0,16],claw:[-2,18],frost:[-2,19],ability:[-3,25],weapon:[-3,24]}[r]||[0,16],by=BR[0],br=BR[1]+Math.sin(now*2.4+d.glow)*.6;
+ ctx.fillStyle='rgba(205,242,255,.22)';ctx.beginPath();ctx.arc(0,by,br,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.6;ctx.stroke();
+ ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,by,br-3.5,Math.PI*1.1,Math.PI*1.45);ctx.stroke();
+ if(d.amt>1&&r!=='weapon'&&r!=='ability'){const t='+'+d.amt;ctx.font='900 10px system-ui';const tw=ctx.measureText(t).width+10;roundRect(-tw/2,by+br-5,tw,15,7,'#173b50ee');ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffe28a';ctx.fillText(t,0,by+br+2.5)}}if(rare){ctx.globalAlpha=.23+.12*Math.sin(now*5+d.glow);ellipse(0,0,19,19,r==='frost'?'#6defff':'#ffdc88');ctx.globalAlpha=1}
  if(r==='coin'){ellipse(0,0,10,10,'#e6b94d');ellipse(0,-1,7,7,'#f8d875');ellipse(0,-2,3.6,4.6,'#fff0a2');line(-5,-8,1,-9,1.6,'#ffec9b')}
  else if(r==='ability'){const item=FIELD_ITEMS.find(x=>x.id===d.weapon?.id);ellipse(0,-3,21,21,'#28687cdd');ctx.strokeStyle=d.weapon?.id==='radar'?'#ffe684':'#8df3d3';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-3,21,0,TAU);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='22px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(item?.icon||'✦',0,-3)}
  else if(r==='xp'){ctx.shadowBlur=lowGraphics()?0:14;ctx.shadowColor='#5ce6ff';poly([[0,-15],[10,-3],[0,11],[-9,-3]],'#7feaff');poly([[0,-15],[0,11],[9,-3]],'#c6faff');line(0,-11,0,8,1,'#ffffffb4')}
