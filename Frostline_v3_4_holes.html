@@ -418,6 +418,8 @@ function gameHour(){return ((game?game.elapsed:0)/60*24)%24}
 function timeOfDayLabel(){const h=gameHour();const hh=Math.floor(h),mm=Math.floor((h-hh)*60);const name=h<6?'กลางคืน':h<11?'เช้า':h<17?'กลางวัน':h<19?'เย็น':'กลางคืน';return `${name} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`}
 function nightDarkness(h){if(h>=20||h<5)return .5;if(h>=5&&h<7)return .5*(1-(h-5)/2);if(h>=18&&h<20)return .5*(h-18)/2;return 0}
 function drawDayNight(){if(!game)return;const d=nightDarkness(gameHour());if(d<=.01)return;ctx.save();ctx.fillStyle=`rgba(8,22,58,${d.toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
+// Magma map: trees and ice become volcanic rock shards
+function drawObsidian(x,y,sc){ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);poly([[-14,6],[-6,-18],[4,-10],[14,6]],'#2a1d1d');poly([[-6,-18],[4,-10],[0,6]],'#4a3030');ctx.restore()}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+52,'#ffffff','900 11px system-ui']);
@@ -579,7 +581,7 @@ function roundRect(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.
 function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,TAU);ctx.fillStyle=fill;ctx.fill()}
 function line(x1,y1,x2,y2,width,color){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineWidth=width;ctx.strokeStyle=color;ctx.lineCap='round';ctx.stroke()}
 function poly(points,color){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill()}
-function drawDecor(d){ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);if(d.kind==='tree'){ellipse(8,15,33,13,'#32678328');line(0,10,0,-26,11,'#6c797c');for(let i=0;i<3;i++){let top=-70+i*19,rad=24+i*5;poly([[0,top],[-rad,top+39],[rad,top+39]],i===0?'#347d86':i===1?'#3d9095':'#3b7d80');poly([[0,top-2],[-rad+4,top+31],[-8,top+27],[-3,top+22]],'#c9f1ec');line(-rad+4,top+36,rad-5,top+36,2,'#d0f9fb65')}ellipse(0,18,21,5,'#fff9')}
+function drawDecor(d){if(game&&(game.themeMix||0)>.5&&(d.kind==='tree'||d.kind==='ice'||d.kind==='bush')){drawObsidian(d.x,d.y,d.scale*1.4);return}ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scale);if(d.kind==='tree'){ellipse(8,15,33,13,'#32678328');line(0,10,0,-26,11,'#6c797c');for(let i=0;i<3;i++){let top=-70+i*19,rad=24+i*5;poly([[0,top],[-rad,top+39],[rad,top+39]],i===0?'#347d86':i===1?'#3d9095':'#3b7d80');poly([[0,top-2],[-rad+4,top+31],[-8,top+27],[-3,top+22]],'#c9f1ec');line(-rad+4,top+36,rad-5,top+36,2,'#d0f9fb65')}ellipse(0,18,21,5,'#fff9')}
  else if(d.kind==='rock'){ellipse(3,9,28,11,'#41718f26');poly([[-17,0],[-13,-14],[4,-21],[20,-9],[25,3],[12,11],[-10,9]],'#839da8');poly([[-17,0],[-13,-14],[4,-21],[1,-5]],'#d7edf3');poly([[1,-5],[4,-21],[20,-9],[25,3]],'#a2bac1');line(-11,9,19,9,3,'#e9fdff')}
  else if(d.kind==='bush'){ellipse(4,5,26,11,'#789eb52a');for(let j=-1;j<=1;j++){ellipse(j*11,0,11,9,j===0?'#679ba1':'#72aaab');ellipse(j*11-3,-4,8,4,'#d9f6ef')}}
  else if(d.kind==='ice'){ellipse(0,3,24,9,'#5191ba1e');poly([[-8,8],[-12,-6],[2,-21],[15,-3],[8,9]],'#94d3e4aa');poly([[-8,8],[-12,-6],[2,-21],[0,5]],'#e6ffffa1')}
@@ -601,6 +603,7 @@ function drawGround(){const mix=game?(game.themeMix||0):0,hot=mix>.5;ctx.fillSty
  let minX=cx-vw/2-120,maxX=cx+vw/2+120,minY=cy-vh/2-120,maxY=cy+vh/2+120;
  let gx=Math.floor(minX/180)*180,gy=Math.floor(minY/180)*180;
  for(let x=gx;x<maxX;x+=180)for(let y=gy;y<maxY;y+=180){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
+ if(hot){for(let x=gx;x<maxX;x+=360)for(let y=gy;y<maxY;y+=360){const j=Math.sin(x*.011+y*.017);ctx.strokeStyle=`rgba(255,150,70,${(.3+.25*Math.sin(now*2+x*.01+y*.01)).toFixed(3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+j*40);ctx.lineTo(x+120,y+60+j*30);ctx.lineTo(x+200,y+20-j*30);ctx.stroke()}}
  // Organic small dotted snow texture: deterministic cells.
  for(let x=Math.floor(minX/77)*77;!lowGraphics()&&x<maxX;x+=77)for(let y=Math.floor(minY/77)*77;y<maxY;y+=77){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
  // Ring around center clears: environmental guide, no border.
