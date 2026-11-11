@@ -2302,7 +2302,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(!lowGraphics()&&d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d);ctx.font='900 15px system-ui';const width=Math.max(58,ctx.measureText(label).width+20),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 15px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();applyCameraPitch();worldTiltActive=true;ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- drawVisibleCuteObstacles();
+ if(!lowGraphics())drawVisibleCuteObstacles();
  drawHoles();drawMeteorGround();
  if(!lowGraphics()){drawWildlifeScene();drawFriendlyScene()}
  // Drops under combatants.
