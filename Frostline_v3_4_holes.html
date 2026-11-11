@@ -265,11 +265,42 @@ function hitWithExtraWeapon(m, w, n, total){
  sparks(m.x,m.y,color,6);addFloat(m.x,m.y-22,String(Math.round(damage)),color);g.hitCounter++;if(g.perks.wave&&g.hitCounter%5===0){g.fx.push({x:p.x,y:p.y,vx:0,vy:0,life:.4,max:.4,color:'#9eeeff',r:65,ring:true});for(const other of g.mobs)if(other!==m&&d2(other.x-p.x,other.y-p.y)<120*120){other.hp-=damage*.45;other.flash=.2}}return true;
 }
 
+// ===== Haki-style weapon clash: sound + visual =====
+function playClang(x,y){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime;if(t-(audioLast.clang??-100)<.1)return;let att=1,pan=0;if(game&&Number.isFinite(x)){const dx=x-game.p.x,dy=y-game.p.y,dist=Math.hypot(dx,dy);if(dist>1300)return;att=Math.max(0,1-dist/1300);pan=clamp(dx/600,-1,1)}const vol=.30*(audioSettings.combat??1)*att;if(vol<=.0005)return;audioLast.clang=t;
+ try{const out=audioCtx.createGain();out.gain.value=1;let node=out;if(audioCtx.createStereoPanner){const pn=audioCtx.createStereoPanner();pn.pan.value=pan;out.connect(pn);pn.connect(audioMaster)}else out.connect(audioMaster);
+ const partial=(hz,type,dur,g)=>{const o=audioCtx.createOscillator(),ga=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(hz*rand(.985,1.015),t);ga.gain.setValueAtTime(.0001,t);ga.gain.exponentialRampToValueAtTime(Math.max(.0002,vol*g),t+.003);ga.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(ga);ga.connect(out);o.start(t);o.stop(t+dur+.02)};
+ partial(1240,'sine',.55,.9);partial(1870,'sine',.42,.7);partial(2790,'sine',.3,.5);partial(3650,'sine',.2,.35);partial(520,'triangle',.4,.6);
+ const o=audioCtx.createOscillator(),ga=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(34,t+.4);ga.gain.setValueAtTime(.0001,t);ga.gain.exponentialRampToValueAtTime(vol*1.4,t+.01);ga.gain.exponentialRampToValueAtTime(.0001,t+.42);o.connect(ga);ga.connect(out);o.start(t);o.stop(t+.45);
+ const len=Math.floor(audioCtx.sampleRate*.06),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),dt=buf.getChannelData(0);for(let i=0;i<len;i++)dt[i]=(Math.random()*2-1)*(1-i/len);const ns=audioCtx.createBufferSource();ns.buffer=buf;const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=3000;const ng=audioCtx.createGain();ng.gain.value=vol*1.2;ns.connect(hp);hp.connect(ng);ng.connect(out);ns.start(t);
+ setTimeout(()=>{try{out.disconnect()}catch(e){}},900)}catch(e){}}
+function spawnHaki(x,y){if(!game)return;game.haki=game.haki||[];if(game.haki.length>6)game.haki.shift();const bolts=[];const n=9;for(let i=0;i<n;i++){const a=i/n*TAU+rand(-.2,.2),pts=[];let r=0,ang=a;for(let k=0;k<6;k++){r+=rand(.14,.22);ang+=rand(-.35,.35);pts.push([Math.cos(ang)*r,Math.sin(ang)*r])}bolts.push(pts)}game.haki.push({x,y,life:.75,max:.75,bolts});game.shake=Math.max(game.shake,14)}
+function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!isVisible(h.x,h.y,300))continue;const t=1-h.life/h.max,a=Math.max(0,1-t);ctx.save();ctx.translate(h.x,h.y);
+ const R=30+t*190,gr=ctx.createRadialGradient(0,0,0,0,0,R);gr.addColorStop(0,'rgba(0,0,0,'+(.75*a)+')');gr.addColorStop(.55,'rgba(70,0,25,'+(.45*a)+')');gr.addColorStop(1,'rgba(255,30,70,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill();
+ ctx.lineCap='round';ctx.lineJoin='round';
+ ctx.strokeStyle='rgba(10,0,10,'+a+')';ctx.lineWidth=12*a+2;ctx.beginPath();ctx.arc(0,0,R*.92,0,TAU);ctx.stroke();ctx.strokeStyle='rgba(255,45,85,'+a+')';ctx.lineWidth=3*a+.5;ctx.beginPath();ctx.arc(0,0,R*.92,0,TAU);ctx.stroke();
+ ctx.strokeStyle='rgba(255,255,255,'+(a*.8)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,R*.55,0,TAU);ctx.stroke();
+ const L=70+t*170;for(const pts of h.bolts){for(const pass of [0,1]){ctx.strokeStyle=pass?'rgba(255,60,90,'+a+')':'rgba(5,0,8,'+a+')';ctx.lineWidth=pass?2:6*a+1.5;ctx.beginPath();ctx.moveTo(0,0);for(const q of pts)ctx.lineTo(q[0]*L,q[1]*L);ctx.stroke()}}
+ if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,26*(1-t/.25)+6,0,TAU);ctx.fill()}
+ ctx.restore()}}
+
+// ===== Loot racks: 2 rows x 6 columns, or random scatter =====
+function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.length>=3)g.racks.shift();
+ const p=g.p,a=rand(0,TAU),d=rand(420,1300),cx=clamp(p.x+Math.cos(a)*d,-half+420,half-420),cy=clamp(p.y+Math.sin(a)*d,-half+260,half-260),grid=Math.random()<.6,gx=86,gy=84;
+ const nonGun=ARSENAL.filter(t=>!t.gun&&t.tier<=Math.min(6,2+Math.floor(((g.stage||1)-1)/2)));
+ const items=[];for(let i=0;i<12;i++){const r=Math.random();if(r<.4)items.push(['weapon',1,randWeapon(false,choose(nonGun).id)]);else if(r<.65)items.push(['ability',1,{id:choose(FIELD_ITEMS).id}]);else{const type=choose(['meat','hide','bone','bone','hide','frost','claw']),cap=clamp(Math.round(4+g.elapsed/20),4,40);items.push([type,1+Math.floor(Math.pow(Math.random(),1.6)*(type==='frost'||type==='claw'?Math.ceil(cap/4):cap)),null])}}
+ g.racks.push({x:cx,y:cy,grid,age:0});
+ items.forEach((it,i)=>{let x,y;if(grid){x=cx+(i%6-2.5)*gx;y=cy+(Math.floor(i/6)-.5)*gy}else{x=clamp(cx+rand(-230,230),-half+90,half-90);y=clamp(cy+rand(-130,130),-half+90,half-90)}
+  spawnDrop(x,y,it[0],it[1],it[2]);const dr=g.drops[g.drops.length-1];if(dr){dr.vx=0;dr.vy=0;dr.age=-1}});
+ note(grid?'🎁 พบชั้นวางของ 2 แถว × 6 ช่อง!':'🎁 พบกองของตกกระจายอยู่แถวนี้!')}
+function drawRacks(){const g=game;if(!g.racks)return;for(const r of g.racks){if(!r.grid||!isVisible(r.x,r.y,300))continue;ctx.save();ctx.translate(r.x,r.y);roundRect(-258,-90,516,180,16,'rgba(120,190,215,.28)');ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.roundRect(-258,-90,516,180,16);ctx.stroke();ctx.restore()}}
+
 // ===== Random pop-up holes =====
 const HOLE_COUNT=20;
 function spawnHole(initial=false){const g=game,p=g.p;let x,y;for(let t=0;t<20;t++){const a=rand(0,TAU),d=rand(initial?260:500,initial?1500:2400);x=clamp(p.x+Math.cos(a)*d,-half+120,half-120);y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<350))break}g.holes.push({x,y,r:rand(46,66),age:0,life:rand(22,40)})}
 function teleportTo(e,pad=120){const g=game;let x,y;for(let t=0;t<20;t++){x=rand(-half+pad,half-pad);y=rand(-half+pad,half-pad);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+120))break}sparks(e.x,e.y,'#bdeaff',14);e.x=x;e.y=y;sparks(x,y,'#e5ffff',18)}
-function updateHoles(dt){const g=game,p=g.p;g.holeCd=Math.max(0,g.holeCd-dt);
+function updateHoles(dt){const g=game,p=g.p;if(g.haki)for(let i=g.haki.length-1;i>=0;i--){g.haki[i].life-=dt;if(g.haki[i].life<=0)g.haki.splice(i,1)}
+ g.rackTimer=(g.rackTimer??5)-dt;if(g.rackTimer<=0){spawnRack();g.rackTimer=rand(45,75)}
+g.holeCd=Math.max(0,g.holeCd-dt);
  for(let i=g.holes.length-1;i>=0;i--){const o=g.holes[i];o.age+=dt;if(o.age>=o.life){g.holes.splice(i,1);spawnHole()}}
  while(g.holes.length<HOLE_COUNT)spawnHole();
  for(const o of g.holes){const grow=Math.min(1,o.age/1.2)*Math.min(1,(o.life-o.age)/1.2);o.k=grow;
@@ -459,14 +490,14 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*game.shake,h/2+(Math.random()-.5)*game.shake);ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- drawHoles();
+ drawHoles();drawRacks();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp')d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else drawPlayer(a.obj)}
-  drawSwords(game.p);drawExtraWeapons(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();
+  drawSwords(game.p);drawExtraWeapons(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  drawEnemyArrows();
@@ -521,7 +552,7 @@ function updateArsenal(dt){
 }
 function drawProjectiles(){for(const b of shots){if(!isVisible(b.x,b.y,100))continue;line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,b.shape==='rpg'?6:2,b.shape==='rpg'?'#ffb968':'#ffe5a0')}}
 function receiveShots(event){if(!Array.isArray(event.shots))return;for(const b of event.shots.slice(-18)){if(!b||typeof b.id!=='string'||!b.id.startsWith(event.id+'s')||b.id.length>100||seenCombat.has(b.id))continue;const spec=WEAPON_TYPES.find(t=>t.id===b.type&&t.gun);if(!spec||!Number.isFinite(b.t)||Math.abs(Date.now()-b.t)>3000)continue;playSound('gun',clean(b.x),clean(b.y),spec.shape);seenCombat.set(b.id,Date.now());for(let k=0;k<(b.rays===8?8:1);k++)emitShot({damage:clean(b.damage,spec.base,1,600)},spec,clean(b.x),clean(b.y),clean(b.a,0,-100,100)+k*TAU/8,event.id,b.id+'-'+k)}}
-function breakBlade(id,x,y,type){if(!game)return false;if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0||combatSpec(game.weapons[i]).gun)return false;game.weapons.splice(i,1)}playSound('clash',x,y);playSound('break',x,y);game.flyWeapons=game.flyWeapons||[];if(game.flyWeapons.length<20)game.flyWeapons.push({x,y,a:rand(0,TAU),vx:rand(-180,180),vy:rand(-220,-100),life:.55,type});sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
+function breakBlade(id,x,y,type){if(!game)return false;if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0||combatSpec(game.weapons[i]).gun)return false;game.weapons.splice(i,1)}playClang(x,y);playSound('break',x,y);spawnHaki(x,y);game.flyWeapons=game.flyWeapons||[];if(game.flyWeapons.length<20)game.flyWeapons.push({x,y,a:rand(0,TAU),vx:rand(-180,180),vy:rand(-220,-100),life:.55,type});sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
 function receiveClashes(event){if(!Array.isArray(event.clashes))return;for(const c of event.clashes.slice(-6)){if(!c||c.to!==CLIENT_ID||typeof c.id!=='string'||seenCombat.has(c.id)||!Number.isFinite(c.t)||Math.abs(Date.now()-c.t)>5000)continue;if(!peers.has(event.id)||Math.hypot(peers.get(event.id).x-game.p.x,peers.get(event.id).y-game.p.y)>500)continue;seenCombat.set(c.id,Date.now());breakBlade(String(c.blade||''),game.p.x,game.p.y,c.type)}}
 function updateClashes(dt){
  const p=game.p;for(const r of peers.values()){if(!r.init||performance.now()-r.last>1500||d2(p.x-r.x,p.y-r.y)>500**2)continue;const own=ownBlades().filter(b=>!combatSpec({type:b.type}).gun),other=remoteBlades(r).filter(b=>!combatSpec({type:b.type}).gun);if(!own.length||!other.length)continue;let dx=p.x-r.x,dy=p.y-r.y,d=Math.hypot(dx,dy),minimum=Math.max(swordRange(),...other.map(b=>b.reach))+30;if(d<minimum){if(d<.001){dx=CLIENT_ID<r.id?1:-1;dy=0;d=1}p.x=clamp(r.x+dx/d*minimum,-half+50,half-50);p.y=clamp(r.y+dy/d*minimum,-half+50,half-50)}if(CLIENT_ID>r.id||now<(r.nextClash||0)||d>450)continue;
