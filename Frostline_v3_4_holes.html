@@ -354,7 +354,7 @@ function addBounceFloat(text,color){const p=game.p;game.float.push({x:p.x,y:p.y-
 
 // ===== Practice bots: 5 roaming fighters, named Bot 1..5 =====
 const BOT_LOOK={boots:1,bag:1,armor:1,furArmor:false,leatherPack:false,level:1};
-function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(315,630);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),items:2+Math.floor(rand(0,7)),fleeing:false}}
+function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(315,630);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),items:2+Math.floor(rand(0,7)),fleeing:false,blades:4}}
 function updateBots(dt){const g=game,p=g.p;for(const b of g.bots||[]){
  if(b.dead>0){b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp}continue}
  b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if(g.weapons.length>b.items&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}
@@ -363,10 +363,10 @@ function updateBots(dt){const g=game,p=g.p;for(const b of g.bots||[]){
  b.mx=(b.x-ox)/Math.max(dt,1e-4);b.my=(b.y-oy)/Math.max(dt,1e-4);b.walk+=dt*11;if(Math.abs(dx)>4)b.dir=Math.sign(dx);
  b.x+=(b.kvx||0)*dt;b.y+=(b.kvy||0)*dt;{const kd2=Math.exp(-dt*8);b.kvx=(b.kvx||0)*kd2;b.kvy=(b.kvy||0)*kd2}b.x=clamp(b.x,-half+50,half-50);b.y=clamp(b.y,-half+50,half-50);resolveObs(b,18);b.s+=dt*2.6;b.hitCd=Math.max(0,b.hitCd-dt);
  // player's melee blades can wound bots
- if(b.hitCd<=0){for(const a of ownBlades()){if(combatSpec({type:a.type}).gun)continue;const aa=g.swordPhase+a.o,tx=p.x+Math.cos(aa)*a.reach,ty=p.y+Math.sin(aa)*a.reach;if(d2(tx-b.x,ty-b.y)<36*36){b.hp-=a.damage;b.hitCd=.35;sparks(b.x,b.y,'#dff8ff',10);addFloat(b.x,b.y-40,`-${Math.round(a.damage)}`,'#ffd0d0');playSound('hit',b.x,b.y);{const ang=Math.atan2(b.y-p.y,b.x-p.x);b.kvx=Math.cos(ang)*260;b.kvy=Math.sin(ang)*260;addSlash(b.x,b.y,ang)}if(b.hp<=0){b.dead=6;earnXP(20);addFloat(b.x,b.y-60,`${b.name} ล้มแล้ว +XP`,'#c8f5ff');sparks(b.x,b.y,'#e5ffff',22);note(`🎯 ${b.name} ล้มแล้ว!`)}break}}}
+ if(b.hitCd<=0){for(const a of ownBlades()){if(combatSpec({type:a.type}).gun)continue;const aa=g.swordPhase+a.o,tx=p.x+Math.cos(aa)*a.reach,ty=p.y+Math.sin(aa)*a.reach;if(d2(tx-b.x,ty-b.y)<36*36){b.hp-=a.damage;b.hitCd=.35;sparks(b.x,b.y,'#dff8ff',10);addFloat(b.x,b.y-40,`-${Math.round(a.damage)}`,'#ffd0d0');playSound('hit',b.x,b.y);{const ang=Math.atan2(b.y-p.y,b.x-p.x);b.kvx=Math.cos(ang)*260;b.kvy=Math.sin(ang)*260;addSlash(b.x,b.y,ang)}if(b.hp<=0){b.dead=6;b.blades=4;earnXP(20);addFloat(b.x,b.y-60,`${b.name} ล้มแล้ว +XP`,'#c8f5ff');sparks(b.x,b.y,'#e5ffff',22);note(`🎯 ${b.name} ล้มแล้ว!`)}break}}}
 }}
 function drawBot(b){ctx.save();drawPlayer(b,BOT_LOOK);ctx.restore();
- const rad=60;for(let k=0;k<4;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
+ const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';ctx.strokeText(b.name,b.x,b.y+36);ctx.fillText(b.name,b.x,b.y+36);
  roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore()}
 
@@ -380,7 +380,7 @@ function addSlash(x,y,a){slashFx.push({x,y,a,life:.28});if(slashFx.length>20)sla
 function updateSlashes(dt){for(const q of slashFx)q.life-=dt;slashFx=slashFx.filter(q=>q.life>0)}
 function drawSlashes(){for(const q of slashFx){const k=q.life/.28;ctx.save();ctx.lineCap='round';ctx.globalAlpha=k;ctx.strokeStyle='#ffffff';ctx.lineWidth=5*k+1;ctx.beginPath();ctx.arc(q.x,q.y,28+(1-k)*18,q.a-.9,q.a+.9);ctx.stroke();ctx.strokeStyle='#ff6b8a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.x,q.y,22+(1-k)*16,q.a-.8,q.a+.8);ctx.stroke();ctx.restore()}}
 function bladeSegments(){const segs=[];for(const r of peers.values()){if(!r.init||performance.now()-r.last>1500)continue;for(const b of remoteBlades(r)){if(!combatSpec({type:b.type}).gun)segs.push([r.x,r.y,b.a,b.reach])}}
- for(const b of game.bots||[]){if(b.dead)continue;for(let k=0;k<4;k++)segs.push([b.x,b.y,b.s+k*TAU/4,60])}return segs}
+ for(const b of game.bots||[]){if(b.dead)continue;for(let k=0;k<b.blades;k++)segs.push([b.x,b.y,b.s+k*TAU/4,60])}return segs}
 function pushFromBlades(p){for(const [cx0,cy0,a,reach] of bladeSegments()){const x1=cx0+Math.cos(a)*20,y1=cy0+Math.sin(a)*20,x2=cx0+Math.cos(a)*reach,y2=cy0+Math.sin(a)*reach;const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy||1;const t=clamp(((p.x-x1)*dx+(p.y-y1)*dy)/L2,0,1);const qx=x1+dx*t,qy=y1+dy*t;const ox=p.x-qx,oy=p.y-qy,d=Math.hypot(ox,oy),R=20;if(d<R){const L=Math.sqrt(L2);const nx=d>1e-6?ox/d:-dy/L,ny=d>1e-6?oy/d:dx/L;p.x=qx+nx*R;p.y=qy+ny*R}}}
 
 // ===== Random pop-up holes =====
