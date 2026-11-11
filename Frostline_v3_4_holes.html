@@ -323,7 +323,7 @@ const STR={th:{master:'หลัก',combat:'เสียงต่อสู้',
 let paused=false,game=null,mode='menu',input={up:false,down:false,left:false,right:false,pointerId:null,ox:0,oy:0,x:0,y:0,dx:0,dy:0};
 // Legacy embedded Zebra printer image removed; procedural fantasy props need no downloads.
 const OBS_W=52,OBS_H=54;
-const world=7200*5,half=world/2,decor=[],particle=[],petals=[];
+const world=7200*2.5,half=world/2,decor=[],particle=[],petals=[];
 
 // FROSTLINE Natural World: one deterministic curved coastline shared by ALL stages,
 // network clients, wildlife, bot AI, drops, holes and teleport targets.
@@ -584,7 +584,7 @@ function newGame(){
  $('killBanner').classList.remove('show');
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
- keepInWorld(game.p,1100);game.p.skin=safeSkinId(saved.skinEquipped);wildlifeStart(1);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];game.nextBotId=0;game.nextBotBalance=0;reconcileBots();for(const b of game.bots)keepInWorld(b,180);for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
+ keepInWorld(game.p,1100);game.p.skin=safeSkinId(saved.skinEquipped);wildlifeStart(1);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};friendlyStart(1);game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];game.nextBotId=0;game.nextBotBalance=0;reconcileBots();for(const b of game.bots)keepInWorld(b,180);for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();showWarpGuideOnce();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -625,6 +625,44 @@ function wildlifeDiscover(id){
  try{localStorage.setItem(WILDLIFE_SAVE_KEY,JSON.stringify([...wildlifeSeen]))}catch{}
  wildlifeBadge();
  if(game&&!lowGraphics())sparks(game.p.x,game.p.y,WILDLIFE_BY_ID.get(id).accent,3);
+}
+// Friendly creatures are decorative, non-colliding and use a separate roster from enemies.
+const FRIENDLY_CREATURES=[
+ {id:'bird',kind:'bird',coat:'#67bad1',accent:'#fff0b6',stages:[1,2,4,5,7,9],behavior:'flee'},
+ {id:'butterfly',kind:'butterfly',coat:'#d5a5f4',accent:'#ffe0ed',stages:[4,5,9],behavior:'fly'},
+ {id:'bee',kind:'bee',coat:'#f5c548',accent:'#ffffff',stages:[4,5,9],behavior:'bee'},
+ {id:'fish',kind:'fish',coat:'#f3976f',accent:'#fceac1',stages:[1,2,4,6,9],behavior:'water'},
+ {id:'turtle',kind:'turtle',coat:'#7db58a',accent:'#c7e4a7',stages:[2,4,9],behavior:'slow'},
+ {id:'otter',kind:'otter',coat:'#aa846b',accent:'#f2ddc5',stages:[1,2,6],behavior:'water'},
+ {id:'panda',kind:'panda',coat:'#f2f3ea',accent:'#435b61',stages:[4,9],behavior:'slow'},
+ {id:'sloth',kind:'sloth',coat:'#bba087',accent:'#efddc4',stages:[4,9],behavior:'slow'},
+ {id:'penguin',kind:'penguin',coat:'#496780',accent:'#f5f3de',stages:[1,2,6,10],behavior:'waddle'},
+ {id:'chick',kind:'chick',coat:'#f5cf5c',accent:'#fff5c9',stages:[2,4,5,9],behavior:'hop'},
+ {id:'whale',kind:'whale',coat:'#76bad0',accent:'#d9f7fa',stages:[1,2,3,4,5,6,7,8,9,10],behavior:'shore'}
+];
+function friendlyStart(stage){
+ const p=game.p,list=FRIENDLY_CREATURES.filter(s=>s.stages.includes(((stage-1)%10)+1));
+ game.friendly=list.map((spec,i)=>{const a=i*TAU/Math.max(1,list.length)+rand(-.15,.15),r=rand(150,500),pos=worldSpot(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,180);return {spec,x:pos.x,y:pos.y,dir:1,phase:rand(0,TAU),walk:0,heading:rand(0,TAU),turn:rand(1,3),show:true}});
+ const penguin=game.friendly.find(a=>a.spec.id==='penguin');if(penguin){for(let i=1;i<=2;i++){const pos=worldSpot(penguin.x-i*24,penguin.y+i*8,150);game.friendly.push({...penguin,x:pos.x,y:pos.y,phase:penguin.phase+i*.5,leader:penguin})}}game.friendlyStage=stage;game.friendlyAcc=0;
+}
+function friendlyTick(dt){
+ if(!game)return;const g=game,p=g.p;if(!g.friendly||g.friendlyStage!==g.stage)friendlyStart(g.stage);
+ g.friendlyAcc+=dt;if(g.friendlyAcc<.1)return;const step=Math.min(.2,g.friendlyAcc);g.friendlyAcc=0;
+ for(const a of g.friendly){
+  const spec=a.spec,dist=Math.hypot(p.x-a.x,p.y-a.y);
+  if(spec.behavior==='shore'){
+   const edge=coastRadius(p.x,p.y),near=Math.hypot(p.x,p.y)>edge-1200;a.show=near;
+   if(near){const angle=Math.atan2(p.y,p.x)+.05;a.x=Math.cos(angle)*(coastRadius(Math.cos(angle),Math.sin(angle))-100);a.y=Math.sin(angle)*(coastRadius(Math.cos(angle),Math.sin(angle))-100)}continue;
+  }
+  a.show=true;if(dist>1000){const ang=rand(0,TAU),r=rand(350,600),pos=worldSpot(p.x+Math.cos(ang)*r,p.y+Math.sin(ang)*r,150);a.x=pos.x;a.y=pos.y;a.turn=0;continue}
+  a.turn-=step;if(a.turn<=0){a.heading+=rand(-1.4,1.4);a.turn=rand(1.5,3.5);
+   if(spec.behavior==='bee'){let best=250*250,found=null;for(const d of g.drops){const dd=(d.x-a.x)**2+(d.y-a.y)**2;if(dd<best){best=dd;found=d}}if(found)a.heading=Math.atan2(found.y-a.y,found.x-a.x)}
+  }
+  if(spec.behavior==='flee'&&dist<120)a.heading=Math.atan2(a.y-p.y,a.x-p.x);
+  const leader=a.leader||(spec.id==='chick'?g.friendly.find(q=>q.spec.id==='bird'):null);if(leader&&Math.hypot(a.x-leader.x,a.y-leader.y)>35)a.heading=Math.atan2(leader.y-a.y,leader.x-a.x);
+  const speed=spec.behavior==='slow'?7:spec.behavior==='water'?10:spec.behavior==='fly'||spec.behavior==='bee'?29:19;
+  a.x+=Math.cos(a.heading)*speed*step;a.y+=Math.sin(a.heading)*speed*step;keepInWorld(a,130);a.dir=Math.cos(a.heading)<0?-1:1;a.walk+=step*8;
+ }
 }
 function wildlifeActor(s,ang,dist){
  const p=game.p;
@@ -923,7 +961,7 @@ function cutePropType(o,stage){
  return pool[Math.abs(Math.floor((o.seed||0)*1e6+stage*7919))%pool.length];
 }
 function makeObstacles(){
- const list=[],clusters=3250;
+ const list=[],clusters=Math.round(3250*(world/(7200*5))**2);
  for(let k=0;k<clusters;k++){
   let cx,cy,tries=0;
   do{
@@ -1410,6 +1448,7 @@ function drawHoles(){const g=game;for(const o of g.holes){if(!isVisible(o.x,o.y,
 function updateSnowDog(dt){
  const g=game,d=g&&g.dog;if(!d)return;
  const p=g.p,motion=Math.hypot(p.mx||0,p.my||0),following=motion>14;
+ d.findTimer=(d.findTimer||0)-dt;if(d.findTimer<=0){d.findTimer=2;let best=260*260;d.itemHint=null;for(const item of g.drops){const dd=(item.x-d.x)**2+(item.y-d.y)**2;if(dd<best){best=dd;d.itemHint={x:item.x,y:item.y}}}}
  const tx=following?p.x-(p.dir||1)*57:p.x+Math.sin(now*.88)*65;
  const ty=following?p.y+20:p.y+20+Math.sin(now*.62)*6;
  let dx=tx-d.x,dy=ty-d.y,dist=Math.hypot(dx,dy);
@@ -1436,7 +1475,7 @@ function update(dt){if(mode==='dying'&&game){updateDying(dt);return}if(mode!=='p
  let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){const newStage=stage!==g.stage;const badge=$('pictureStage');badge.classList.remove('changed');void badge.offsetWidth;badge.classList.add('changed');g.stage=stage;g.phase=phase;if(newStage)wildlifeStart(stage);if(stage===3||newStage&&STAGE_DESIGNS[stage])g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${STAGE_DESIGNS[stage]?.thai||beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,STAGE_DESIGNS[stage]?.color||'#e5ffff',22);if(phase===3&&STAGE_DESIGNS[stage])spawnThemedBoss(stage);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}if(pinchPts.size>=2){dx=0;dy=0}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);if(g.dash){const D=g.dash,el=now-D.t0;p.x=el<D.out?D.x0:D.x1;p.y=el<D.out?D.y0:D.y1;p.inv=Math.max(p.inv,.1);if(el>=D.out+D.inDur){g.dash=null;resolveObs(p,16);sparks(p.x,p.y,'#e5ffff',12)}}keepInWorld(p,75);p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateSnowDog(dt);wildlifeTick(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();for(const b of g.bots||[])if(b.dead<=0)keepInWorld(b,75);buildBotTargetGrid();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
+ updateSnowDog(dt);wildlifeTick(dt);friendlyTick(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();for(const b of g.bots||[])if(b.dead<=0)keepInWorld(b,75);buildBotTargetGrid();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -1861,6 +1900,24 @@ function drawWildlifeBoss(m){
  if(m.hp<m.maxHp){const w=62;roundRect(m.x-w/2,m.y-77,w,6,3,'#2c395c');
   roundRect(m.x-w/2,m.y-77,w*clamp(m.hp/Math.max(1,m.maxHp),0,1),6,3,s.accent)}
 }
+function drawFriendlyScene(){
+ if(!game||!game.friendly)return;
+ for(const a of game.friendly){
+  if(!a.show||!isVisible(a.x,a.y,80))continue;const spec=a.spec,k=spec.kind;
+  if(['butterfly','turtle','otter','panda','sloth','penguin'].includes(k)){drawWildlifeShape(a,spec);continue}
+  ctx.save();ctx.translate(a.x,a.y);const bob=Math.sin(now*3+a.phase)*2;ctx.translate(0,bob);ctx.scale(a.dir*.5,.5);
+  if(k==='fish'||k==='whale'){
+   ellipse(0,10,42,11,'#85cddd99');ellipse(0,8,33,6,'#c3f4f2');
+   ellipse(0,-4,k==='whale'?26:19,k==='whale'?14:10,spec.coat);poly([[-17,-4],[-31,-15],[-30,7]],spec.coat);ellipse(10,-8,2.5,2.5,'#244555');
+   if(k==='whale'){line(0,-18,-3,-27,2,'#ddffff');line(0,-18,6,-27,2,'#ddffff')}
+  }else if(k==='bee'){
+   ellipse(-5,-16,8,11,'#e3f9ff');ellipse(6,-16,8,11,'#e3f9ff');ellipse(0,-5,16,11,spec.coat);line(-4,-14,-4,4,4,'#665347');line(5,-14,5,4,4,'#665347');ellipse(10,-8,2,2,'#283b4c');
+  }else{
+   ellipse(0,0,18,13,spec.coat);ellipse(12,-11,12,11,spec.coat);poly([[22,-11],[31,-7],[22,-4]],'#f2ad55');ellipse(14,-14,2,2,'#294457');ellipse(-4,-3,8,5,spec.accent);
+  }
+  ctx.restore();
+ }
+}
 function drawWildlifeScene(){
  if(!game||!game.wildlife)return;
  const mx=w/Math.max(.05,screenScale)*.55,my=h/Math.max(.05,screenScale)*.55;
@@ -1949,7 +2006,7 @@ function drawSnowDog(d){
  if(!lowGraphics())roundRect(d.x-18,d.y-35,36,12,6,'#234a60d6');
  ctx.font='bold 8px system-ui,sans-serif';ctx.fillStyle='#fff8e4';
  if(!lowGraphics())ctx.fillText('🐾 โมจิ',d.x,d.y-29);
- ctx.restore();
+ ctx.restore();if(d.itemHint){const angle=Math.atan2(d.itemHint.y-d.y,d.itemHint.x-d.x);ctx.save();ctx.translate(d.x,d.y-39);ctx.rotate(angle);poly([[8,0],[-3,-5],[-3,5]],'#ffe482');ctx.restore()}
 }
 
 
@@ -2090,7 +2147,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  drawVisibleCuteObstacles();
  drawHoles();drawMeteorGround();
- drawWildlifeScene();
+ drawWildlifeScene();drawFriendlyScene();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
