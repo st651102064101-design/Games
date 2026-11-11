@@ -635,8 +635,61 @@ $('levelReady').onclick=showLevelChoice; {const ni=$('nameInput');ni.value=PLAYE
 let b=readBest();$('bestText').textContent=b.time?`สถิติสูงสุด: ${Math.floor(b.time/60)}:${String(b.time%60).padStart(2,'0')} นาที · ด่าน ${b.stage}`:'เล่นได้ทั้งมือถือและคอมพิวเตอร์ · ไม่ต้องเชื่อมต่ออินเทอร์เน็ต';
 initDecor();resize();requestAnimationFrame(tick);
 
+// Detailed gun models (barrel points toward -y in local space)
+function drawGun(t,w,metal,dark){
+ const steel=(x0,x1)=>{const g=ctx.createLinearGradient(x0,0,x1,0);g.addColorStop(0,'#1f2d36');g.addColorStop(.42,'#9bb0bc');g.addColorStop(.6,'#5a6e7b');g.addColorStop(1,'#1b2831');return g};
+ const wood=ctx.createLinearGradient(-6,0,6,0);wood.addColorStop(0,'#5b3a26');wood.addColorStop(.5,'#a46f46');wood.addColorStop(1,'#4a2e1e');
+ const polymer='#2d3b44',sh=t.shape;
+ const grip=(y0,h,x=0)=>roundRect(-4+x,y0,8,h,3,polymer);
+ const trigger=(y)=>{ctx.beginPath();ctx.arc(0,y,5,0,Math.PI);ctx.strokeStyle='#22313a';ctx.lineWidth=2;ctx.stroke()};
+ if(sh==='pistol'||sh==='burst'){
+  roundRect(-5,-24,10,24,2,steel(-5,5));roundRect(-3,-31,6,8,2,'#26343e');ellipse(0,-30,2.5,2.5,'#101a20');
+  roundRect(-4,-14,8,8,2,polymer);grip(-6,18);trigger(4);roundRect(-1.5,-27,3,3,1,'#ffd27a');
+  if(sh==='burst'){roundRect(-3,-46,6,5,1,steel(-3,3));roundRect(-6,-40,12,3,1,polymer)}
+ }else if(sh==='revolver'){
+  ellipse(0,-14,9,9,steel(-9,9));for(let i=0;i<6;i++){const q=i*TAU/6;ellipse(Math.cos(q)*4.5,-14+Math.sin(q)*4.5,1.6,1.6,'#0f171d')}
+  roundRect(-2.5,-40,5,20,2,steel(-3,3));roundRect(-1.5,-44,3,4,1,'#ffd27a');
+  roundRect(-4,-6,8,18,3,wood);trigger(6);
+ }else if(sh==='smg'){
+  roundRect(-6,-26,12,17,3,steel(-6,6));roundRect(-3,-44,6,20,2,'#24323b');
+  for(let k=0;k<4;k++)line(-2,-40+k*4,2,-40+k*4,1.4,'#0c1419');
+  roundRect(-2,-46,4,3,1,'#ffd27a');roundRect(-4,-26,8,4,2,polymer);
+  poly([[-4,-9],[4,-9],[6,6],[-3,11],[-6,4]],polymer);
+  grip(-9,16,3);roundRect(-9,-8,4,10,2,polymer);trigger(3);
+ }else if(sh==='rifle'){
+  roundRect(-6,-26,12,20,3,steel(-6,6));line(0,-26,0,-54,4.5,'#2a3840');roundRect(-5,-46,10,18,2,wood);
+  roundRect(-2,-54,4,3,1,'#2a3840');roundRect(-7,-22,14,6,2,polymer);
+  poly([[-4,-6],[4,-6],[5,14],[-3,14]],'#26343e');grip(-6,16,4);roundRect(-6,4,12,22,3,wood);trigger(4);
+ }else if(sh==='sniper'){
+  roundRect(-6,-26,12,18,3,steel(-6,6));line(0,-26,0,-66,4,'#2a3840');
+  roundRect(-4,-50,8,22,4,'#1c2c35');ellipse(0,-50,3,3,'#72dff4');ellipse(0,-50,1.2,1.2,'#dff9ff');
+  roundRect(-6,-70,4,6,1,'#2a3840');
+  roundRect(-6,-6,12,18,4,wood);roundRect(-5,-8,10,6,2,polymer);grip(-2,12,2);trigger(2);
+ }else if(sh==='shotgun'){
+  line(-2.2,-22,-2.2,-64,3.6,steel(-4,0));line(2.2,-22,2.2,-64,3.6,steel(0,4));
+  roundRect(-6,-22,12,16,3,steel(-6,6));roundRect(-5,-34,10,12,3,wood);
+  roundRect(-6,-6,12,6,2,wood);poly([[-5,0],[5,0],[6,18],[-4,18]],wood);
+  grip(-6,12,2);trigger(3);
+ }else if(sh==='lmg'){
+  roundRect(-8,-26,16,20,3,dark);roundRect(-5,-46,10,22,3,'#4d5b45');
+  for(let k=0;k<4;k++)line(-4,-42+k*4,4,-42+k*4,1.2,'#2b3527');
+  line(0,-46,0,-66,6.5,steel(-4,4));roundRect(-14,-24,6,22,2,'#5f6e4e');
+  line(-4,-46,-9,-60,2,'#2a3840');line(4,-46,9,-60,2,'#2a3840');
+  roundRect(-5,-6,10,6,2,'#2a3840');grip(-6,14,3);trigger(5);
+ }else if(sh==='rpg'){
+  roundRect(-7,-44,14,36,6,'#5d6b43');line(0,-44,0,-66,11,'#4f5c3a');poly([[-11,-66],[0,-84],[11,-66]],'#8f9d6c');
+  roundRect(-3,-54,6,3,1,'#2b3527');roundRect(-4,-18,8,12,2,dark);roundRect(-3,-38,6,6,1,'#ffd27a');grip(-4,12,2);
+ }else if(sh==='minigun'){
+  roundRect(-12,-34,24,22,4,dark);roundRect(-6,-16,12,12,3,polymer);grip(-8,14,3);trigger(4);
+  for(let i=0;i<6;i++){const off=Math.sin(now*25*(w.fire?.spin||0)+i*TAU/6)*9;line(off,-32,off,-62,3,w.fire?.heat>.8?'#ff946c':steel(-3,3))}
+  ellipse(0,-33,12,4,dark);
+ }else{
+  roundRect(-7,-30,14,28,3,steel(-7,7));line(0,-30,0,-50,6,'#2a3840');grip(-2,14,2);trigger(2);
+ }
+}
+
 function drawArsenalModel(x,y,a,w,t,r){ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);const metal=t.shape==='frost'?'#8cecff':t.shape==='storm'?'#bba3ff':r.color,dark='#365363';line(0,8,0,-15,5,'#72574a');
- if(t.gun){if(w.fire?.flash>0)ctx.translate(0,4);const len=t.shape==='sniper'?64:t.shape==='rpg'?60:t.shape==='pistol'?25:43;roundRect(-7,-len,14,len-6,3,dark);line(0,-len,0,-len-10,t.shape==='rpg'?13:5,metal);roundRect(1,-17,6,18,2,'#6f5d4d');if(['rifle','smg','lmg','minigun'].includes(t.shape))roundRect(-5,-24,10,15,2,'#172e3b');if(t.shape==='revolver')ellipse(0,-20,9,8,'#869aa3');if(t.shape==='burst')line(-7,-30,7,-30,3,metal);if(t.shape==='shotgun'){line(-4,-45,-4,-60,4,metal);line(4,-45,4,-60,4,metal)}if(t.shape==='sniper'){roundRect(-4,-46,8,19,2,'#182e3c');ellipse(0,-46,4,4,'#72dff4')}if(t.shape==='lmg')roundRect(-15,-28,13,16,2,'#70805d');if(t.shape==='minigun'){for(let i=0;i<6;i++){const off=Math.sin(now*25*(w.fire?.spin||0)+i*TAU/6)*9;line(off,-32,off,-62,3,w.fire?.heat>.8?'#ff946c':metal)}ellipse(0,-33,12,4,dark)}if(t.shape==='rpg'){poly([[-11,-58],[0,-80],[11,-58],[7,-41],[-7,-41]],'#91a36a')}if(w.fire?.flash>0){poly([[0,-len-25],[-9,-len-8],[9,-len-8]],'#ffe6a0')}ctx.restore();return}
+ if(t.gun){if(w.fire?.flash>0)ctx.translate(0,4);drawGun(t,w,metal,dark);if(w.fire?.flash>0){const L=t.shape==='pistol'?34:t.shape==='sniper'?72:t.shape==='rpg'?70:58;poly([[0,-L-18],[-8,-L-4],[8,-L-4]],'#ffe6a0')}ctx.restore();return}
  const sh=t.shape;
  if(['baton','crowbar','chain'].includes(sh)){line(0,0,0,-50,sh==='baton'?8:4,metal);if(sh==='crowbar')line(0,-50,13,-58,5,metal);if(sh==='chain'){for(let k=0;k<5;k++)ellipse(0,-16-k*6,3,5,dark);ctx.beginPath();ctx.arc(-10,-48,18,-2.8,.7);ctx.lineWidth=5;ctx.strokeStyle=metal;ctx.stroke()}}
  else if(['hatchet','axe','halberd','hammer'].includes(sh)){line(0,4,0,-52,5,'#8c6950');if(sh==='hammer')roundRect(-17,-56,34,18,3,metal);else{poly([[0,-53],[-19,-62],[-23,-39],[0,-35]],metal);if(sh==='axe')poly([[0,-53],[19,-62],[23,-39],[0,-35]],metal);if(sh==='halberd')poly([[0,-80],[-6,-55],[6,-55]],metal)}}
