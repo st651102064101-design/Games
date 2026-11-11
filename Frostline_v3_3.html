@@ -317,6 +317,16 @@ function drawDecor(d){ctx.save();ctx.translate(d.x,d.y);ctx.scale(d.scale,d.scal
  else if(d.kind==='bush'){ellipse(4,5,26,11,'#789eb52a');for(let j=-1;j<=1;j++){ellipse(j*11,0,11,9,j===0?'#679ba1':'#72aaab');ellipse(j*11-3,-4,8,4,'#d9f6ef')}}
  else if(d.kind==='ice'){ellipse(0,3,24,9,'#5191ba1e');poly([[-8,8],[-12,-6],[2,-21],[15,-3],[8,9]],'#94d3e4aa');poly([[-8,8],[-12,-6],[2,-21],[0,5]],'#e6ffffa1')}
  else {ellipse(0,0,37,16,'#d4f5f870');ellipse(-6,-2,22,7,'#e7fbffad')}ctx.restore()}
+// Visual terrain outside the exact movement limit; draw only when the camera can see it.
+function drawWorldBoundary(minX,maxX,minY,maxY){
+ const edge=half-50;
+ function sea(x,y,width,height){if(width<=0||height<=0)return;ctx.fillStyle='#346b83';ctx.fillRect(x,y,width,height);ctx.fillStyle='#548da1';for(let px=Math.floor(x/160)*160;px<x+width;px+=160)for(let py=Math.floor(y/115)*115;py<y+height;py+=115)ellipse(px+65,py+44,35,4,'#a5d9e455')}
+ if(maxX>edge)sea(edge,minY,maxX-edge,maxY-minY);
+ if(maxY>edge)sea(minX,edge,maxX-minX,maxY-edge);
+ if(minX< -edge){ctx.fillStyle='#273f55';ctx.fillRect(minX,minY,-edge-minX,maxY-minY);ctx.fillStyle='#385970';ctx.fillRect(-edge-30,minY,30,maxY-minY);for(let y=Math.floor(minY/125)*125;y<maxY;y+=125)poly([[-edge,y],[-edge-45,y+35],[-edge-20,y+80],[-edge,y+105]],'#7295a1')}
+ if(minY< -edge){ctx.fillStyle='#567986';ctx.fillRect(minX,minY,maxX-minX,-edge-minY);for(let x=Math.floor(minX/190)*190;x<maxX;x+=190){poly([[x,-edge],[x+95,-edge-150],[x+190,-edge]],'#6b8d98');poly([[x+55,-edge-86],[x+95,-edge-150],[x+135,-edge-86],[x+110,-edge-100],[x+95,-edge-90],[x+80,-edge-101]],'#e0f4f6')}}
+ ctx.strokeStyle='#b8ecf2';ctx.lineWidth=4;ctx.beginPath();if(minX< -edge){ctx.moveTo(-edge,minY);ctx.lineTo(-edge,maxY)}if(maxX>edge){ctx.moveTo(edge,minY);ctx.lineTo(edge,maxY)}if(minY< -edge){ctx.moveTo(minX,-edge);ctx.lineTo(maxX,-edge)}if(maxY>edge){ctx.moveTo(minX,edge);ctx.lineTo(maxX,edge)}ctx.stroke();
+}
 function drawGround(){ctx.fillStyle='#d3edf3';ctx.fillRect(0,0,w,h);
  const scale=screenScale,cx=cam.x,cy=cam.y;ctx.save();ctx.translate(w/2,h/2);ctx.scale(scale,scale);ctx.translate(-cx,-cy);let vw=w/scale,vh=h/scale;
  // Vast snow fields with gentle contour bands.
@@ -327,6 +337,7 @@ function drawGround(){ctx.fillStyle='#d3edf3';ctx.fillRect(0,0,w,h);
  for(let x=Math.floor(minX/77)*77;!lowGraphics()&&x<maxX;x+=77)for(let y=Math.floor(minY/77)*77;y<maxY;y+=77){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
  // Ring around center clears: environmental guide, no border.
  for(let d of decor){if(d.x<minX-85||d.x>maxX+85||d.y<minY-90||d.y>maxY+90)continue;drawDecor(d)}
+ drawWorldBoundary(minX,maxX,minY,maxY);
  ctx.restore()}
 function drawBear(m){ctx.save();ctx.translate(m.x,m.y);ctx.scale(m.elite?1.17:1,m.elite?1.17:1);if(m.flash>0)ctx.globalAlpha=.6+Math.sin(m.flash*40)*.2;
  ellipse(4,15,31,13,'#2c4e6333');let walk=Math.sin(m.walk)*4;
