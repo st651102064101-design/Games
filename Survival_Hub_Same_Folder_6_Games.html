@@ -667,9 +667,9 @@
           setStatus(e==='LOCAL_FILE'?'ไฟล์ทดลอง • ไม่เชื่อมฐานข้อมูล': 'เชื่อมต่อสถิติไม่ได้', 'offline');
           hint.textContent = 'เกมยังเปิดเล่นได้ตามปกติ';
           if(e==='LOCAL_FILE') showHelp('กำลังเปิดเมนูผ่านไฟล์บนเครื่อง: เกมยังเล่นได้จากโฟลเดอร์เดียวกัน แต่สถิติรวมทุกคนต้องมี Netlify Functions (หรือ Backend) จึงจะใช้งานได้');
-          else if(e==='HTTP_404' || e==='BAD_RESPONSE') showHelp('ไม่พบ Netlify Function ที่ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a> หรือได้คำตอบผิดรูปแบบ โปรด Deploy <strong>ทั้งโปรเจกต์ผ่าน GitHub หรือ Netlify CLI</strong> ไม่ใช่อัปโหลด HTML/ZIP แบบ static เท่านั้น');
-          else if(e==='HTTP_503'||e==='HTTP_500'||e==='HTTP_502') showHelp('ฟังก์ชันเซิร์ฟเวอร์มีข้อผิดพลาด โปรดดู Netlify → Logs → Functions → stats และตรวจสอบการติดตั้ง @netlify/blobs');
-          else showHelp('ถ้าใช้เซิร์ฟเวอร์ไฟล์อย่างเดียว (เช่น Python http.server) ระบบนับรวมจะไม่ทำงาน ต้อง Deploy Netlify Functions ด้วย ตรวจสอบ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a>');
+          else if(e==='HTTP_404' || e==='BAD_RESPONSE') showHelp('ไม่พบ Edge Function ที่ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a> หรือได้คำตอบผิดรูปแบบ โปรด Deploy <strong>ทั้งโปรเจกต์ผ่าน GitHub หรือ Netlify CLI</strong> ไม่ใช่อัปโหลด HTML/ZIP แบบ static เท่านั้น');
+          else if(e==='HTTP_503'||e==='HTTP_500'||e==='HTTP_502') showHelp('ฟังก์ชันเซิร์ฟเวอร์มีข้อผิดพลาด ยังไม่ได้ผูก KV namespace ชื่อ STATS_KV กับโปรเจกต์ EdgeOne (EdgeOne Console → KV Storage → Bind) แล้ว Redeploy');
+          else showHelp('ถ้าใช้เซิร์ฟเวอร์ไฟล์อย่างเดียว (เช่น Python http.server) ระบบนับรวมจะไม่ทำงาน ต้อง Deploy Edge Functionctions ด้วย ตรวจสอบ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a>');
         } finally { busy=false; refresh.disabled=false; if(pendingRefresh) { pendingRefresh=false; if (Date.now() >= nextAutomaticRetryAt) void refreshStats(); } }
       }
       async function recordLaunch(id) {
@@ -682,7 +682,7 @@
           await refreshStats();
         } catch(err) {
           setStatus('กดเข้าเกมได้ แต่บันทึกคลิกไม่สำเร็จ','offline');
-          showHelp('ระบบเก็บสถิติไม่พร้อม โปรดตรวจสอบ Netlify Function และ Deploy ผ่าน GitHub หรือ Netlify CLI');
+          showHelp('ระบบเก็บสถิติไม่พร้อม โปรดตรวจสอบ Edge Function /api/stats และการผูก KV namespace STATS_KV บน EdgeOne');
         }
       }
       try { updateLast(localStorage.getItem(storageKey)); } catch {}
