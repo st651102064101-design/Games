@@ -142,24 +142,24 @@ function playFootstep(speed){if(!audioCtx||audioCtx.state!=='running')return;if(
 let rockNext=0,rockStep=0,rockDist=null,rockBus=null,rockNoise=null;
 function rockMusic(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime,vol=audioSettings.music;if(vol<=0.001)return;
  if(!rockBus){rockBus=audioCtx.createGain();rockBus.connect(audioMaster);const n=2048,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/n*2-1;c[i]=Math.tanh(x*7)}rockDist=audioCtx.createWaveShaper();rockDist.curve=c;rockDist.oversample='2x';const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;rockDist.connect(lp);lp.connect(rockBus);const len=audioCtx.sampleRate;rockNoise=audioCtx.createBuffer(1,len,audioCtx.sampleRate);const d=rockNoise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1}
- rockBus.gain.value=vol*1.6;
+ rockBus.gain.value=vol*.5;
  const bpm=148,step=60/bpm/4;if(rockNext<t-.5||rockNext===0){rockNext=t+.08;rockStep=0}
  while(rockNext<t+.35){rockScheduleStep(rockNext,rockStep);rockNext+=step;rockStep=(rockStep+1)%64}}
 function rockScheduleStep(t,st){const bar=Math.floor(st/16),s16=st%16,ROOTS=[82.41,82.41,65.41,73.42],root=ROOTS[bar];
  const env=(g,a,d,pk)=>{g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(pk,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d)};
  // kick
- if([0,6,8,10].includes(s16)||(bar===3&&s16===14)){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);env(g,.003,.22,.9);o.connect(g);g.connect(rockBus);o.start(t);o.stop(t+.25)}
+ if([0,6,8,10].includes(s16)||(bar===3&&s16===14)){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);env(g,.003,.22,.45);o.connect(g);g.connect(rockBus);o.start(t);o.stop(t+.25)}
  // snare
- if(s16===4||s16===12){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const bp=audioCtx.createBiquadFilter();bp.type='highpass';bp.frequency.value=1500;const g=audioCtx.createGain();env(g,.002,.17,.55);ns.connect(bp);bp.connect(g);g.connect(rockBus);ns.start(t,Math.random()*.5,.2);const o=audioCtx.createOscillator(),g2=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(130,t+.08);env(g2,.002,.1,.4);o.connect(g2);g2.connect(rockBus);o.start(t);o.stop(t+.12)}
+ if(s16===4||s16===12){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const bp=audioCtx.createBiquadFilter();bp.type='highpass';bp.frequency.value=1500;const g=audioCtx.createGain();env(g,.002,.17,.28);ns.connect(bp);bp.connect(g);g.connect(rockBus);ns.start(t,Math.random()*.5,.2);const o=audioCtx.createOscillator(),g2=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(130,t+.08);env(g2,.002,.1,.2);o.connect(g2);g2.connect(rockBus);o.start(t);o.stop(t+.12)}
  // hi-hat 8ths (open on offbeat)
- if(s16%2===0){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;const g=audioCtx.createGain();env(g,.001,s16%4===2?.12:.04,.2);ns.connect(hp);hp.connect(g);g.connect(rockBus);ns.start(t,Math.random()*.5,.15)}
+ if(s16%2===0){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;const g=audioCtx.createGain();env(g,.001,s16%4===2?.12:.04,.1);ns.connect(hp);hp.connect(g);g.connect(rockBus);ns.start(t,Math.random()*.5,.15)}
  // crash on bar 1
- if(s16===0&&bar===0&&st===0){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=5000;const g=audioCtx.createGain();env(g,.002,.9,.3);ns.connect(hp);hp.connect(g);g.connect(rockBus);ns.start(t,0,1)}
+ if(s16===0&&bar===0&&st===0){const ns=audioCtx.createBufferSource();ns.buffer=rockNoise;const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=5000;const g=audioCtx.createGain();env(g,.002,.9,.15);ns.connect(hp);hp.connect(g);g.connect(rockBus);ns.start(t,0,1)}
  // distorted power-chord riff (palm-muted 8ths with accents)
  const riff=[1,0,1,1,0,1,1,0,1,0,1,1,0,1,0,0];
- if(riff[s16]){const long=s16===0||s16===8,dur=long?.34:.1;const g=audioCtx.createGain();env(g,.004,dur,.16);for(const [m,ty] of [[1,'sawtooth'],[1.498,'sawtooth'],[2,'square']]){const o=audioCtx.createOscillator();o.type=ty;o.frequency.setValueAtTime(root*2*m,t);o.detune.value=rand(-6,6);o.connect(g);o.start(t);o.stop(t+dur+.02)}g.connect(rockDist)}
+ if(riff[s16]){const long=s16===0||s16===8,dur=long?.34:.1;const g=audioCtx.createGain();env(g,.004,dur,.09);for(const [m,ty] of [[1,'sawtooth'],[1.498,'sawtooth'],[2,'square']]){const o=audioCtx.createOscillator();o.type=ty;o.frequency.setValueAtTime(root*2*m,t);o.detune.value=rand(-6,6);o.connect(g);o.start(t);o.stop(t+dur+.02)}g.connect(rockDist)}
  // bass
- if(s16%2===0){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(root,t);env(g,.005,.2,.5);o.connect(g);g.connect(rockBus);o.start(t);o.stop(t+.24)}
+ if(s16%2===0){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(root,t);env(g,.005,.2,.25);o.connect(g);g.connect(rockBus);o.start(t);o.stop(t+.24)}
  // lead lick every other bar
  if(bar%2===1&&[2,5,7,10,13].includes(s16)){const sc=[1,1.189,1.335,1.498,1.782],note=root*4*sc[(s16*3+bar)%5],o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(note,t);env(g,.01,.22,.07);o.connect(g);g.connect(rockDist);o.start(t);o.stop(t+.25)}}
 function audioTick(dt){if(!audioCtx)return;if(!game||mode!=='playing'){stopFootstep();return}footstepTimer-=dt;heartbeatTimer-=dt;const moving=Math.hypot(game.p.mx,game.p.my);if(moving>10){if(footstepTimer<=0){playFootstep(moving);footstepTimer=moving>245?.27:moving>100?.35:.48}}else{stopFootstep();footstepTimer=0}rockMusic();if(game.p.hp/game.p.maxHp<.25&&heartbeatTimer<=0){playSound('heartbeat');heartbeatTimer=.8}}
