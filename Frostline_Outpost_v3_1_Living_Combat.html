@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#071522">
+<title>Frostline Outpost v3.1 — Living Combat & Weapons</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9ab5c0;color:white;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;overscroll-behavior:none}
+#game,#ui{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}#game{z-index:0}#ui{z-index:1;pointer-events:auto;cursor:grab}#ui:active{cursor:grabbing}
+#fallback{display:none;position:absolute;top:25%;left:10%;width:80%;padding:24px;border-radius:18px;background:#102734e0;color:white;text-align:center;z-index:4}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas><canvas id="ui"></canvas>
+<div id="fallback">ไม่สามารถเริ่ม WebGL ได้ โปรดลองเปิดไฟล์ด้วย Chrome, Edge หรือ Safari รุ่นใหม่</div>
+<script>
+"use strict";
+(() => {
+const world = document.getElementById('game');
+const overlay = document.getElementById('ui');
+const ctx = overlay.getContext('2d');
+const gl = world.getContext('webgl',{antialias:true,alpha:false,powerPreference:'high-performance'});
+if(!gl){document.getElementById('fallback').style.display='block';return;}
+
+const TAU = Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rand=(a,b)=>a+Math.random()*(b-a), dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+const color = h => [(h>>16&255)/255,(h>>8&255)/255,(h&255)/255];
+let W=1,H=1,DPR=1,t=0,view,proj,vp,frame=0,now=0;
+const palette = {snow:0xe7f3f8,snowblue:0xc3dde8,ice:0xa9d5dd,wood:0x7b594c,wooddark:0x4c4c47,pine:0x285c63,pine2:0x397276,pine3:0x23656b,rock:0x839eaa,rock2:0xb8c8ce,roof:0x477684,wall:0x6d8890,metal:0x355463,black:0x182c36,gold:0xffca61,orange:0xff9c4a,red:0xfa6568,green:0x70d9a6,blue:0x58b9d3,brown:0x816155,brown2:0x694c45,cream:0xe1cbbc,skin:0xe9c0a0,white:0xffffff};
+function shader(type,source){let s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+const vs = `
+attribute vec3 p,n;
+uniform mat4 proj,view,model;
+varying vec3 norm,worldPos;
+void main(){
+  vec4 pos=model*vec4(p,1.0);
+  worldPos=pos.xyz;
+  norm=normalize(mat3(model)*n);
+  gl_Position=proj*view*pos;
+}`;
+const fs=`
+precision mediump float;
+uniform vec3 diffuse,camera;
+uniform float alpha;
+varying vec3 norm,worldPos;
+void main(){
+  float light=max(dot(normalize(norm),normalize(vec3(-0.35,0.88,0.42))),0.0);
+  float ambient=0.66+light*0.36;
+  float fill=max(dot(normalize(norm),normalize(vec3(0.5,0.48,-0.5))),0.0)*0.08;
+  vec3 c=diffuse*(ambient+fill);
+  float fog=smoothstep(38.0,88.0,distance(worldPos,camera));
+  c=mix(c,vec3(0.68,0.82,0.88),fog*0.82);
+  gl_FragColor=vec4(c,alpha);
+}`;
+let program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);
+if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+gl.useProgram(program);
+const loc={p:gl.getAttribLocation(program,'p'),n:gl.getAttribLocation(program,'n'),proj:gl.getUniformLocation(program,'proj'),view:gl.getUniformLocation(program,'view'),model:gl.getUniformLocation(program,'model'),diffuse:gl.getUniformLocation(program,'diffuse'),camera:gl.getUniformLocation(program,'camera'),alpha:gl.getUniformLocation(program,'alpha')};
+gl.enableVertexAttribArray(loc.p);gl.enableVertexAttribArray(loc.n);
+gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+const meshes={};
+function mesh(name,coords){let data=new Float32Array(coords),buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);meshes[name]={buffer:buf,count:data.length/6}}
+const verts=[];
+const vertex=(p,n)=>verts.push(p[0],p[1],p[2],n[0],n[1],n[2]);
+const tri=(a,b,c,n)=>{vertex(a,n);vertex(b,n);vertex(c,n)};
+function boxMesh(){
+  let sides=[
+    {n:[0,0,1],a:[-.5,-.5,.5],b:[.5,-.5,.5],c:[.5,.5,.5],d:[-.5,.5,.5]},
+    {n:[0,0,-1],a:[.5,-.5,-.5],b:[-.5,-.5,-.5],c:[-.5,.5,-.5],d:[.5,.5,-.5]},
+    {n:[1,0,0],a:[.5,-.5,.5],b:[.5,-.5,-.5],c:[.5,.5,-.5],d:[.5,.5,.5]},
+    {n:[-1,0,0],a:[-.5,-.5,-.5],b:[-.5,-.5,.5],c:[-.5,.5,.5],d:[-.5,.5,-.5]},
+    {n:[0,1,0],a:[-.5,.5,.5],b:[.5,.5,.5],c:[.5,.5,-.5],d:[-.5,.5,-.5]},
+    {n:[0,-1,0],a:[-.5,-.5,-.5],b:[.5,-.5,-.5],c:[.5,-.5,.5],d:[-.5,-.5,.5]}
+  ]; for(let s of sides){tri(s.a,s.b,s.c,s.n);tri(s.a,s.c,s.d,s.n)}
+  mesh('box',verts.splice(0))
+}
+function sphereMesh(){
+ let lat=12,lon=16,at=(a,b)=>{let ph=Math.PI*(a/lat-.5),th=TAU*b/lon;return [Math.cos(ph)*Math.cos(th)*.5,Math.sin(ph)*.5,Math.cos(ph)*Math.sin(th)*.5]};
+ for(let i=0;i<lat;i++)for(let j=0;j<lon;j++){
+   let a=at(i,j),b=at(i,j+1),c=at(i+1,j+1),d=at(i+1,j);
+   // Sphere CCW is reversed for latitude/lon orientation; enable no cull below if needed.
+   for(let [x,y,z] of [[a,c,b],[a,d,c]]){vertex(x,x);vertex(y,y);vertex(z,z)}
+ }
+ mesh('sphere',verts.splice(0))
+}
+function coneMesh(){
+  let parts=14;
+  for(let i=0;i<parts;i++){
+   let a=TAU*i/parts,b=TAU*(i+1)/parts;
+   let p=[Math.cos(a)*.5,-.5,Math.sin(a)*.5],q=[Math.cos(b)*.5,-.5,Math.sin(b)*.5],tip=[0,.5,0];
+   let n=[Math.cos((a+b)/2),.5,Math.sin((a+b)/2)];
+   tri(p,tip,q,n);tri([0,-.5,0],q,p,[0,-1,0]);
+  }
+  mesh('cone',verts.splice(0))
+}
+function cylinderMesh(){
+ let parts=16;
+ for(let i=0;i<parts;i++){
+  let a=TAU*i/parts,b=TAU*(i+1)/parts;
+  let p=[Math.cos(a)*.5,-.5,Math.sin(a)*.5],q=[Math.cos(b)*.5,-.5,Math.sin(b)*.5],r=[Math.cos(a)*.5,.5,Math.sin(a)*.5],s=[Math.cos(b)*.5,.5,Math.sin(b)*.5];
+  let n=[Math.cos((a+b)/2),0,Math.sin((a+b)/2)];
+  tri(p,r,s,n);tri(p,s,q,n);
+  tri([0,.5,0],s,r,[0,1,0]);tri([0,-.5,0],p,q,[0,-1,0]);
+ }
+ mesh('cylinder',verts.splice(0))
+}
+function diskMesh(){
+ for(let i=0;i<24;i++){let a=i*TAU/24,b=(i+1)*TAU/24;tri([0,0,0],[Math.cos(a)*.5,0,Math.sin(a)*.5],[Math.cos(b)*.5,0,Math.sin(b)*.5],[0,1,0])}
+ mesh('disk',verts.splice(0))
+}
+function ringMesh(){
+ for(let i=0;i<32;i++){
+  let a=TAU*i/32,b=TAU*(i+1)/32;
+  let v=(r,q)=>[Math.cos(q)*r,0,Math.sin(q)*r];
+  tri(v(.5,a),v(.5,b),v(.415,b),[0,1,0]);
+  tri(v(.5,a),v(.415,b),v(.415,a),[0,1,0]);
+ }
+ mesh('ring',verts.splice(0))
+}
+boxMesh();sphereMesh();coneMesh();cylinderMesh();diskMesh();ringMesh();
+function matMul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o}
+function perspective(fovy,asp,near,far){const f=1/Math.tan(fovy/2),o=new Float32Array(16);o[0]=f/asp;o[5]=f;o[10]=(far+near)/(near-far);o[11]=-1;o[14]=2*far*near/(near-far);return o}
+function lookAt(eye,at,up){
+ const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],norm=a=>{let l=Math.hypot(...a)||1;return a.map(x=>x/l)},cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ let z=norm(sub(eye,at)),x=norm(cross(up,z)),y=cross(z,x);
+ return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x[0]*eye[0]-x[1]*eye[1]-x[2]*eye[2],-y[0]*eye[0]-y[1]*eye[1]-y[2]*eye[2],-z[0]*eye[0]-z[1]*eye[1]-z[2]*eye[2],1]);
+}
+let cacheMesh=null;
+function draw(name,x,y,z,sx,sy,sz,c,rotation=0,alpha=1){
+ if(sx<=0||sy<=0||sz<=0)return;
+ const obj=meshes[name];if(cacheMesh!==name){gl.bindBuffer(gl.ARRAY_BUFFER,obj.buffer);gl.vertexAttribPointer(loc.p,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(loc.n,3,gl.FLOAT,false,24,12);cacheMesh=name}
+ const co=Math.cos(rotation),si=Math.sin(rotation);
+ const m=new Float32Array([co*sx,0,-si*sx,0,0,sy,0,0,si*sz,0,co*sz,0,x,y,z,1]);
+ gl.uniformMatrix4fv(loc.model,false,m);gl.uniform3fv(loc.diffuse,color(c));gl.uniform1f(loc.alpha,alpha);
+ gl.drawArrays(gl.TRIANGLES,0,obj.count);
+}
+function orient(x,z,yaw,lx,lz){return [x+Math.cos(yaw)*lx+Math.sin(yaw)*lz,z-Math.sin(yaw)*lx+Math.cos(yaw)*lz]}
+
+let seed=98712453;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+const staticObjs=[],decor=[],shadow=[],boxes=[];
+const add=(type,x,y,z,sx,sy,sz,col,ry=0)=>staticObjs.push({type,x,y,z,sx,sy,sz,col,ry});
+function pine(x,z,size,tone){
+ const s=size;
+ add('cylinder',x,.8*s,z,.42*s,1.6*s,.42*s,palette.wooddark);
+ add('cone',x,1.65*s,z,3*s,2.3*s,3*s,tone);
+ add('cone',x,2.65*s,z,2.55*s,2.1*s,2.55*s,tone);
+ add('cone',x,3.6*s,z,2.05*s,2*s,2.05*s,tone);
+ add('sphere',x,4.6*s,z,.54*s,.22*s,.52*s,palette.white);
+}
+function boulder(x,z,s){add('sphere',x,.28*s,z,1.5*s,.66*s,1.05*s,rnd()>.5?palette.rock:palette.rock2,rnd()*4);add('sphere',x-.25*s,.6*s,z-.15*s,.8*s,.18*s,.48*s,palette.snow)}
+add('box',0,-.33,0,92,.64,112,palette.snow);
+add('box',0,-.28,15.6,48,.4,7,palette.snowblue);
+add('box',0,-.28,-6,13,.4,39,0xe2ecf3);
+for(let i=0;i<70;i++){let x=(rnd()-.5)*84,z=(rnd()-.5)*98;if(Math.hypot(x,z-3)<10||Math.abs(x)<5&&z>-22&&z<23)continue;add('sphere',x,-.16,z,1.5+rnd()*3,.16+rnd()*.1,1.5+rnd()*3,rnd()>.5?0xecf7fa:0xd9eaf0)}
+for(let i=0;i<74;i++){
+ let x=(rnd()-.5)*80,z=-46+rnd()*87;if(Math.hypot(x,z-3)<14||Math.abs(x)<7&&z>-28&&z<25||Math.abs(z-13)<3)continue;
+ if(rnd()>.24)pine(x,z,.65+rnd()*.48,[palette.pine,palette.pine2,palette.pine3][Math.floor(rnd()*3)]);
+ else boulder(x,z,.7+rnd()*.75)
+}
+for(let i=0;i<18;i++){let x=-25+rnd()*50,z=-31+rnd()*64;if(Math.abs(x)<6&&z>-20&&z<20)continue;boulder(x,z,.4+rnd()*.3)}
+// Base platform, cabin, service spots.
+add('box',0,-.04,3,19,.22,15,0xc1d9e3);
+add('box',-11,1.8,1,7,3.6,6,palette.wall);add('box',-11,3.7,1,8.2,.4,6.7,palette.roof);
+add('box',-11,1.8,-2.05,2.4,2.4,.18,palette.wooddark);
+add('box',-13,2.25,4.1,1.65,1.25,.13,0x9dccdc);
+add('box',-8.95,2.25,4.1,1.2,1.15,.12,0x9dccdc);
+add('box',-11,4,1,8.5,.4,7.1,palette.snow);
+add('cylinder',-14.2,2,4.2,.19,4,.19,palette.wood);
+add('cylinder',-7.8,2,4.2,.19,4,.19,palette.wood);
+add('box',-11,3.8,4.22,6.3,.7,.18,palette.wooddark);
+add('box',-11.0,2.4,6,4.6,.45,1.6,palette.wood);
+for(let i=0;i<5;i++){let x=-14+(i%3)*2,z=7+(i%2)*.9;add('box',x,.65,z,1.1,1.25,1.1,palette.wood,0.3*i);add('box',x,.75,z,1.15,.12,1.15,palette.wooddark)}
+// Upgrade station
+add('box',11,1.2,1,6,2.4,5,palette.metal);
+add('box',11,2.55,1,6.6,.45,5.5,palette.snowblue);
+add('box',9.4,1.9,3.59,1.85,1.1,.2,0x77dde9);
+add('cylinder',13.2,2.6,1,.85,2.8,.85,palette.blue);
+add('sphere',13.2,4.05,1,1.25,.45,1.25,palette.gold);
+for(let i=0;i<3;i++){add('box',13.7+i*.4,.5,4+i*.2,.65,1,.65,0x9daeb8)}
+// Pads below player; sign labels drawn in screen space.
+for(let p of [{x:-6.8,z:5.2,c:palette.green},{x:7.2,z:5.2,c:palette.orange},{x:0,z:11,c:palette.gold}]) {
+ add('cylinder',p.x,.06,p.z,5.35,.14,5.35,p.c);
+ add('cylinder',p.x,.145,p.z,4.5,.1,4.5,0x355364);
+}
+// Meat-delivery zone: distinct red pad, freight sorting table, and holographic tower base.
+add('cylinder',0,.07,-5.7,6.25,.18,6.25,0x9c5755);
+add('cylinder',0,.165,-5.7,5.2,.15,5.2,0x3d5258);
+// campfire
+for(let a=0;a<6;a++){const th=a*TAU/6;add('sphere',-3+Math.cos(th)*1,.2,-3+Math.sin(th)*1,.95,.55,.84,palette.rock)}
+for(let i=0;i<3;i++)add('box',-3,.25,-3,2,.3,.4,palette.wood,i*Math.PI/3);
+// Fence and gate
+for(let side of [-1,1]){
+ for(let i=0;i<10;i++){
+  let x=side*(5+i*3.1);
+  add('cylinder',x,1.2,13,.34,2.4,.34,palette.wooddark);
+  if(i<9)add('box',x+side*1.55,.95,13,3.2,.23,.27,palette.wood);
+  if(i<9)add('box',x+side*1.55,1.75,13,3.2,.23,.27,palette.wood);
+ }
+ add('cylinder',side*4.5,2,13,.9,4,.9,palette.metal);
+ add('sphere',side*4.5,4.4,13,1,.95,1,palette.gold);
+}
+add('box',0,4.2,13,10,.68,.75,palette.metal);
+for(let x of [-21,21])for(let z of [-33,-19,27]){add('cylinder',x,1.7,z,.25,3.4,.25,palette.wooddark);add('sphere',x,3.7,z,.65,.72,.65,0xffcc8c)}
+// Zone 2 chest/ruins
+add('box',-5,1,27,8,2,4,palette.rock);
+add('box',-5,2.25,27,8.7,.5,4.5,palette.snow);
+add('cylinder',-10,1.1,25,1,2.2,1,palette.rock);
+add('cylinder',1,1.1,28,1,2.2,1,palette.rock);
+// Meat-offloading table and an obvious in-world delivery target.
+add('box',4.5,.55,-6.45,3.4,.55,2.55,0x4d676d);
+for(let i=0;i<3;i++) add('box',3.25+i*1.25,.88,-6.45,.19,.09,2.35,0xbd9a7c);
+for(let xx of [3.2,5.7])for(let zz of [-7.3,-5.7])add('cylinder',xx,.28,zz,.18,.56,.18,palette.wooddark);
+add('box',9,.06,-10.7,7.8,.3,7.8,0xb4cad4);
+add('box',9,.22,-10.7,6.8,.12,6.8,0x657c88);
+for(let xx of [5.5,12.5])for(let zz of [-14.2,-7.2])add('cylinder',xx,.55,zz,.27,1.1,.27,palette.wooddark);
+// Selling conveyor and visible market objects.
+add('box',-8.65,.48,5.1,4.8,.5,1.35,0x335e66);
+for(let i=0;i<7;i++)add('box',-10.6+i*.63,.76,5.1,.13,.07,1.2,0x87a2aa);
+add('box',-11.35,1.15,5.1,1.5,1.75,2.6,palette.wall);
+add('box',-11.35,2.08,5.1,1.6,.35,2.75,palette.roof);
+add('sphere',-11.35,2.45,5.1,.85,.72,.85,palette.gold);
+for(let i=0;i<5;i++){
+  const xx=-14+i*.9;add('box',xx,.43,9,1.0,.82,.9,0x967159);
+  add('box',xx,.9,9,1.02,.11,.95,0xbd9b76);
+}
+// Energy rail and animated upgrade hardware.
+for(let i=0;i<4;i++){
+  let a=TAU*i/4,x=7.2+Math.cos(a)*2.45,z=5.2+Math.sin(a)*2.45;
+  add('cylinder',x,.85,z,.3,1.65,.3,palette.metal);
+  add('sphere',x,1.72,z,.47,.5,.47,palette.blue);
+}
+add('box',7.2,.27,5.2,2.5,.3,2.5,0x2f6573);
+add('cylinder',7.2,.82,5.2,1.3,1.1,1.3,0x4a8995);
+// More snow props and useful-looking landmarks; generated with a fixed seed.
+for(let i=0;i<22;i++){
+ let xx=-27+rnd()*54,zz=-38+rnd()*71;
+ if(Math.abs(xx)<11&&zz>-8&&zz<16)continue;
+ add('box',xx,.25,zz,1.15+rnd()*.65,.5,.5+rnd()*.4,i%3?0xbdd2d8:0x8198a2,rnd()*TAU);
+ if(i%3===0)add('box',xx,.56,zz,.78,.12,.55,palette.snow);
+}
+for(let i=0;i<12;i++){
+ let xx=-25+rnd()*50,zz=-41+rnd()*74;
+ if(Math.abs(xx)<13&&zz>-10&&zz<18)continue;
+ add('cylinder',xx,.24,zz,.75,.5,.75,palette.wood);
+ add('cylinder',xx+.65,.24,zz+.4,.65,.5,.65,palette.wood);
+ add('sphere',xx+.1,.53,zz,.85,.2,.85,palette.snow);
+}
+for(let i=0;i<14;i++){
+ let xx=-27+rnd()*54,zz=-36+rnd()*66;
+ if(Math.abs(xx)<10&&zz>-10&&zz<17)continue;
+ add('cone',xx,.5,zz,.5,1,.5,i%2?0x6abbb9:0x91d8dd);
+ add('cone',xx+.48,.36,zz+.35,.42,.72,.42,0xb7ebed);
+}
+
+// v3: live-world warehouse, turret foundation, quest notice board and automatic workers.
+add('box',-17,.24,7.4,4.7,.48,3.7,0x647a7e);
+for(let x of [-19,-15])for(let z of [5.7,9.1]) add('cylinder',x,.92,z,.3,1.4,.3,0x685446);
+add('box',-17,1.7,7.4,5.2,.35,4.1,0x628897);
+add('box',-17,1.91,7.4,5.5,.18,4.5,palette.snow);
+add('box',-17,1.2,9.6,3.1,.8,.18,0x374b51);
+add('box',-7,.85,-1.8,2.5,1.7,.4,0x7c6553);
+add('box',-7,1.73,-1.8,2.8,.24,.6,0xd8b781);
+add('cylinder',4,.32,-1,2.4,.45,2.4,0x4d6970);
+add('cylinder',-4,.32,-1,2.4,.45,2.4,0x4d6970);
+// Decorative trail markers to hint that more wildlife lives beyond the outpost.
+for(let zz of [-20,-30,-39]){
+ add('cylinder',-1.8,.95,zz,.16,1.9,.16,0x77594b);
+ add('box',-1.8,1.9,zz,.85,.44,.28,0xa5c2c6);
+}
+
+// Retain the existing save key, so previous progress continues on this version.
+// Armory ground & equipment pedestals; selecting a gun is done by walking onto the correct stand.
+add('box',22,-.12,-.55,29,.30,16,0xc4dce4);
+for(let i=0;i<8;i++){
+ const x=16+(i%4)*4,z=i<4?-4.7:3.6;
+ add('cylinder',x,.32,z,2.28,.64,2.28,0x4a6977);
+ add('cylinder',x,.72,z,1.72,.15,1.72,0x849ca4);
+ add('box',x,1.1,z+.77,1.25,.72,.22,0x334e59);
+}
+add('box',22,3.55,-.75,1.1,6.2,.65,0x577080);
+add('box',22,6.6,-.75,9.0,1.05,.52,0x284856);
+const SAVE_KEY='frostline_outpost_standalone_3d_v1';
+function load(){try{let q=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');return q&&typeof q==='object'?q:{}}catch(e){return {}}}
+const prev=load();
+const state={
+ coins:clamp(+prev.coins||0,0,999999),level:clamp(+prev.level||1,1,50),
+ gate:!!prev.gate,kills:clamp(+prev.kills||0,0,999999),
+ bag:clamp(+prev.bag||0,0,60), bagValue:clamp(+prev.bagValue||(+prev.bag||0)*12,0,999999),maxBag:60,
+ // Meat is an independent unlimited-use inventory. Other goods remain sellable.
+ meat:clamp(Math.floor(Number(prev.meat)||0),0,Number.MAX_SAFE_INTEGER),
+ fortLevel:clamp(Math.floor(Number(prev.fortLevel)||0),0,999),
+ buildStored:Math.max(0,Math.floor(Number(prev.buildStored)||0)),
+ crystals:clamp(Math.floor(Number(prev.crystals)||0),0,100000),
+ cores:clamp(Math.floor(Number(prev.cores)||0),0,1000),
+ warehouseMeat:Math.max(0,Math.floor(Number(prev.warehouseMeat)||0)),
+ warehouseGoods:Math.max(0,Math.floor(Number(prev.warehouseGoods)||0)),
+ warehouseValue:Math.max(0,Math.floor(Number(prev.warehouseValue)||0)),
+ raidsWon:Math.max(0,Math.floor(Number(prev.raidsWon)||0)),
+ questCount:Math.max(0,Math.floor(Number(prev.questCount)||0)),
+ metrics:Object.assign({kills:0,meat:0,trade:0,chests:0,worker:0,raids:0,elite:0,fort:0,rare:0},prev.metrics||{}),
+ activeQuest:prev.activeQuest&&typeof prev.activeQuest==='object'?prev.activeQuest:null,
+ equippedWeapon:typeof prev.equippedWeapon==='string'?prev.equippedWeapon:'rifle',
+ unlockedWeapons:prev.unlockedWeapons&&typeof prev.unlockedWeapons==='object'?{...prev.unlockedWeapons}:{pistol:true,rifle:true},
+ weaponLevels:prev.weaponLevels&&typeof prev.weaponLevels==='object'?{...prev.weaponLevels}:{rifle:clamp(+prev.level||1,1,50)},
+ weaponDiscoveries:Math.max(0,Math.floor(Number(prev.weaponDiscoveries)||0))
+};
+// Eight weapon classes, separately owned, upgraded and animated; no external assets.
+const WEAPONS=[
+ {id:'pistol',short:'PST',name:'Pistol',dmg:18,range:12,rate:.38,mag:12,reload:1.0,speed:44,pellets:1,spread:.018,cost:0,crystals:0,cores:0,tint:0xaab6bf},
+ {id:'smg',short:'SMG',name:'SMG',dmg:11,range:14.5,rate:.105,mag:36,reload:1.35,speed:48,pellets:1,spread:.095,cost:180,crystals:0,cores:0,tint:0xffbc67},
+ {id:'shotgun',short:'SG',name:'Shotgun',dmg:17,range:9.5,rate:.87,mag:7,reload:1.8,speed:40,pellets:7,spread:.24,cost:240,crystals:0,cores:0,tint:0xbf8674},
+ {id:'rifle',short:'AR',name:'Assault Rifle',dmg:22,range:19,rate:.29,mag:28,reload:1.45,speed:55,pellets:1,spread:.028,cost:0,crystals:0,cores:0,tint:0x66a7ba},
+ {id:'dmr',short:'DMR',name:'Marksman Rifle',dmg:48,range:26,rate:.7,mag:12,reload:1.6,speed:67,pellets:1,spread:.006,pierce:1,cost:480,crystals:1,cores:0,tint:0xb3c4a6},
+ {id:'sniper',short:'SNP',name:'Sniper Rifle',dmg:105,range:34,rate:1.4,mag:5,reload:2.15,speed:95,pellets:1,spread:.001,pierce:2,cost:720,crystals:2,cores:0,tint:0xb4dafa},
+ {id:'lmg',short:'LMG',name:'Heavy LMG',dmg:16,range:21,rate:.12,mag:75,reload:3.0,speed:52,pellets:1,spread:.078,cost:960,crystals:2,cores:0,tint:0xf0c080},
+ {id:'plasma',short:'PLS',name:'Plasma Rifle',dmg:46,range:24,rate:.35,mag:22,reload:2.3,speed:35,pellets:1,spread:.014,splash:3.2,cost:1600,crystals:4,cores:1,tint:0x7af5e9}
+];
+const ARMORY_PADS=WEAPONS.map((w,i)=>({...w,x:16+(i%4)*4.0,z:i<4?-4.7:3.6,r:1.55}));
+if(!WEAPONS.some(w=>w.id===state.equippedWeapon))state.equippedWeapon='rifle';
+state.unlockedWeapons.pistol=true;state.unlockedWeapons.rifle=true;
+for(const w of WEAPONS){state.weaponLevels[w.id]=clamp(Math.floor(Number(state.weaponLevels[w.id])||1),1,50)}
+function currentWeapon(){return WEAPONS.find(w=>w.id===state.equippedWeapon)||WEAPONS[3]}
+function currentWeaponLevel(){return state.weaponLevels[currentWeapon().id]||1}
+function currentWeaponUpgradeCost(){return 65+(currentWeaponLevel()-1)*75+Math.round(currentWeapon().cost*.12)}
+function weaponDamage(w){return w.dmg+(currentWeaponLevel()-1)*Math.max(2,Math.ceil(w.dmg*.13))+Math.floor(state.crystals*.7)+state.cores*3}
+
+const hero={x:0,z:4,yaw:Math.PI,health:100,maxHealth:100,shoot:0,hit:0,step:0,walk:0,respawns:0,boost:0,unloading:false,unloadPose:0,unloadSwing:0,
+ ammo:currentWeapon().mag,reload:0,recoil:0,swap:0,aim:0,shotPulse:0};
+const camera={x:0,z:4};
+// v3 uses the same camera and world coordinates as the original save.
+const bears=[],bullets=[],pickups=[],sparks=[],messages=[],lootFlights=[],rings=[],fallen=[],turretShots=[],rewardOrbs=[],casings=[],impactFX=[];
+// Real item magnet: only physical drops inside this world-space radius fly to the player.
+const MAGNET={radius:10.0,collectRadius:1.15,pullSpeed:20.0};
+let magnetActive=0, lootNoticeCooldown=0;
+const effects={sell:0,upgrade:0,unlock:0,fail:0,buildComplete:0};
+const BUILD={x:0,z:-5.7,radius:2.75,dropX:4.45,dropZ:-6.45,fortX:9.0,fortZ:-10.7};
+const depositFlights=[];
+let meatReserved=0, depositInterval=0, displayMeat=state.meat;
+function buildGoal(){return 100+Math.min(state.fortLevel,120)*75}
+state.buildStored=clamp(state.buildStored,0,buildGoal());
+function buildPercentage(){return clamp(Math.round(state.buildStored/buildGoal()*100),0,100)}
+function meatLayers(n){return n>0?clamp(Math.ceil(Math.sqrt(n)*.93),1,15):0}
+function freeMeat(){return Math.max(0,state.meat-meatReserved)}
+function pretty(n){return n>=1000000?(n/1000000).toFixed(1)+'M':n>=10000?(n/1000).toFixed(1)+'K':String(n)}
+
+let banner=null, bagFullWarn=0;
+const LOOT=[
+ {name:'เนื้อ',color:0xe88a77,value:12},
+ {name:'หนัง',color:0xc2a17d,value:16},
+ {name:'กระดูก',color:0xebead4,value:11},
+ {name:'เสบียง',color:0xffcc69,value:19}
+];
+const supplies=[
+ {x:-6,z:-12,count:7},{x:5,z:-16,count:9},{x:-16,z:-22,count:8},
+ {x:14,z:-26,count:9},{x:-9,z:-32,count:10},{x:18,z:-35,count:10},
+ {x:-22,z:-37,count:7},{x:2,z:-39,count:9},{x:-18,z:-11,count:6},
+ {x:18,z:-11,count:7},{x:8,z:24,count:12},{x:-12,z:30,count:13},
+ {x:16,z:31,count:11},{x:-23,z:24,count:10}
+].map((p,i)=>({...p,ready:true,cooldown:0,phase:i*1.37}));
+function upgradeCost(){return currentWeaponUpgradeCost()}
+function bannerEvent(type,title,detail,color){banner={type,title,detail,color,duration:2.7,life:2.7}}
+function wave(x,z,col,count=3){for(let i=0;i<count;i++)rings.push({x,z,color:col,age:-i*.17,total:1.15})}
+
+function notice(msg,x=hero.x,z=hero.z,tone='#ffffff',life=2.2){
+ messages.push({msg,x,z,life,full:life,color:tone});
+ if(messages.length>12)messages.shift()
+}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
+function spawnBear(area,idx,explicitType=null){
+ let x,z;
+ if(area===0){x=rand(-22,22);z=rand(-38,-17)}
+ else{x=rand(-22,22);z=rand(20,33)}
+ const type=explicitType||(area===1&&idx===0?'alpha':area===0&&idx===9?'elite':idx%6===3?'wolf':idx%6===4?'reindeer':'bear');
+ const boss=type==='alpha',elite=type==='elite';
+ const hp=type==='alpha'?580:elite?220:type==='wolf'?45:type==='reindeer'?75:area?104:73;
+ const speed=boss?2.6:elite?3:type==='wolf'?4.6:type==='reindeer'?4:area?2.8:2.9;
+ return {x,z,homeX:x,homeZ:z,area,boss,elite,type,maxHp:hp,hp,alive:true,respawn:0,
+   phase:rand(0,TAU),yaw:rand(-3,3),attack:rand(0,1),roar:rand(2,9),speed,
+   step:0,walk:0,ability:rand(2,8),charging:0,raid:false};
+}
+for(let i=0;i<11;i++)bears.push(spawnBear(0,i));
+for(let i=0;i<8;i++)bears.push(spawnBear(1,i));
+bears[0].x=-6;bears[0].z=-17;
+bears[1].x=8;bears[1].z=-20;
+bears[9].x=14;bears[9].z=-31;
+// ===== FROSTLINE v3.0: QUESTS, TREASURE, WORKERS, RAIDS AND AUTO TURRETS =====
+const QUESTS=[
+ {key:'kills',label:'กำจัดสัตว์ป่า',amount:4,coins:75},
+ {key:'meat',label:'เก็บเนื้อสัตว์',amount:35,coins:70},
+ {key:'trade',label:'ขายสินค้าให้พ่อค้า',amount:110,coins:70},
+ {key:'chests',label:'ค้นหาหีบสมบัติ',amount:1,coins:125},
+ {key:'worker',label:'ให้คนงานส่งของเข้าคลัง',amount:12,coins:90},
+ {key:'elite',label:'ล่าหมี Elite หรือบอส',amount:1,coins:180},
+ {key:'fort',label:'ก่อสร้างป้อมหนึ่งระดับ',amount:1,coins:150},
+ {key:'raids',label:'ป้องกันฐานจากฝูงหมี',amount:1,coins:180},
+ {key:'rare',label:'ค้นพบคริสตัลหายาก',amount:1,coins:110}
+];
+let questHold=0,prevQuestIndex=-1;
+function newQuest(){
+ let available=QUESTS.filter(q=>q.key!=='raids'||t>50);
+ if(state.questCount===0)available=[QUESTS[0]];
+ if(state.questCount===1)available=[QUESTS[3]];
+ const options=available.filter(q=>QUESTS.indexOf(q)!==prevQuestIndex);
+ const chosen=options[Math.floor(Math.random()*options.length)]||available[0];
+ prevQuestIndex=QUESTS.indexOf(chosen);
+ const bonus=1+Math.floor(Math.min(state.questCount,24)/5)*.24;
+ state.activeQuest={key:chosen.key,label:chosen.label,amount:Math.ceil(chosen.amount*bonus),
+   coins:Math.floor(chosen.coins*bonus),start:state.metrics[chosen.key]||0};
+ save();
+}
+if(!state.activeQuest||!QUESTS.some(q=>q.key===state.activeQuest.key))newQuest();
+function metric(key,value=1){
+ state.metrics[key]=(state.metrics[key]||0)+Math.max(0,value);
+}
+function questProgress(){
+ const q=state.activeQuest;
+ return q?clamp((state.metrics[q.key]||0)-(q.start||0),0,q.amount):0;
+}
+function questUpdate(dt){
+ if(!state.activeQuest)return;
+ if(questHold>0){questHold-=dt;if(questHold<=0)newQuest();return}
+ let q=state.activeQuest;
+ if(questProgress()>=q.amount){
+  state.coins+=q.coins;state.questCount++;
+  if(state.questCount%4===0){state.crystals++;metric('rare',1)}
+  bannerEvent('quest','ภารกิจสำเร็จ!','+'+q.coins+' เหรียญ  •  ภารกิจ #'+state.questCount,'#bdfce0');
+  notice('QUEST COMPLETE +'+q.coins,hero.x,hero.z,'#bfffc5',2.5);
+  particles(hero.x,2,hero.z,0xffe29b,25);sfx('coin');questHold=3.2;save();
+ }
+}
+const chests=[
+ {x:-18,z:-16,rare:.10},{x:19,z:-24,rare:.20},{x:-19,z:-34,rare:.30},
+ {x:8,z:-41,rare:.25},{x:14,z:25,rare:.40},{x:-13,z:31,rare:.5}
+].map((q,i)=>({...q,id:i,cool:0,open:0,inside:false,shine:i*2.3}));
+function openChest(c){
+ c.cool=68+rand(0,36);c.open=2.2;
+ const coins=Math.round(rand(28,58)*(1+(state.questCount*.07)));
+ const meat=Math.floor(rand(9,22));
+ state.coins+=coins;spawnDrop('meat',meat,c.x,c.z);
+ let special='+'+coins+' เหรียญ • เนื้อ '+meat;
+ if(Math.random()<c.rare){
+  if(Math.random()<.18){state.cores++;special+=' • ★ CORE';}
+  else{let n=Math.random()<.25?2:1;state.crystals+=n;metric('rare',n);special+=' • 💎 CRYSTAL ×'+n;}
+ }
+ metric('chests');
+ bannerEvent('chest','พบหีบสมบัติ!',special,'#ffe2a0');
+ notice('TREASURE!',c.x,c.z,'#ffe9bd',2.5);
+ particles(c.x,1.4,c.z,palette.gold,24);wave(c.x,c.z,palette.gold,4);
+ for(let i=0;i<9;i++)rewardOrbs.push({x:c.x+rand(-1,1),z:c.z+rand(-1,1),y:1.6,life:1.1,age:-i*.055});
+ sfx('unlock');save();
+}
+function chestsUpdate(dt){
+ for(let c of chests){
+  c.shine+=dt;
+  if(c.cool>0)c.cool-=dt;
+  c.open=Math.max(0,c.open-dt);
+  let inside=dist(hero,c)<2.7;
+  if(inside&&!c.inside&&c.cool<=0)openChest(c);
+  c.inside=inside;
+ }
+ for(let i=rewardOrbs.length-1;i>=0;i--){rewardOrbs[i].age+=dt;if(rewardOrbs[i].age>=rewardOrbs[i].life)rewardOrbs.splice(i,1)}
+}
+const WAREHOUSE={x:-17,z:7.4,r:2.8};
+const workers=[
+ {x:-15,z:5.5,yaw:0,walk:0,carry:0,kind:'goods',value:0,target:null,phase:'seek',cool:0,hue:0x5bc6b5},
+ {x:-17,z:7,yaw:0,walk:0,carry:0,kind:'meat',value:0,target:null,phase:'seek',cool:1.1,hue:0xe9ad68}
+];
+function workerMove(w,tx,tz,dt,speed=5.3){
+ let dx=tx-w.x,dz=tz-w.z,d=Math.hypot(dx,dz);
+ if(d>.01){w.yaw=Math.atan2(-dx,-dz);let step=Math.min(d,speed*dt);w.x+=dx/d*step;w.z+=dz/d*step;if(step>.01)w.walk+=dt*11}
+ return d;
+}
+function workersUpdate(dt){
+ for(let w of workers){
+  w.cool-=dt;w.pickAnim=Math.max(0,(w.pickAnim||0)-dt*2.4);w.dropAnim=Math.max(0,(w.dropAnim||0)-dt*2.1);
+  // Workers seek shelter during a raid; cargo stays safely on their backs.
+  if(raid.active){
+   if(w.target&&w.target.workerTarget===w)w.target.workerTarget=null;
+   w.target=null;w.raidFlee=true;
+   workerMove(w,WAREHOUSE.x+(w.hue===0x5bc6b5?1:-1),WAREHOUSE.z,dt,7);
+   continue;
+  }
+  if(w.raidFlee){w.raidFlee=false;w.phase=w.carry>0?'return':'seek';w.cool=.5;}
+
+  if(w.phase==='seek'){
+   if(w.cool>0)continue;
+   let closest=null,best=1e12;
+   for(let p of pickups){
+    // No worker may steal a bundle actively magnetized toward the player.
+    if(p.attract||p.workerTarget||p.count<=0||p.z>12.4)continue;
+    let d=dist(w,p);if(d<best){best=d;closest=p}
+   }
+   if(closest){w.target=closest;closest.workerTarget=w;w.phase='fetch'}
+   else w.cool=1.2;
+  }else if(w.phase==='fetch'){
+   let p=w.target;
+   if(!p||!pickups.includes(p)||p.count<=0||p.attract){
+    if(p&&p.workerTarget===w)p.workerTarget=null;
+    w.target=null;w.phase='seek';w.cool=.2;continue;
+   }
+   if(workerMove(w,p.x,p.z,dt)<1.18){
+    const amount=Math.min(14,p.count);
+    w.carry=amount;w.kind=p.kind;w.value=amount*p.unitValue;w.pickAnim=1;
+    p.count-=amount;p.workerTarget=null;w.target=null;
+    if(p.count<=0)pickups.splice(pickups.indexOf(p),1);
+    w.phase='return';w.cool=.23;sfx('pick');
+    particles(w.x,.75,w.z,p.color,4);
+   }
+  }else if(w.phase==='return'){
+   if(workerMove(w,WAREHOUSE.x+(w.hue===0x5bc6b5?1:-1),WAREHOUSE.z,dt,5.7)<1.25){
+    if(w.kind==='meat')state.warehouseMeat+=w.carry;
+    else{state.warehouseGoods+=w.carry;state.warehouseValue+=w.value}
+    metric('worker',w.carry);
+    notice('คลัง +'+w.carry,w.x,w.z,'#bcfff2',1.2);
+    particles(w.x,1,w.z,w.kind==='meat'?0xe38d7d:0xffd49a,8);
+    wave(w.x,w.z,0x7de8d0,1);sfx('drop');
+    w.carry=0;w.dropAnim=1;w.phase='seek';w.cool=rand(.6,1.6);save();
+   }
+  }
+ }
+}
+const turrets=[
+ {x:4,z:-1,active:true,shoot:0,yaw:0,flash:0,reload:0,mag:12,idle:0,roof:false},
+ {x:-4,z:-1,active:false,shoot:.7,yaw:0,flash:0,reload:0,mag:12,idle:1.9,roof:false},
+ {x:9,z:-10.7,active:false,shoot:.4,yaw:0,flash:0,reload:0,mag:12,idle:3.2,roof:false},
+ {x:-11,z:1,active:false,shoot:1.2,yaw:0,flash:0,reload:0,mag:12,idle:4.4,roof:true}
+];
+function towerHeight(i){return i===2?5.2:i===3?4.2:3.5}
+function towerLevel(i){return clamp(state.fortLevel+(i===0?1:0),1,4)}
+function towerGuards(i){return i===3?1:Math.min(3,1+Math.floor((towerLevel(i)-1)/2))}
+const raid={active:false,next:75,wave:0,spawned:0,killed:0,hp:100,maxHp:100,clock:0,ending:0};
+function startRaid(){
+ raid.wave++;raid.active=true;raid.hp=raid.maxHp=240+raid.wave*65+state.fortLevel*55;
+ raid.killed=0;raid.spawned=0;raid.clock=0;
+ const number=Math.min(12,4+raid.wave*2);
+ for(let i=0;i<number;i++){
+  let type=i===number-1&&raid.wave%3===0?'elite':i%4===0?'wolf':'bear';
+  const b=spawnBear(0,i,type);b.raid=true;b.boss=false;
+  b.x=rand(-18,18);b.z=-39-rand(0,5);b.homeX=b.x;b.homeZ=b.z;
+  b.maxHp=Math.round(b.maxHp*(1+raid.wave*.07));b.hp=b.maxHp;
+  b.speed=Math.max(2.6,b.speed*.9);b.attack=rand(0,1.2);b.ability=3;
+  bears.push(b);raid.spawned++;
+ }
+ bannerEvent('raid','ฝูงหมีบุกฐาน!','ป้องกันคลังและหอคอย • '+number+' ตัว','#ffc1a2');
+ notice('RAID START!',0,-1,'#ffd2af',3);sfx('bear');
+ wave(0,0,palette.red,3);
+}
+function finishRaid(win){
+ if(!raid.active)return;
+ raid.active=false;
+ for(let i=bears.length-1;i>=0;i--)if(bears[i].raid)bears.splice(i,1);
+ if(win){
+  const reward=80+raid.wave*45;
+  state.coins+=reward;state.raidsWon++;metric('raids');
+  bannerEvent('raid','ป้องกันฐานสำเร็จ!','+'+reward+' เหรียญ  •  RAID CLEARED','#b8ffd6');
+  particles(0,1,0,0x8cf8c0,35);sfx('build');
+ }else{
+  const loss=Math.min(state.coins,20+raid.wave*18);
+  state.coins-=loss;
+  bannerEvent('raid','ฐานถูกบุก!', 'เสีย '+loss+' เหรียญ • ซ่อมฐานอัตโนมัติ','#ffadac');
+  sfx('death');
+ }
+ raid.next=155+rand(0,25);raid.hp=raid.maxHp;save();
+}
+function raidUpdate(dt){
+ if(!raid.active){raid.next-=dt;if(raid.next<=0)startRaid();return}
+ raid.clock+=dt;
+ if(raid.hp<=0){finishRaid(false);return}
+ if(bears.filter(b=>b.raid&&b.alive).length===0){finishRaid(true);return}
+ if(raid.clock>135){finishRaid(false)}
+}
+function turretsUpdate(dt){
+ for(let i=0;i<turrets.length;i++){
+  const s=turrets[i];s.active=i===0||(i===3?state.fortLevel>=1:state.fortLevel>=i);
+  s.flash=Math.max(0,s.flash-dt);s.reload=Math.max(0,s.reload-dt);
+  s.idle+=dt;
+  if(!s.active)continue;
+  s.shoot-=dt;
+  const range=24+Math.min(state.fortLevel,8)*1.7;
+  let target=null,best=range;
+  for(let b of bears){if(!b.alive||(!b.raid&&Math.hypot(b.x,b.z-1.2)>12))continue;
+   let d=dist(s,b);if(d<best){best=d;target=b}
+  }
+  s.target=target;
+  if(target){
+   s.yaw=Math.atan2(s.x-target.x,s.z-target.z);
+   if(s.reload<=0&&s.shoot<=0){
+    if(s.mag<=0){s.reload=1.6;s.mag=12;s.shoot=1.6;sfx('reload');}
+    else {
+     const tall=towerHeight(i), muzzle=orient(s.x,s.z,s.yaw,.28,-1.25);
+     const dx=target.x-muzzle[0],dz=target.z-muzzle[1],d=Math.hypot(dx,dz)||1;
+     const speed=57,damage=15+Math.min(state.fortLevel,16)*4+state.cores*2;
+     const initialY=tall+1.35,vy=(1.55-initialY)/Math.max(.15,d/speed);
+     turretShots.push({x:muzzle[0],y:initialY,z:muzzle[1],vx:dx/d*speed,vz:dz/d*speed,vy,damage,life:range/speed+.17,trail:0});
+     s.flash=.15;s.mag--;
+     s.shoot=Math.max(.14,.68-Math.min(state.fortLevel,6)*.045)/Math.min(1.8,towerGuards(i));
+     ejectCasing(s.x,tall+1.3,s.z);if(dist(s,hero)<22)sfx('guardshot');
+    }
+   }
+  }else{s.yaw=Math.sin(t*.37+i*1.7)*.82;s.mag=Math.max(0,s.mag)}
+ }
+ for(let i=turretShots.length-1;i>=0;i--){
+  let o=turretShots[i];let px=o.x,pz=o.z;
+  o.x+=o.vx*dt;o.z+=o.vz*dt;o.y+=o.vy*dt;o.life-=dt;
+  let hit=false;
+  for(let b of bears){if(!b.alive)continue;
+   if(segmentDistance(px,pz,o.x,o.z,b.x,b.z)<(b.boss?2.15:b.elite?1.78:b.type==='wolf'?.75:1.35)){
+    damageEnemy(b,o.damage,o.x,o.z,0x8ee3ff,false);hit=true;break;
+   }
+  }
+  if(hit||o.life<=0)turretShots.splice(i,1);
+ }
+}
+
+let padInside={sell:false,upgrade:false,gate:false},gunFlash=0;
+const pointer={active:false,id:null,x:0,y:0,dx:0,dy:0},keys=new Set();
+const rightScreen=[.86,-.51],upScreen=[-.51,-.86];
+function input(){
+ let x=0,y=0;
+ if(keys.has('a')||keys.has('arrowleft'))x--;
+ if(keys.has('d')||keys.has('arrowright'))x++;
+ if(keys.has('w')||keys.has('arrowup'))y--;
+ if(keys.has('s')||keys.has('arrowdown'))y++;
+ if(pointer.active){x+=pointer.dx/58;y+=pointer.dy/58}
+ const l=Math.hypot(x,y);if(l>1){x/=l;y/=l}
+ return {x:x*rightScreen[0]-y*upScreen[0],z:x*rightScreen[1]-y*upScreen[1],power:Math.min(1,l)}
+}
+let ac=null,noiseBuffer=null;
+function initSound(){
+ try{
+  if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();
+   noiseBuffer=ac.createBuffer(1,Math.round(ac.sampleRate*.42),ac.sampleRate);
+   let d=noiseBuffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+  }
+  if(ac.state==='suspended')ac.resume();
+ }catch(e){ac=null}
+}
+function tone(f,d,type='triangle',volume=.13,fend=f){
+ if(!ac)return;
+ try{let st=ac.currentTime,osc=ac.createOscillator(),g=ac.createGain();osc.type=type;osc.frequency.setValueAtTime(f,st);osc.frequency.exponentialRampToValueAtTime(Math.max(25,fend),st+d);g.gain.setValueAtTime(volume,st);g.gain.exponentialRampToValueAtTime(.0001,st+d);osc.connect(g);g.connect(ac.destination);osc.start(st);osc.stop(st+d+.01)}catch(e){}
+}
+function noise(d,volume=.1,cutoff=1200){
+ if(!ac||!noiseBuffer)return;
+ try{let st=ac.currentTime,src=ac.createBufferSource(),filter=ac.createBiquadFilter(),g=ac.createGain();src.buffer=noiseBuffer;filter.type='lowpass';filter.frequency.value=cutoff;g.gain.setValueAtTime(volume,st);g.gain.exponentialRampToValueAtTime(.0001,st+d);src.connect(filter);filter.connect(g);g.connect(ac.destination);src.start(st);src.stop(st+Math.min(.4,d))}catch(e){}
+}
+function ejectCasing(x,y,z){
+ if(casings.length>85)casings.shift();
+ casings.push({x,y,z,vx:rand(-2.8,2.8),vy:rand(2,5),vz:rand(-2.8,2.8),age:0,life:.65});
+}
+function segmentDistance(x1,z1,x2,z2,x,z){
+ let dx=x2-x1,dz=z2-z1,l=dx*dx+dz*dz;
+ let f=l>0?clamp(((x-x1)*dx+(z-z1)*dz)/l,0,1):0;
+ return Math.hypot(x-x1-dx*f,z-z1-dz*f)
+}
+function damageEnemy(b,dmg,x,z,tint=0xffeaba,show=true){
+ if(!b.alive)return;
+ b.hp-=dmg;b.animHit=.3;
+ particles(x,1.6,z,tint,show?5:3);
+ if(show)notice('-'+Math.ceil(dmg),b.x,b.z,'#ffeaba',.48);
+ if(b.hp<=0)killBear(b);
+}
+function startReload(){
+ if(hero.reload>0)return;
+ const w=currentWeapon();hero.reload=w.reload;hero.ammo=0;hero.shotPulse=0;
+ if(dist(hero,camera)<30)sfx('reload');
+}
+function armoryUpdate(dt){
+ for(const p of ARMORY_PADS){
+  const inside=Math.hypot(hero.x-p.x,hero.z-p.z)<p.r;
+  const was=!!p.wasInside;
+  if(inside&&!was){
+   if(state.unlockedWeapons[p.id]){
+    if(state.equippedWeapon!==p.id){
+     state.equippedWeapon=p.id;hero.ammo=p.mag;hero.reload=0;hero.shoot=.35;hero.swap=.95;
+     wave(p.x,p.z,p.tint,4);particles(hero.x,1.4,hero.z,p.tint,18);
+     bannerEvent('weapon','ติดตั้ง '+p.name,'กระสุน '+p.mag+' นัด • ยิงอัตโนมัติ','#d6f5ff');sfx('weapon');save();
+    }else notice(p.name+' พร้อมใช้งาน',p.x,p.z,'#c6eeef',1.1);
+   }else if(state.coins>=p.cost&&state.crystals>=p.crystals&&state.cores>=p.cores){
+    state.coins-=p.cost;state.crystals-=p.crystals;state.cores-=p.cores;
+    state.unlockedWeapons[p.id]=true;state.weaponDiscoveries++;state.equippedWeapon=p.id;
+    hero.ammo=p.mag;hero.reload=0;hero.swap=1.2;hero.shoot=.5;
+    wave(p.x,p.z,p.tint,6);particles(p.x,1.2,p.z,palette.gold,32);
+    bannerEvent('weapon','ปลดล็อก '+p.name,'ปืนชนิดใหม่พร้อมใช้งาน','#c7ffee');sfx('unlock');save();
+   }else{
+    const needs=[];if(state.coins<p.cost)needs.push('เหรียญอีก '+(p.cost-state.coins));
+    if(state.crystals<p.crystals)needs.push('คริสตัล '+(p.crystals-state.crystals));
+    if(state.cores<p.cores)needs.push('Core '+(p.cores-state.cores));
+    notice('ต้องการ '+needs.join(' • '),p.x,p.z,'#ffe0a2',2.4);sfx('fail');
+   }
+  }
+  p.wasInside=inside;
+ }
+}
+function sfx(which){
+ if(!ac)return;
+ if(which==='shot'){noise(.15,.10,2500);tone(190,.12,'sawtooth',.043,70)}
+ else if(which==='hit'){noise(.12,.12,740);tone(110,.09,'triangle',.07,48)}
+ else if(which==='hurt'){noise(.16,.13,520);tone(290,.27,'sawtooth',.1,85)}
+ else if(which==='bear'){tone(110,.58,'sawtooth',.075,49);noise(.45,.045,430)}
+ else if(which==='foot'){noise(.07,.035,580)}
+ else if(which==='pick'){tone(520,.09,'sine',.045,900)}
+ else if(which==='coin'){tone(700,.22,'sine',.105,1100);setTimeout(()=>tone(1000,.2,'sine',.07,1400),90)}
+ else if(which==='upgrade'){tone(350,.28,'triangle',.13,690);setTimeout(()=>tone(680,.28,'sine',.1,1050),120)}
+ else if(which==='fail'){tone(250,.2,'triangle',.09,170)}
+ else if(which==='death'){tone(310,.5,'sawtooth',.13,48);noise(.35,.1,450)}
+ else if(which==='unlock'){tone(370,.6,'sine',.13,1000);setTimeout(()=>tone(700,.48,'triangle',.12,1450),100)}
+ else if(which==='sweep'){tone(410,.2,'sine',.043,850);noise(.16,.03,1120)}
+ else if(which==='meat'){tone(385,.13,'sine',.045,585)}
+ else if(which==='drop'){noise(.16,.075,340);tone(145,.18,'triangle',.07,83)}
+ else if(which==='build'){tone(240,.48,'triangle',.13,700);tone(560,.62,'sine',.12,1100)}
+ else if(which==='guardshot'){noise(.09,.043,1650);tone(160,.095,'triangle',.035,75)}
+ else if(which==='rapid'){noise(.07,.055,2800);tone(220,.075,'sawtooth',.025,98)}
+ else if(which==='sniper'){noise(.34,.18,1550);tone(135,.32,'sawtooth',.12,41)}
+ else if(which==='plasma'){tone(780,.26,'sawtooth',.075,220);tone(1080,.16,'sine',.052,560)}
+ else if(which==='reload'){noise(.075,.05,1250);tone(380,.14,'triangle',.033,245)}
+ else if(which==='weapon'){tone(430,.17,'sine',.082,770);noise(.08,.03,1800)}
+}
+function particles(x,y,z,col,count=7){
+ for(let i=0;i<count;i++)sparks.push({x,y,z,vx:rand(-5,5),vy:rand(1,6),vz:rand(-5,5),life:rand(.2,.55),full:.6,color:col,size:rand(.1,.3)})
+}
+// Spawn a few visible grouped items, rather than granting loot from anywhere on the map.
+// Grouping protects mobile FPS even when many bears are killed.
+function spawnDrop(kind,amount,x,z,unitValue=12){
+ amount=Math.max(0,Math.floor(amount));if(amount<=0)return 0;
+ const bundles=kind==='meat'?Math.min(4,Math.max(2,Math.ceil(amount/6))):Math.min(2,Math.ceil(amount/5));
+ for(let i=0;i<bundles;i++){
+  const count=Math.floor(amount/bundles)+(i<amount%bundles?1:0);
+  if(!count)continue;
+  let xx=x+rand(-.82,.82),zz=z+rand(-.82,.82);
+  // Merge crowded drops instead of deleting resources or spawning unlimited meshes.
+  if(pickups.length>=170){
+   let nearest=null,best=Infinity;
+   for(let p of pickups){
+    if(p.kind!==kind||p.unitValue!==unitValue)continue;
+    let d=Math.hypot(p.x-xx,p.z-zz);if(d<best){best=d;nearest=p}
+   }
+   if(nearest){nearest.count+=count;continue}
+  }
+  pickups.push({kind,count,x:xx,z:zz,unitValue,color:kind==='meat'?0xcb6966:0xffcc81,
+   phase:rand(0,TAU),age:0,life:420,speed:0,attract:false});
+ }
+ return amount;
+}
+function giveLoot(amount,x,z,kind='bear'){
+ const n=Math.max(0,Math.floor(amount));
+ const unitValue=kind==='cache'?19:16;
+ return spawnDrop('goods',n,x,z,unitValue);
+}
+function collectDrop(p){
+ let amount=0;
+ if(p.kind==='meat'){
+  const can=Math.max(0,Number.MAX_SAFE_INTEGER-state.meat);
+  amount=Math.min(p.count,can);
+  if(amount<=0)return false;
+  state.meat+=amount;metric('meat',amount);
+ }else{
+  amount=Math.min(p.count,state.maxBag-state.bag);
+  if(amount<=0)return false; // full bag: physical goods stay on the snow
+  state.bag+=amount;state.bagValue+=amount*p.unitValue;
+ }
+ p.count-=amount;
+ // Animate the last metre up into the backpack; inventory is committed only now.
+ for(let j=0;j<Math.min(4,amount);j++){
+  lootFlights.push({x:p.x+rand(-.15,.15),z:p.z+rand(-.15,.15),elapsed:-j*.055,life:.38,
+   color:p.color,kind:p.kind});
+ }
+ particles(p.x,.9,p.z,p.color,Math.min(9,3+amount));
+ if(lootNoticeCooldown<=0){
+  notice(p.kind==='meat'?'🥩 เนื้อ +'+amount:'📦 เสบียง +'+amount,hero.x,hero.z,p.kind==='meat'?'#ffcfb8':'#ffe5a3',1.35);
+  sfx(p.kind==='meat'?'meat':'pick');lootNoticeCooldown=.25;
+ }
+ save();return p.count<=0;
+}
+function harvestMeat(count,x,z){
+ if(count<=0)return;
+ const before=state.meat;
+ state.meat=Math.min(Number.MAX_SAFE_INTEGER,state.meat+count);metric('meat',Math.min(count,Number.MAX_SAFE_INTEGER-state.meat));
+ const actual=state.meat-before;
+ for(let i=0;i<Math.min(14,actual);i++){
+  lootFlights.push({x:x+rand(-1.1,1.1),z:z+rand(-1.1,1.1),targetX:hero.x,targetZ:hero.z,
+   elapsed:-i*.045,life:.74,color:0xcb6966,kind:'meat'});
+ }
+ notice('🥩 +'+actual,x,z,'#ffd4bc',1.65);
+ wave(x,z,0xdd8271,2);sfx('meat');save();
+}
+function pickUp(b){
+ // Bears give the primary resource (meat) even if the other-goods backpack is full.
+ const count=b.boss?Math.floor(rand(75,100)):b.elite?Math.floor(rand(38,57)):b.type==='wolf'?Math.floor(rand(7,12)):b.type==='reindeer'?Math.floor(rand(20,29)):b.area?Math.floor(rand(18,26)):Math.floor(rand(11,19));
+ spawnDrop('meat',count,b.x,b.z);
+ // Hides and bones also remain on the ground until the magnet reaches them.
+ giveLoot(b.boss?15:b.elite?11:b.area?5:3,b.x,b.z,'bear');
+ wave(b.x,b.z,0xdd8271,2);
+}
+function killBear(b){
+ b.alive=false;b.respawn=b.raid?1e9:b.boss?44:b.elite?25:rand(8,14);state.kills++;
+ metric('kills');if(b.boss||b.elite)metric('elite');if(b.raid)raid.killed++;
+ if((b.boss||b.elite)&&Math.random()<(b.boss?.65:.26)){state.crystals++;metric('rare');notice('💎 CRYSTAL +1',b.x,b.z,'#c6f3ff',2.2)}
+ fallen.push({x:b.x,z:b.z,boss:b.boss,age:0,duration:1.8});
+ particles(b.x,1.4,b.z,0xffd89d,14);pickUp(b);
+ notice(b.boss?'ALPHA BOSS DOWN!':b.elite?'ELITE DOWN!':b.type==='wolf'?'WOLF DOWN!':b.type==='reindeer'?'REINDEER DOWN!':'BEAR DOWN',b.x,b.z,'#fff0b6');sfx('hit');save()
+}
+function respawn(){
+ hero.health=100;hero.x=0;hero.z=4;hero.hit=1;hero.respawns++;
+ // Preserve meat, build progress, and sellable goods when respawning.
+ bannerEvent('death','กลับถึงฐานแล้ว','เลือดเต็ม • เสบียงยังอยู่','#a7e8f3');
+ notice('เกิดใหม่ที่ฐาน',0,4,'#f9f2bd',2);
+ sfx('death');save();
+}
+function checkPads(){
+ const pads=[{type:'sell',x:-6.8,z:5.2,r:2.5},{type:'upgrade',x:7.2,z:5.2,r:2.5},{type:'warehouse',x:WAREHOUSE.x,z:WAREHOUSE.z,r:2.8},{type:'gate',x:0,z:11,r:3.0}];
+ for(let p of pads){
+  const inside=Math.hypot(hero.x-p.x,hero.z-p.z)<p.r;
+  if(inside&&!padInside[p.type]){
+   if(p.type==='sell'){
+    if(state.bag+state.warehouseGoods>0){
+     let items=state.bag+state.warehouseGoods,earned=state.bagValue+state.warehouseValue;
+     state.coins+=earned;metric('trade',earned);state.bag=0;state.bagValue=0;state.warehouseGoods=0;state.warehouseValue=0;
+     effects.sell=2.6;hero.boost=1.0;
+     wave(p.x,p.z,0x6ff3b3,5);particles(p.x,1.1,p.z,palette.gold,35);
+     bannerEvent('sell','ขายของสำเร็จ!','+'+earned+' เหรียญ  •  '+items+' ชิ้น','#94f7be');
+     notice('+'+earned+' 🪙',p.x,p.z,'#ffedb3',2.7);sfx('coin');save();
+    }else{notice('ไม่มีของขาย',p.x,p.z,'#c5e6ea',1.55);effects.fail=1;sfx('fail')}
+   }else if(p.type==='warehouse'){
+     if(state.warehouseMeat>0){
+       const amount=state.warehouseMeat;state.meat+=amount;state.warehouseMeat=0;
+       notice('รับเนื้อจากคลัง +'+amount,p.x,p.z,'#ffd6ba',2.4);
+       for(let i=0;i<Math.min(10,amount);i++)lootFlights.push({x:p.x,z:p.z,elapsed:-i*.04,life:.52,color:0xdd8271,kind:'meat'});
+       wave(p.x,p.z,0xcaa483,3);sfx('meat');save();
+     }
+   }else if(p.type==='upgrade'){
+    const cost=upgradeCost();
+    if(state.coins>=cost&&currentWeaponLevel()<50){
+     state.coins-=cost;state.weaponLevels[currentWeapon().id]++;
+     state.level=Math.max(state.level,currentWeaponLevel());effects.upgrade=2.7;hero.boost=2.2;
+     wave(p.x,p.z,0xffc36b,5);particles(hero.x,1.7,hero.z,palette.gold,38);
+     bannerEvent('upgrade','UPGRADE! '+currentWeapon().short+' Lv.'+currentWeaponLevel(),'พลังยิงเพิ่ม • ปืนรุ่นนี้แรงขึ้น','#ffd28a');
+     notice('★ LEVEL UP ★',p.x,p.z,'#ffe9bb',2.6);sfx('upgrade');save();
+    }else{
+     bannerEvent('fail',currentWeaponLevel()>=50?'ปืนระดับสูงสุดแล้ว':'เหรียญยังไม่พอ',currentWeaponLevel()>=50?'MAX LEVEL':'ขาดอีก '+Math.max(0,cost-state.coins)+' เหรียญ','#ffb7a9');
+     effects.fail=1.1;wave(p.x,p.z,0xff7373,2);sfx('fail')
+    }
+   }else if(p.type==='gate'&&!state.gate){
+    if(state.coins>=60){
+     state.coins-=60;state.gate=true;effects.unlock=2.5;
+     wave(p.x,p.z,0x91ffbe,6);particles(p.x,2.3,13,palette.green,46);
+     bannerEvent('unlock','เปิดประตูสำเร็จ!','ปลดล็อกพื้นที่ใหม่','#a9ffd3');
+     notice('GATE OPEN!',0,13,'#d0ffcf',3);sfx('unlock');save();
+    }else{
+     bannerEvent('fail','ประตูยังล็อก','ขาดอีก '+(60-state.coins)+' เหรียญ','#ffb7a9');
+     effects.fail=1.1;wave(p.x,p.z,0xff7373,2);sfx('fail')
+    }
+   }
+  }
+  padInside[p.type]=inside;
+ }
+}
+function unloadUpdate(dt){
+ // Walking away stops NEW throws. In-flight meat finishes landing and is never lost.
+ const inside=Math.hypot(hero.x-BUILD.x,hero.z-BUILD.z)<BUILD.radius;
+ hero.unloading=inside&&freeMeat()>0&&effects.buildComplete<=0&&state.buildStored+meatReserved<buildGoal();
+ hero.unloadPose+=(Number(hero.unloading)-hero.unloadPose)*Math.min(1,dt*10);
+ hero.unloadSwing=Math.max(0,hero.unloadSwing-dt*4.3);
+ if(hero.unloading){
+  depositInterval-=dt;
+  if(depositInterval<=0){
+   const available=freeMeat();
+   const remaining=buildGoal()-state.buildStored-meatReserved;
+   // Batch size is adaptive so a huge inventory never takes forever to unload.
+   const batch=available<20?1:available<100?3:available<400?7:15;
+   const n=Math.min(available,remaining,batch);
+   if(n>0){
+    meatReserved+=n;
+    const offset=orient(hero.x,hero.z,hero.yaw,0,1.02);
+    const tier=meatLayers(displayMeat);
+    depositFlights.push({n,elapsed:0,duration:.48,x:offset[0],y:1.45+tier*.22,z:offset[1],
+      toX:BUILD.dropX+rand(-.8,.8),toY:1.2,toZ:BUILD.dropZ+rand(-.65,.65)});
+    hero.unloadSwing=1;
+    depositInterval=.16;
+   }
+  }
+ }else depositInterval=0;
+ for(let i=depositFlights.length-1;i>=0;i--){
+  const f=depositFlights[i]; f.elapsed+=dt;
+  if(f.elapsed>=f.duration){
+   // Only commit inventory/progress when the carried meat physically lands.
+   meatReserved-=f.n;
+   state.meat=Math.max(0,state.meat-f.n);
+   state.buildStored+=f.n;
+   particles(f.toX,f.toY,f.toZ,0xd98f79,Math.min(9,f.n+3));
+   if(i%2===0)sfx('drop');
+   depositFlights.splice(i,1);
+   if(state.buildStored>=buildGoal()){
+    const finished=state.fortLevel+1;
+    state.fortLevel=Math.min(999,state.fortLevel+1);metric('fort');
+    state.buildStored=0;
+    effects.buildComplete=3.6;
+    hero.boost=2.2;
+    wave(BUILD.fortX,BUILD.fortZ,0x88f5bf,7);
+    particles(BUILD.fortX,3,BUILD.fortZ,0xffdfa0,46);
+    bannerEvent('build','สร้างป้อมสำเร็จ!','OUTPOST  Lv.'+finished,'#a9ffd3');
+    notice('★ ป้อม Lv.'+finished+' สำเร็จ ★',BUILD.fortX,BUILD.fortZ,'#d6ffce',3.5);
+    sfx('build');
+    depositInterval=.8;
+   }
+   save();
+  }
+ }
+ displayMeat+=(freeMeat()-displayMeat)*Math.min(1,dt*11);
+}
+function fireWeapon(target){
+ const w=currentWeapon(),p=orient(hero.x,hero.z,hero.yaw,.45,-1.12);
+ const dx=target.x-p[0],dz=target.z-p[1],distTarget=Math.hypot(dx,dz)||1;
+ const dirx=dx/distTarget,dirz=dz/distTarget;
+ for(let k=0;k<w.pellets;k++){
+  const scatter=(Math.random()+Math.random()-1)*w.spread;
+  const vx=(dirx*Math.cos(scatter)-dirz*Math.sin(scatter))*w.speed;
+  const vz=(dirx*Math.sin(scatter)+dirz*Math.cos(scatter))*w.speed;
+  bullets.push({x:p[0],y:1.58,z:p[1],vx,vz,life:w.range/w.speed+.06,
+   damage:weaponDamage(w),weapon:w.id,pierce:w.pierce||0,splash:w.splash||0,
+   hits:new Set(),color:w.tint});
+ }
+ hero.ammo--;hero.shoot=Math.max(.078,w.rate/(1+(currentWeaponLevel()-1)*.008));
+ hero.recoil=1;hero.shotPulse=1;gunFlash=.12;
+ ejectCasing(hero.x+.55,1.64,hero.z);
+ if(w.id==='plasma')sfx('plasma');else if(w.id==='sniper'||w.id==='shotgun')sfx('sniper');
+ else if(w.id==='smg'||w.id==='lmg')sfx('rapid');else sfx('shot');
+ if(hero.ammo<=0)startReload();
+}
+function heroUpdate(dt){
+ const inp=input();const moveFactor=hero.reload>0?.9:1;
+ const speed=7.2*moveFactor;
+ if(inp.power>.01){
+  let nx=clamp(hero.x+inp.x*dt*speed,-34,34),nz=clamp(hero.z+inp.z*dt*speed,-45,34);
+  if(!state.gate&&hero.z<=12.75&&nz>12.75)nz=12.75;
+  if(!state.gate&&hero.z>12.75&&nz<12.75)nz=12.75;
+  hero.x=nx;hero.z=nz;
+  hero.walk+=dt*(hero.reload>0?9.5:12);hero.step-=dt;
+  if(hero.step<=0){hero.step=.36;sfx('foot')}
+ }
+ hero.hit=Math.max(0,hero.hit-dt*2.3);
+ hero.boost=Math.max(0,hero.boost-dt);
+ hero.swap=Math.max(0,hero.swap-dt*1.5);
+ hero.recoil=Math.max(0,hero.recoil-dt*6.8);
+ hero.shotPulse=Math.max(0,hero.shotPulse-dt*4);
+ hero.shoot-=dt;
+ if(hero.reload>0){hero.reload-=dt;if(hero.reload<=0){hero.reload=0;hero.ammo=currentWeapon().mag;sfx('weapon')}}
+ let target=null,near=currentWeapon().range;
+ for(let b of bears){if(!b.alive)continue;const d=dist(b,hero);
+  if(d<near){near=d;target=b}
+ }
+ if(target){
+  hero.yaw=Math.atan2(hero.x-target.x,hero.z-target.z);
+  hero.aim+=(1-hero.aim)*Math.min(1,dt*8.2);
+  if(hero.shoot<=0&&hero.reload<=0&&hero.swap<.22){
+   if(hero.ammo>0)fireWeapon(target);else startReload();
+  }
+ }else{
+  hero.aim+=(0-hero.aim)*Math.min(1,dt*6);
+  if(inp.power>.08)hero.yaw=Math.atan2(-inp.x,-inp.z);
+ }
+ gunFlash=Math.max(0,gunFlash-dt);
+}
+function bearsUpdate(dt){
+ for(let b of bears){
+  if(!b.alive){
+   if(b.raid)continue;
+   b.respawn-=dt;
+   if(b.respawn<=0){b.alive=true;b.hp=b.maxHp;b.x=b.homeX+rand(-3,3);b.z=b.homeZ+rand(-2,2);b.attack=0;b.ability=rand(2,6)}
+   continue
+  }
+  const d=dist(b,hero),safe=Math.hypot(hero.x,hero.z-4)<9.8;
+  const reindeer=b.type==='reindeer';
+  const chase=b.raid||(!reindeer&&d<14&&!safe&&(b.area===0?hero.z< -6:hero.z>13.2));
+  b.roar-=dt;b.ability-=dt;b.charging=Math.max(0,b.charging-dt);
+  b.animHit=Math.max(0,(b.animHit||0)-dt);
+  b.attackPose=Math.max(0,(b.attackPose||0)-dt*2.0);
+  if(!reindeer&&chase&&b.roar<=0){b.roar=rand(9,18);if(d<11)sfx('bear')}
+  if((b.boss||b.elite)&&chase&&d<11&&b.ability<=0){
+   b.charging=b.boss?1.6:1.15;b.ability=b.boss?8:11;
+   wave(b.x,b.z,b.boss?0xff7777:0xffaf70,2);
+   if(d<12)sfx('bear');
+  }
+  let dx=0,dz=0,targetX=hero.x,targetZ=hero.z;
+  if(b.raid){
+   if(d>5){targetX=0;targetZ=1.1}else{targetX=hero.x;targetZ=hero.z}
+   dx=targetX-b.x;dz=targetZ-b.z;
+  }else if(reindeer&&d<12){dx=b.x-hero.x;dz=b.z-hero.z}
+  else if(chase){dx=hero.x-b.x;dz=hero.z-b.z}
+  else{
+   b.phase+=dt*.5;
+   dx=Math.sin(b.phase)*.7+(b.homeX-b.x)*.085;
+   dz=Math.cos(b.phase*.72)*.7+(b.homeZ-b.z)*.085;
+  }
+  const dBase=Math.hypot(b.x,b.z-1.1);
+  const goBase=b.raid&&d>5;
+  let ll=Math.hypot(dx,dz);if(ll>.001){dx/=ll;dz/=ll}
+  if((goBase&&dBase>2.5)||(!goBase&&(d>(b.boss?2.65:2.05)||!chase))){
+   let speed=(chase?b.speed:reindeer&&d<12?b.speed*1.22:1.1)*(b.charging>0?1.6:1)*dt;
+   b.x=clamp(b.x+dx*speed,-33,33);
+   b.z=clamp(b.z+dz*speed,b.raid?-45:b.area===0?-44:17,b.raid?13:b.area===0?-7:34);
+   b.yaw=Math.atan2(-dx,-dz);
+   b.walk+=dt*(chase?9:3);
+  }
+  b.attack-=dt;
+  if(b.raid&&dBase<3.45&&b.attack<=0){
+   b.attack=b.elite?.8:1.24;b.attackPose=1;
+   let damage=b.elite?19:b.type==='wolf'?10:13;
+   raid.hp-=damage;
+   particles(b.x,.8,b.z,0xf1a392,4);
+   wave(b.x,b.z,palette.red,1);
+   if(dBase<19)noise(.16,.065,370);
+  }else if(!reindeer&&(chase||b.raid)&&d<2.25&&b.attack<=0){
+   b.attack=b.type==='wolf'?.75:b.boss?1.06:1.28;b.attackPose=1;
+   const damage=b.boss?31:b.elite?22:b.type==='wolf'?11:b.area?18:13;
+   hero.health-=damage;hero.hit=1;
+   particles(hero.x,1.3,hero.z,0xff7c7c,4);
+   sfx('hurt');notice('-'+damage+' HP',hero.x,hero.z,'#ff8997',.9);
+   if(hero.health<=0)respawn();
+  }
+ }
+}
+
+function bulletsUpdate(dt){
+ for(let i=bullets.length-1;i>=0;i--){
+  const o=bullets[i],px=o.x,pz=o.z;
+  o.x+=o.vx*dt;o.z+=o.vz*dt;o.life-=dt;
+  let remove=false;
+  for(let b of bears){
+   if(!b.alive||o.hits.has(b))continue;
+   const radius=b.boss?2.1:b.elite?1.7:b.type==='wolf'?.73:b.type==='reindeer'?1.15:1.3;
+   if(segmentDistance(px,pz,o.x,o.z,b.x,b.z)<radius){
+    o.hits.add(b);damageEnemy(b,o.damage,o.x,o.z,o.color,true);sfx('hit');
+    if(o.splash){
+     wave(o.x,o.z,o.color,2);
+     particles(o.x,1.5,o.z,o.color,12);
+     for(let secondary of bears)if(secondary.alive&&secondary!==b&&dist(secondary,o)<o.splash)damageEnemy(secondary,o.damage*.52,o.x,o.z,o.color,false);
+    }
+    if(o.pierce>0){o.pierce--;o.damage*=.72}else{remove=true;break}
+   }
+  }
+  if(remove||o.life<=0)bullets.splice(i,1);
+ }
+ for(let i=casings.length-1;i>=0;i--){
+  const c=casings[i];c.age+=dt;c.x+=c.vx*dt;c.y+=c.vy*dt;c.z+=c.vz*dt;c.vy-=12*dt;
+  if(c.y<.15)c.y=.15;
+  if(c.age>=c.life)casings.splice(i,1);
+ }
+ // Magnet pickup: world-distance check, easing, physical movement, arrival credit.
+ magnetActive=0;
+ lootNoticeCooldown=Math.max(0,lootNoticeCooldown-dt);
+ for(let i=pickups.length-1;i>=0;i--){
+  let p=pickups[i];p.age+=dt;p.phase+=dt*2.0;p.life-=dt;
+  let dx=hero.x-p.x,dz=hero.z-p.z,d=Math.hypot(dx,dz);
+  const canCarry=p.kind==='meat'?state.meat<Number.MAX_SAFE_INTEGER:state.bag<state.maxBag;
+  const isNear=d<MAGNET.radius && canCarry;
+  p.attract=isNear;
+  if(isNear){
+   magnetActive=Math.max(magnetActive,1);
+   if(p.age>.14){
+    // Gradual acceleration, faster closer to the hero. Frame-independent motion.
+    const target=clamp(5+(MAGNET.radius-d)*2.2,5,MAGNET.pullSpeed);
+    p.speed+=(target-p.speed)*Math.min(1,dt*9);
+    if(d>MAGNET.collectRadius){
+     const step=Math.max(0,Math.min(d-MAGNET.collectRadius*.5,p.speed*dt));
+     p.x+=dx/d*step;p.z+=dz/d*step;
+    }
+    if(Math.hypot(hero.x-p.x,hero.z-p.z)<MAGNET.collectRadius){
+     if(collectDrop(p)){pickups.splice(i,1);continue}
+    }
+   }
+  }else p.speed=Math.max(0,p.speed-dt*20);
+  // Uncollected items remain visible; expiration only affects old non-meat supplies.
+  if(p.life<=0 && p.kind==='goods' && d>MAGNET.radius*2){pickups.splice(i,1)}
+ }
+ // Supply crates open by proximity and now drop real items which must be magnet-collected.
+ for(let p of supplies){
+  p.phase+=dt;
+  if(!p.ready){p.cooldown-=dt;if(p.cooldown<=0)p.ready=true;continue}
+  if(Math.hypot(hero.x-p.x,hero.z-p.z)<3.3&&state.bag<state.maxBag){
+   let n=giveLoot(p.count,p.x,p.z,'cache');
+   if(n>0){p.ready=false;p.cooldown=rand(24,37);wave(p.x,p.z,0xffd36f,3);sfx('sweep')}
+  }
+ }
+ for(let i=lootFlights.length-1;i>=0;i--){let p=lootFlights[i];p.elapsed+=dt;if(p.elapsed>p.life)lootFlights.splice(i,1)}
+ for(let i=sparks.length-1;i>=0;i--){let p=sparks[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=10*dt;p.life-=dt;if(p.life<=0)sparks.splice(i,1)}
+ for(let i=messages.length-1;i>=0;i--){messages[i].life-=dt;if(messages[i].life<=0)messages.splice(i,1)}
+ for(let i=rings.length-1;i>=0;i--){let p=rings[i];p.age+=dt;if(p.age>p.total)rings.splice(i,1)}
+ for(let i=fallen.length-1;i>=0;i--){let p=fallen[i];p.age+=dt;if(p.age>p.duration)fallen.splice(i,1)}
+ for(let key of Object.keys(effects))effects[key]=Math.max(0,effects[key]-dt);
+ if(banner){banner.life-=dt;if(banner.life<=0)banner=null}
+ bagFullWarn=Math.max(0,bagFullWarn-dt);
+}
+function cameraUpdate(dt){let k=1-Math.exp(-4.0*dt);camera.x+=(hero.x-camera.x)*k;camera.z+=(hero.z-camera.z)*k}
+const screenSnow=Array.from({length:100},()=>({x:Math.random(),y:Math.random(),z:rand(.3,1.3),vx:rand(-.4,-.12),vy:rand(.04,.15)}));
+function resize(){
+ W=Math.max(1,innerWidth);H=Math.max(1,innerHeight);DPR=Math.min(devicePixelRatio||1,W<650?1.4:1.7);
+ for(let c of [world,overlay]){c.width=Math.ceil(W*DPR);c.height=Math.ceil(H*DPR)}
+ gl.viewport(0,0,world.width,world.height);
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+ proj=perspective(Math.PI/4.35,W/H,.1,180);
+ gl.useProgram(program);gl.uniformMatrix4fv(loc.proj,false,proj);
+}
+window.addEventListener('resize',resize);resize();
+function project(x,y,z){
+ let m=vp,q=m[3]*x+m[7]*y+m[11]*z+m[15];
+ if(q<=0.01)return {x:-10000,y:-10000,visible:false};
+ let px=(m[0]*x+m[4]*y+m[8]*z+m[12])/q,py=(m[1]*x+m[5]*y+m[9]*z+m[13])/q;
+ return {x:(px*.5+.5)*W,y:(.5-py*.5)*H,visible:Math.abs(px)<1.3&&Math.abs(py)<1.3}
+}
+function drawMeat(x,y,z,scale=1,rotation=0){
+ draw('sphere',x,y,z,.72*scale,.29*scale,.47*scale,0xb76160,rotation);
+ draw('sphere',x+.07*scale,y+.065*scale,z-.02*scale,.50*scale,.18*scale,.31*scale,0xe08c7c,rotation);
+ draw('sphere',x-.2*scale,y+.015*scale,z+.13*scale,.14*scale,.16*scale,.14*scale,0xffe7c4);
+}
+function drawConstruction(){
+ const {x,z,dropX,dropZ,fortX,fortZ}=BUILD;
+ const pct=state.buildStored/buildGoal(),finished=state.fortLevel>0;
+ const built=finished?1:pct;
+ const flashing=effects.buildComplete>0;
+ // New delivery pad: circular ring, meat marker, and arrows to the holding table.
+ draw('ring',x,.265,z,5.8+Math.sin(t*3)*.2,1,5.8+Math.sin(t*3)*.2,
+    hero.unloading?0xf1c89a:0xef8b75,0,.83);
+ for(let i=0;i<5;i++){
+  const angle=t*.62+i*TAU/5;
+  draw('sphere',x+Math.sin(angle)*2.65,.45+Math.sin(t*3+i)*.15,
+       z+Math.cos(angle)*2.65,.22,.24,.22,0xffb39b);
+ }
+ // Small floating 3D meat-shaped delivery icon.
+ drawMeat(x,3.42+Math.sin(t*2.5)*.24,z,.85,t*.18);
+ for(let i=0;i<5;i++){
+   let xx=x+1.4+i*.58,zz=z+(dropZ-z)*(i/4);
+   draw('box',xx,.29,zz,.34,.1,.23,0xf2b3a1,-.12);
+ }
+ // A meat pile grows visibly as the delivery count rises.
+ const pieces=clamp(Math.ceil(pct*29),0,29);
+ for(let i=0;i<pieces;i++){
+  let col=i%5,row=Math.floor(i/5);
+  let xx=dropX-1.13+col*.56,zz=dropZ-.65+row*.24;
+  let yy=1.25+Math.floor(i/15)*.28;
+  drawMeat(xx,yy,zz,.57,((i*1.7)%3)-1.5);
+ }
+ // Outpost gradually constructs in four unmistakable 3D phases.
+ if(built>.04){
+  const foundation=clamp(built/.24,0,1);
+  draw('box',fortX,.4,fortZ,6.4*foundation,.52,6.3*foundation,0x8c7864);
+  draw('box',fortX,.71,fortZ,5.7*foundation,.24,5.5*foundation,0xc9ae8b);
+ }
+ if(built>.18){
+  const p=clamp((built-.18)/.33,0,1),h=3.1*p;
+  for(let xx of [-2.4,2.4])for(let zz of [-2.2,2.2]){
+   draw('cylinder',fortX+xx,.75+h/2,fortZ+zz,.42,h,.42,0x715844);
+   draw('sphere',fortX+xx,.75+h,fortZ+zz,.53,.28,.53,0xc7a784);
+  }
+  if(p>.15)draw('box',fortX,.75+h,fortZ,5.5,.22,5,0xad8b6b);
+ }
+ if(built>.45){
+  const p=clamp((built-.45)/.29,0,1);
+  for(let side of [-1,1]){
+   draw('box',fortX+side*2.45,1.45+p*.65,fortZ,.34,p*1.95,4.45,0x8d6b50);
+   draw('box',fortX,1.45+p*.65,fortZ+side*2.3,5.0,p*1.95,.33,0x8d6b50);
+   for(let j=-1;j<=1;j++)draw('box',fortX+j*1.55,1.65+p*.65,fortZ+side*2.31,.1,p*2,.44,0xd6b08b);
+  }
+ }
+ if(built>.70){
+  const p=clamp((built-.70)/.30,0,1);
+  draw('box',fortX,3.75+p*.18,fortZ,6.7,.3,6.7,0x648899);
+  draw('cone',fortX,4.0+p*.95,fortZ,6.5,p*2.1,6.5,0x406a77);
+  draw('cone',fortX,4.65+p*.95,fortZ,5.0,p*1.2,5.0,palette.snow);
+ }
+ if(finished){
+  // Existing tower remains built after 100%; later completions add embellishments.
+  const extra=clamp(state.fortLevel,1,6);
+  draw('cylinder',fortX,5.6+extra*.25,fortZ,.22,1.5+extra*.5,.22,0x615044);
+  draw('sphere',fortX,6.35+extra*.5,fortZ,.82,.77,.82,flashing?palette.gold:0xffba79);
+  for(let i=0;i<Math.min(state.fortLevel,4);i++){
+   draw('box',fortX-2.6+i*1.75,.82,fortZ+3.5,.55,1.18,.5,0xb3a08c);
+   draw('cone',fortX-2.6+i*1.75,1.52,fortZ+3.5,.85,.65,.85,0x4a8790);
+  }
+ }
+ if(flashing){
+  const k=1-effects.buildComplete/3.6;
+  for(let i=0;i<4;i++){
+   let a=t*2+i*TAU/4;
+   draw('sphere',fortX+Math.sin(a)*3.9,1+k*5.2,fortZ+Math.cos(a)*3.9,.3,.3,.3,palette.gold);
+  }
+ }
+ // Each meat bundle visibly arcs out of the stack and lands on the table.
+ for(let f of depositFlights){
+  const u=clamp(f.elapsed/f.duration,0,1),e=u*u*(3-2*u);
+  const xx=f.x+(f.toX-f.x)*e,zz=f.z+(f.toZ-f.z)*e;
+  const yy=f.y+(f.toY-f.y)*e+Math.sin(Math.PI*u)*1.3;
+  const sc=f.n>=10?1.28:f.n>=3?.95:.75;
+  drawMeat(xx,yy,zz,sc,t*.7);
+  if(f.n>=3){draw('sphere',xx,yy+.4,zz,.18,.18,.18,palette.gold)}
+ }
+}
+function drawChest(c){
+ if(c.cool>0&&c.open<=0)return;
+ const pulse=.08+Math.sin(t*3+c.id)*.06;
+ draw('ring',c.x,.10,c.z,2.55+pulse,1,2.55+pulse,c.rare>.3?0x7fd6ef:palette.gold,0,.7);
+ draw('box',c.x,.51,c.z,1.6,.93,1.16,0x735345);
+ draw('box',c.x,.59,c.z,1.67,.24,1.23,0xb58c59);
+ for(let side of [-1,1])draw('box',c.x+side*.63,.55,c.z,.18,.96,1.23,0xeac278);
+ const lift=c.open>0?Math.sin((1-clamp(c.open/2.2,0,1))*Math.PI*.75)*.8:0;
+ draw('box',c.x,.99+lift,c.z-(lift*.32),1.82,.32,1.4,0xe9c17f);
+ draw('box',c.x,1.04+lift,c.z-(lift*.32),1.4,.10,1.0,0x9e7750);
+ draw('sphere',c.x,1.6+Math.sin(t*3+c.id)*.24+lift,c.z,.38,.46,.38,c.rare>.3?0x87e4f4:palette.gold);
+}
+function drawWorker(w){
+ let walk=Math.sin(w.walk)*.17;
+ const gesture=(w.pickAnim||0)-(w.dropAnim||0), bob=w.carry>0?Math.sin(t*5+w.x)*.045:0;
+ const part=(name,lx,y,lz,sx,sy,sz,c)=>{
+  const p=orient(w.x,w.z,w.yaw,lx,lz);
+  draw(name,p[0],y+bob,p[1],sx,sy,sz,c,w.yaw)
+ };
+ part('box',-.24,.32,walk,.37,.6,.48,0x2e495c);
+ part('box',.24,.32,-walk,.37,.6,.48,0x2e495c);
+ part('box',0,1.25,0,.85,1.11,.64,w.hue);
+ part('box',-.51,1.3+Math.max(0,gesture)*.25,-.1-gesture*.35,.23,.75,.38,0xe8c6a6);
+ part('box',.51,1.3+Math.max(0,gesture)*.27,-.1-gesture*.34,.23,.75,.38,0xe8c6a6);
+ part('sphere',0,2.05-(w.pickAnim||0)*.11,-.05,.59,.61,.57,0xe4c0a2);
+ part('cylinder',0,2.41,-.05,.74,.31,.7,0x253e4b);
+ part('box',0,1.1,.50,.68,.95,.13,0x856b50);
+ if(w.carry>0){
+  const rows=Math.min(5,Math.ceil(w.carry/3));
+  for(let i=0;i<rows;i++){
+   const z=.67+Math.sin(i*2)*.02,y=1.02+i*.3;
+   if(w.kind==='meat')part('sphere',0,y,z,.8,.27,.65,i%2?0xd5786e:0xb96262);
+   else{
+    part('box',0,y,z,.87,.28,.78,0xb9976c);
+    part('box',0,y+.13,z,.87,.07,.83,0xe1bf80);
+   }
+  }
+ }
+}
+// Low-poly weapon prototypes; visuals differ by class, using the existing procedural meshes.
+function drawGunAt(x,y,z,yaw,w,scale=1,flash=0,reload=0){
+ const id=w.id||'rifle',stock=id==='pistol'?0:id==='smg'?.20:.47;
+ const len=id==='pistol'?.53:id==='shotgun'?1.18:id==='sniper'?2.05:id==='lmg'?1.66:id==='plasma'?1.42:id==='dmr'?1.7:1.3;
+ const p=(lx,ly,lz)=>{const a=orient(x,z,yaw,lx*scale,lz*scale);return [a[0],y+ly*scale,a[1]]};
+ let r=p(0,0,-.22);
+ draw('box',r[0],r[1],r[2],.28*scale,.25*scale,len*scale,w.tint,yaw);
+ if(stock){r=p(0,-.06,stock*.72);draw('box',r[0],r[1],r[2],.33*scale,.19*scale,stock*scale,0x2b3f4a,yaw)}
+ r=p(0,.12,-.10);draw('box',r[0],r[1],r[2],.23*scale,.15*scale,.54*scale,0x263d4a,yaw);
+ r=p(0,-.28,-.24);draw('box',r[0],r[1],r[2],.18*scale,(id==='lmg'?.60:.40)*scale,.27*scale,0x293942,yaw);
+ const barrel=id==='shotgun'?.22:id==='sniper'?.10:.13;
+ r=p(0,.01,-len/2-.18);draw('cylinder',r[0],r[1],r[2],barrel*scale,.28*scale,barrel*scale,id==='plasma'?0x65ffff:0x142c39,0);
+ if(id==='shotgun')for(let side of [-.11,.11]){r=p(side,.07,-len/2-.35);draw('box',r[0],r[1],r[2],.10*scale,.11*scale,.35*scale,0x243541,yaw)}
+ if(id==='dmr'||id==='sniper'){r=p(0,.3,-.25);draw('box',r[0],r[1],r[2],.24*scale,.20*scale,id==='sniper'?.69*scale:.41*scale,0x1a3b48,yaw);r=p(0,.40,-.62);draw('sphere',r[0],r[1],r[2],.19*scale,.19*scale,.12*scale,0x8fd8ea)}
+ if(id==='lmg'){r=p(-.13,-.18,-.75);draw('box',r[0],r[1],r[2],.24*scale,.75*scale,.59*scale,0x776f4f,yaw)}
+ if(id==='plasma'){r=p(0,.13,-.65);draw('sphere',r[0],r[1],r[2],.36*scale,.33*scale,.65*scale,0x6df4e9,0,.92);r=p(0,-.12,-.67);draw('box',r[0],r[1],r[2],.49*scale,.11*scale,1.08*scale,0x284c54,yaw)}
+ if(reload>0){r=p(.09,-.20+.1*Math.sin(reload*12),-.24);draw('box',r[0],r[1],r[2],.20*scale,.36*scale,.25*scale,0xf5c26e,yaw)}
+ if(flash>0){r=p(0,.02,-len/2-.52);draw('sphere',r[0],r[1],r[2],.42*scale,.44*scale,.40*scale,id==='plasma'?0x7cffff:0xffdc85)}
+}
+function drawGuard(x,y,z,yaw,s,i,idx){
+ const anim=s.idle+idx*1.7,bodyBob=Math.sin(anim*1.4)*.035;
+ const walking=(!s.target&&Math.sin(anim*.8)>0)?Math.sin(anim*2.0)*.06:0;
+ const recoil=s.flash>0?.16:0;
+ const part=(mesh,lx,ly,lz,sx,sy,sz,c)=>{const p=orient(x,z,yaw,lx,lz);draw(mesh,p[0],y+ly+bodyBob,p[1],sx,sy,sz,c,yaw)};
+ // Raised platform garrison: helmet, face, vest, hands, legs and individual weapons.
+ part('box',-.20,.32,walking,.32,.59,.39,0x273c4e);
+ part('box',.20,.32,-walking,.32,.59,.39,0x263f55);
+ part('box',0,1.17,0,.86,1.12,.59,idx===0?0x527a83:0x47686e);
+ part('box',0,1.23,-.34,.68,.63,.16,0x273c4b);
+ part('sphere',0,1.97,-.03,.54,.57,.52,0xdec3a4);
+ part('sphere',0,2.31,-.05,.64,.25,.57,0x243849);
+ part('box',0,2.28,-.28,.72,.18,.43,0x294351);
+ part('box',-.51,1.39,-.37,.20,.58,.42,0x527b87);
+ part('box',.51,1.39,-.48,.20,.58,.42,0x527b87);
+ part('sphere',-.47,1.16,-.69,.25,.23,.26,0xe7c49f);
+ part('sphere',.47,1.16,-.72,.25,.23,.26,0xe7c49f);
+ const wp=orient(x,z,yaw,.36,-.72);
+ let weapon=WEAPONS[towerLevel(i)>=3?6:3];
+ drawGunAt(wp[0],y+1.35-recoil-(s.reload>0?.31:0),wp[1],yaw,weapon,1.0,s.flash,s.reload);
+ if(s.reload>0&&idx===0){part('box',.22,.94,-.28,.28,.31,.22,palette.gold)}
+}
+function drawTurret(s,i){
+ if(!s.active)return;
+ const tall=towerHeight(i),lv=towerLevel(i);
+ if(!s.roof){
+  draw('cylinder',s.x,tall*.46,s.z,.52,tall*.9,.52,0x466473);
+  for(let k=0;k<4;k++)draw('cylinder',s.x+(k<2?-1:1)*1.0,tall*.47,s.z+(k%2?1:-1)*.9,.21,tall*.89,.21,0x755849);
+  draw('box',s.x,tall-.08,s.z,2.8,.32,2.7,0x71594b);
+  draw('box',s.x,tall+.12,s.z,2.95,.14,2.95,0xc9e1e8);
+  for(let q of [-1,1]){
+   draw('box',s.x+q*1.35,tall+.65,s.z,.16,.98,2.9,0x866652);
+   draw('box',s.x,tall+.65,s.z+q*1.35,2.9,.98,.16,0x866652);
+  }
+  if(lv>=3){draw('box',s.x,tall+3.04,s.z,3.3,.26,3.3,0x668d96);draw('box',s.x,tall+3.25,s.z,3.45,.14,3.45,palette.snow)}
+ }else{draw('ring',s.x,tall+.05,s.z,2.4,1,2.4,0x79d6df,0,.4)}
+ for(let g=0;g<towerGuards(i);g++){
+  const shifts=towerGuards(i)===1?[0]:towerGuards(i)===2?[-.57,.57]:[-.78,0,.78];
+  const x=s.x+shifts[g],z=s.z+(g%2===0?.05:.35);
+  const yaw=g===0?s.yaw:s.yaw+Math.sin(t*.27+g)*.09;
+  drawGuard(x,tall,z,yaw,s,i,g);
+ }
+ if(s.flash>0){const p=orient(s.x,s.z,s.yaw,0,-1.5);draw('sphere',p[0],tall+1.35,p[1],.48,.5,.5,palette.gold)}
+ draw('ring',s.x,.12,s.z,2.7+Math.sin(t*2+i)*.09,1,2.7+Math.sin(t*2+i)*.09,lv>=3?0xffd9a1:palette.blue,0,.4);
+}
+function drawArmory(){
+ // 8 walk-up plinths, visible weapon models, and spotlight rings with unlocked state.
+ for(let i=0;i<ARMORY_PADS.length;i++){
+  const a=ARMORY_PADS[i],owned=!!state.unlockedWeapons[a.id],selected=state.equippedWeapon===a.id;
+  const glow=selected?0x9cffc7:owned?a.tint:0xffbb79;
+  const pulse=Math.sin(t*3.2+i)*.13;
+  draw('ring',a.x,.24,a.z,2.65+pulse,1,2.65+pulse,glow,0,.86);
+  draw('sphere',a.x,1.1+Math.sin(t*2.4+i)*.13,a.z,.42,.25,.46,selected?0x80f7c9:owned?0xffe0a8:0x8ea2ab);
+  drawGunAt(a.x,1.58+Math.sin(t*2.4+i)*.13,a.z,t*.24+i*.07,a,1.35,0,0);
+  if(selected)draw('ring',a.x,.33,a.z,3.2,1,3.2,0x76ffd0,0,.45);
+ }
+ draw('ring',22,.1,-.6,18,1,18,0x7c9eab,0,.28);
+}
+function drawWarehouse(){
+ draw('ring',WAREHOUSE.x,.14,WAREHOUSE.z,4.7+Math.sin(t*2)*.13,1,4.7+Math.sin(t*2)*.13,0x8de8ce,0,.62);
+ const boxes=Math.min(13,Math.ceil(state.warehouseGoods/9));
+ for(let i=0;i<boxes;i++){
+  const x=WAREHOUSE.x-1.5+(i%4),z=WAREHOUSE.z-1.2+(Math.floor(i/4)%3)*.9;
+  draw('box',x,.67+Math.floor(i/12)*.3,z,.7,.74,.63,0xc9aa78);
+  draw('box',x,.67+Math.floor(i/12)*.3,z,.14,.77,.66,0x765d45);
+ }
+ const stack=Math.min(8,Math.ceil(state.warehouseMeat/12));
+ for(let i=0;i<stack;i++)drawMeat(WAREHOUSE.x+1.0,1+i*.24,WAREHOUSE.z-.85,.63);
+}
+
+function render3D(){
+ gl.clearColor(.64,.78,.84,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ let cam=[camera.x+15,24,camera.z+28],at=[camera.x,0,camera.z-2];
+ view=lookAt(cam,at,[0,1,0]);vp=matMul(proj,view);
+ gl.uniformMatrix4fv(loc.view,false,view);gl.uniform3fv(loc.camera,cam);
+ // Geometry is deliberately two-sided for reliable procedurally generated rounded meshes.
+ gl.disable(gl.CULL_FACE);
+ cacheMesh=null;
+ // static scene
+ for(let o of staticObjs){if(Math.hypot(o.x-camera.x,o.z-camera.z)>62&&o.sx<20)continue;draw(o.type,o.x,o.y,o.z,o.sx,o.sy,o.sz,o.col,o.ry)}
+ drawConstruction();
+ drawWarehouse();
+ drawArmory();
+ for(let c of chests)if(dist(c,camera)<49)drawChest(c);
+ for(let i=0;i<turrets.length;i++)drawTurret(turrets[i],i);
+ for(let w of workers)if(dist(w,camera)<46)drawWorker(w);
+ // Interactive ground zones are animated at all times: green sell, amber upgrade, cyan gate.
+ const sellPulse=Math.sin(t*2.9)*.28,upPulse=Math.sin(t*3.4)*.31;
+ draw('ring',-6.8,.23,5.2,5.25+sellPulse,1,5.25+sellPulse,palette.green,0,.75);
+ draw('ring',7.2,.31,5.2,5.22+upPulse,1,5.22+upPulse,palette.gold,0,.85);
+ draw('ring',0,.24,11,5.5+Math.sin(t*2)*.2,1,5.5+Math.sin(t*2)*.2,state.gate?palette.green:palette.orange,0,.78);
+ for(let i=0;i<4;i++){
+  let a=t*1.6+i*TAU/4;
+  draw('sphere',-6.8+Math.sin(a)*2.35,.45+Math.sin(t*3+i)*.18,5.2+Math.cos(a)*2.35,.25,.3,.25,palette.green);
+  draw('sphere',7.2+Math.sin(-a)*2.4,.55+Math.sin(t*3+i)*.2,5.2+Math.cos(-a)*2.4,.27,.3,.27,palette.gold);
+ }
+ // Hovering 3D symbols in the two workstations, independent of UI text.
+ draw('sphere',-6.8,3.15+Math.sin(t*3)*.22,5.2,.95,.95,.3,palette.gold,Math.sin(t));
+ draw('sphere',-6.8,3.16+Math.sin(t*3)*.22,5.2,.54,.54,.4,0xfff2c1,Math.sin(t));
+ draw('box',7.2,3.13+Math.sin(t*3)*.25,5.2,.25,1.28,.38,palette.gold,t*.7);
+ draw('box',7.2,3.13+Math.sin(t*3)*.25,5.2,1.28,.25,.38,palette.gold,t*.7);
+ // Scene-level sell animation: crates move across the conveyor into the market stall,
+ // while gold coins visibly erupt. This is not just a counter changing.
+ if(effects.sell>0){
+  let pr=1-effects.sell/2.6;
+  for(let i=0;i<9;i++){
+   let u=pr*1.7-i*.11;
+   if(u<=0||u>=1)continue;
+   let xx=-6.45-u*4.75;
+   draw('box',xx,1.1+Math.sin(u*Math.PI)*.12,5.1,.65,.66,.65,i%2?palette.wood:0xc8976a);
+   draw('box',xx,1.45+Math.sin(u*Math.PI)*.12,5.1,.7,.1,.7,palette.gold);
+  }
+  for(let j=0;j<18;j++){
+   let tt=pr*3-j*.08;
+   if(tt<=0||tt>1.9)continue;
+   let x=-11.15+Math.cos(j*2.4)*(.5+tt*1.1),z=5.1+Math.sin(j*2.4)*(.45+tt*.9);
+   draw('sphere',x,1.4+Math.sin(tt*Math.PI/1.9)*3.2,z,.36,.36,.16,palette.gold,j);
+  }
+ }
+ // Upgrade animation: energy rings rise around the character, sparks orbit the gun.
+ if(effects.upgrade>0){
+  let pr=1-effects.upgrade/2.7;
+  for(let i=0;i<6;i++){
+   let u=(pr*1.6-i*.14);
+   if(u<0||u>1)continue;
+   draw('ring',hero.x,.2+u*3.9,hero.z,2.5+u*2.7,1,2.5+u*2.7,i%2?palette.blue:palette.gold,t*.2,1-u*.85);
+  }
+  for(let i=0;i<10;i++){
+   let a=t*6+i*TAU/10,rr=1.1+pr*1.4;
+   draw('sphere',hero.x+Math.cos(a)*rr,.7+(i%5)*.65+pr*.8,hero.z+Math.sin(a)*rr,.22,.22,.22,palette.gold);
+  }
+ }
+ for(let e of rings){
+  if(e.age<0)continue;
+  let k=e.age/e.total;
+  draw('ring',e.x,.27+k*.08,e.z,1+k*10,1,1+k*10,e.color,0,(1-k)*.75);
+ }
+ // Locked barrier visibly splits and slides open instead of popping out of existence.
+ const opening=state.gate?clamp(1-effects.unlock/2.5,0,1):0;
+ if(!state.gate||effects.unlock>0){
+  for(let side of [-1,1]){
+   let shift=side*opening*4.65;
+   for(let y of [.8,1.6,2.5])draw('box',side*2.15+shift,y,13,4.3,.27,.46,palette.orange);
+   for(let i=0;i<4;i++)draw('box',side*(.7+i*.95)+shift,1.65,13,.12,2.2,.2,palette.red,0,.8);
+  }
+ }else{
+  draw('box',-4.5,3.22,13,.9,.22,.4,palette.green);
+  draw('box',4.5,3.22,13,.9,.22,.4,palette.green);
+ }
+ // shadows
+ gl.depthMask(false);
+ draw('disk',hero.x,.031,hero.z,2.5,1,1.8,0x405f73,0,.26);
+ for(let b of bears)if(b.alive&&dist(b,camera)<45)draw('disk',b.x,.035,b.z,b.boss?4.4:3.1,1,b.boss?3.8:2.6,0x314954,0,.22);
+ gl.depthMask(true);
+ // player, hunted bear remains, and reusable supply caches.
+ for(let f of fallen){
+  let k=f.age/f.duration;
+  draw('sphere',f.x,.35*(1-k)+.1,f.z,(f.boss?2.3:1.9)*(1-k*.2),.7*(1-k*.65),(f.boss?2.9:2.3)*(1-k*.2),0x886e61,0,1-k*.8);
+  draw('sphere',f.x,.37*(1-k)+.1,f.z-1.0,.82*(1-k*.2),.5*(1-k*.5),.72*(1-k*.2),palette.brown2,0,1-k*.8);
+ }
+ for(let p of supplies){
+  if(!p.ready||dist(p,camera)>48)continue;
+  let bob=Math.sin(t*2.8+p.phase)*.09;
+  draw('ring',p.x,.12,p.z,2.9+Math.sin(t*3+p.phase)*.16,1,2.9+Math.sin(t*3+p.phase)*.16,palette.gold,0,.68);
+  draw('box',p.x,.53+bob,p.z,1.2,.85,1.08,0xc39863,t*.07);
+  draw('box',p.x,.98+bob,p.z,1.3,.15,1.16,palette.gold,t*.07);
+  draw('box',p.x,.56+bob,p.z,.18,.92,1.12,palette.wooddark,t*.07);
+  draw('sphere',p.x,1.55+Math.sin(t*3+p.phase)*.2,p.z,.31,.41,.31,0xffe299);
+ }
+ drawHero();
+ for(let b of bears)if(b.alive&&dist(b,camera)<48)drawBear(b);
+ for(let b of turretShots){draw('sphere',b.x,b.y,b.z,.23,.24,.4,0x9ef4ff);draw('sphere',b.x-b.vx*.012,b.y,b.z-b.vz*.012,.12,.15,.33,palette.blue)}
+ for(let r of rewardOrbs){if(r.age<0)continue;let k=r.age/r.life;draw('sphere',r.x,1.45+k*2.2+Math.sin(k*Math.PI)*.45,r.z,.28*(1-k*.65),.32*(1-k*.65),.28*(1-k*.65),palette.gold)}
+ for(let b of bullets){const s=b.weapon==='plasma'?.58:b.weapon==='sniper'?.29:.19;
+  draw('sphere',b.x,b.y,b.z,s,s,s*1.7,b.color||0xffe19b);
+  draw('sphere',b.x-b.vx*.013,b.y,b.z-b.vz*.013,s*.54,s*.6,s*2,b.weapon==='plasma'?0xaffff4:0xffd886);
+ }
+ for(let c of casings){draw('box',c.x,c.y,c.z,.09,.15,.08,0xe5bc70,t*9+c.x)}
+ // Visible meat chunks and supply parcels. Items glide along the snow when in range.
+ if(magnetActive>0){
+  draw('ring',hero.x,.08,hero.z,MAGNET.radius*2,1,MAGNET.radius*2,0x8deaf2,0,.13+Math.sin(t*3)*.035);
+ }
+ for(let p of pickups){
+  if(dist(p,camera)>48)continue;
+  let bob=Math.sin(p.phase*3)*.12+(p.attract?.22:.0);
+  if(p.kind==='meat'){
+   drawMeat(p.x,.48+bob,p.z,1.22,p.phase*.28);
+   draw('ring',p.x,.09,p.z,1.45,1,1.45,p.attract?0x87f5e8:0xe99e94,0,.38);
+  }else{
+   draw('box',p.x,.57+bob,p.z,.84,.74,.78,0xb48d62,p.phase*.2);
+   draw('box',p.x,1.0+bob,p.z,.9,.1,.82,0xffd288,p.phase*.2);
+   draw('box',p.x,.62+bob,p.z,.17,.76,.82,0x746452,p.phase*.2);
+   draw('ring',p.x,.1,p.z,1.5,1,1.5,p.attract?0x87f5e8:0xffcf7a,0,.4);
+  }
+ }
+ for(let f of lootFlights){
+  if(f.elapsed<0)continue;
+  let k=clamp(f.elapsed/f.life,0,1),q=k*k*(3-2*k),
+   xx=f.x+(hero.x-f.x)*q,zz=f.z+(hero.z-f.z)*q;
+  let yy=.6+Math.sin(k*Math.PI)*2.5+q*.7;
+  draw('box',xx,yy,zz,.32,.37,.33,f.color,t*2+k*4);
+  draw('sphere',xx,yy+.22,zz,.15,.18,.15,palette.white);
+ }
+ for(let p of sparks)draw('sphere',p.x,p.y,p.z,p.size,p.size,p.size,p.color);
+ // animated fire and ice light
+ for(let i=0;i<3;i++){let x=-3+Math.sin(t*5+i*2)*.28,z=-3+Math.cos(t*4+i*2)*.24;draw('cone',x,.65+i*.16,z,.55,1.3+Math.sin(t*7+i)*.3,.55,i===0?0xffca67:i===1?0xff873b:0xffe5a8)}
+}
+function drawHero(){
+ const {x,z,yaw}=hero,walk=Math.sin(hero.walk)*.14,sh=hero.hit>.1,celebrate=hero.boost>.0;
+ const part=(name,lx,y,lz,sx,sy,sz,c,ang=0)=>{
+  let p=orient(x,z,yaw,lx,lz);draw(name,p[0],y,p[1],sx,sy,sz,c,yaw+ang)
+ };
+ const coat=sh?palette.red:celebrate?0x53a2af:0x317b9b;
+ // boots, legs, coat, scarf, head, hat
+ part('box',-.26,.23,.14+walk,.42,.43,.73,palette.black);
+ part('box',.26,.23,.14-walk,.42,.43,.73,palette.black);
+ part('box',-.26,.73,0,.43,.82,.48,0x1c4b67);
+ part('box',.26,.73,0,.43,.82,.48,0x1c4b67);
+ part('box',0,1.43-hero.unloadPose*.12-hero.unloadSwing*.11,-hero.unloadPose*.17,1.07,1.24,.72,coat);
+ part('box',0,1.72,-.38,1.12,.19,.35,0xc8e9ec);
+ const lean=hero.unloadPose,sw=hero.unloadSwing,rdAnim=hero.reload>0?Math.sin((currentWeapon().reload-hero.reload)/currentWeapon().reload*Math.PI):0;
+ part('box',-.71,1.5+lean*.18+sw*.22+rdAnim*.15,-.07-lean*.45-sw*.24-hero.aim*.25,.34,1.0,.42,coat);
+ part('box',.71,1.5+lean*.15+sw*.18+rdAnim*.18-hero.recoil*.08,-.19-lean*.56-sw*.30-hero.aim*.31,.34,.99,.42,coat);
+ if(lean>.03){
+  part('sphere',-.73,1.08+lean*.30+sw*.33,-.64-lean*.45-sw*.24,.25,.23,.28,palette.skin);
+  part('sphere',.73,1.08+lean*.25+sw*.29,-.68-lean*.42-sw*.30,.25,.22,.28,palette.skin);
+ }
+ part('sphere',0,2.28,-.02,.68,.7,.6,palette.skin);
+ part('cylinder',0,2.66,0,.82,.28,.76,0x243f53);
+ part('box',0,2.57,-.26,.94,.17,.38,0x243f53);
+ part('box',0,1.14,-.01,1.14,.22,.81,palette.black);
+ // Body leans/arms reach out in sync with the physical meat delivery arc.
+ if(state.bag>0){
+  part('box',-.26,1.35,.55,.48,.64,.28,0xb89563);
+  part('box',-.26,1.48,.78,.39,.09,.18,palette.wooddark);
+ }
+ const layers=meatLayers(displayMeat);
+ if(layers>0){
+  part('box',0,1.42,.68,.86,.87,.25,0x76564d); // supporting frame
+  for(let layer=0;layer<layers;layer++){
+   const yy=1.3+layer*.30,zz=.86+Math.sin(layer*2)*.04;
+   const sway=Math.sin(t*6+layer*.3)*(pointer.active||keys.size>0?.025:0);
+   for(let side of [-1,1]){
+    const px=side*.255+sway;
+    part('sphere',px,yy,zz,.46,.24,.51,layer%2?0xb96661:0xca746c);
+    part('sphere',px+.035,yy+.07,zz-.025,.30,.12,.33,0xe8a18c);
+   }
+   if(layer%3===0)part('box',0,yy+.12,zz,.94,.075,.72,0xa27b59);
+  }
+  part('box',0,1.39+layers*.30,.90,1.04,.13,.72,0x745d51);
+ }
+ // Equipped weapon is shown on the character, including aiming, recoil, swap and reload poses.
+ const swapPose=hero.swap,rd=hero.reload>0?1:0;
+ const gunPos=orient(x,z,yaw,.45,-.75+hero.recoil*.12+swapPose*.2);
+ drawGunAt(gunPos[0],1.49+hero.aim*.06+swapPose*.25-rd*.35,gunPos[1],yaw,currentWeapon(),1.06,gunFlash,rd);
+ if(hero.reload>0){
+  part('box',.22,1.04+rdAnim*.27,-.47,.22,.4,.23,0xf0d2a7);
+  part('box',.35,1.14+rdAnim*.18,-.64,.22,.37,.18,0xf6ce87);
+ }
+
+}
+function drawWolf(b){
+ const {x,z,yaw}=b,walk=Math.sin(b.walk)*.19,hit=b.animHit||0,atk=b.attackPose||0;
+ const part=(type,lx,y,lz,sx,sy,sz,c)=>{let p=orient(x,z,yaw,lx,lz);draw(type,p[0],y,p[1],sx,sy,sz,c,yaw)};
+ part('sphere',0,.96+Math.sin(b.walk*1.2)*.05-hit*.25,.2-atk*.2,1.22,.9,1.75,hit>0?0xe2a7a4:0x778992);
+ for(let xx of [-.43,.43])for(let zz of [-.47,.68])part('box',xx,.43+((xx*zz>0)?walk:-walk),zz,.26,.78,.34,0x475e67);
+ part('sphere',0,1.22,-.55,.8,.65,.87,0x6a7d8a);
+ part('sphere',0,1.37,-.98,.77,.67,.71,0x778b95);
+ for(let xx of [-.32,.32])part('cone',xx,1.82,-1,.27,.66,.27,0x455a63);
+ part('cone',0,.88,1.15,.25,.5,.9,0x748895);
+ part('sphere',0,1.14,-1.32,.39,.3,.45,0xc2d0cd);
+ part('sphere',0,1.12,-1.62,.2,.16,.18,0x24333b);
+ for(let xx of [-.24,.24])part('sphere',xx,1.45,-1.27,.09,.12,.11,0xffc471);
+}
+function drawReindeer(b){
+ const {x,z,yaw}=b,walk=Math.sin(b.walk)*.13;
+ const part=(type,lx,y,lz,sx,sy,sz,c)=>{let p=orient(x,z,yaw,lx,lz);draw(type,p[0],y,p[1],sx,sy,sz,c,yaw)};
+ part('sphere',0,1.3,.2,1.28,1.17,2,0xad8066);
+ for(let xx of [-.48,.48])for(let zz of [-.64,.66])part('cylinder',xx,.63+((xx*zz>0)?walk:-walk),zz,.21,1.05,.21,0x765c4d);
+ part('sphere',0,1.92,-.62,.71,1.2,.79,0xb99277);
+ part('sphere',0,2.37,-.97,.62,.65,.81,0x92684f);
+ part('sphere',0,2.2,-1.38,.44,.35,.48,0xe1c9a8);
+ for(let xx of [-.48,.48]){
+   part('cone',xx*.9,2.75,-.89,.31,.55,.32,0x8d604d);
+   part('cylinder',xx*.9,3.2,-.88,.12,1.0,.12,0xdac9a4);
+   part('cylinder',xx*1.5,3.5,-.8,.11,.71,.11,0xe0d2ad);
+   part('cone',xx*1.6,3.85,-.81,.18,.4,.18,0xe0d2ad);
+   part('sphere',xx*.35,2.45,-1.33,.10,.11,.12,0x253942);
+ }
+ part('sphere',0,1.33,1.24,.42,.48,.43,0xd1c2ae);
+}
+
+function drawBear(b){
+ if(b.type==='wolf')return drawWolf(b);
+ if(b.type==='reindeer')return drawReindeer(b);
+ const {x,z,yaw}=b,walk=Math.sin(b.walk)*.18,hit=b.animHit||0,atk=b.attackPose||0;
+ const part=(name,lx,y,lz,sx,sy,sz,c)=>{let p=orient(x,z,yaw,lx,lz);draw(name,p[0],y,p[1],sx,sy,sz,c,yaw)};
+ let s=b.boss?1.7:b.elite?1.33:b.area?1.13:1;
+ const body=b.boss?0x555c70:b.elite?0xb98557:palette.brown;
+ part('sphere',0,(1.12-hit*.16)*s,atk*.33*s,1.85*s,1.68*s,2.35*s,hit>0?0xd69b92:body);
+ part('sphere',0,1.64*s,-.89*s,1.3*s,1.19*s,1.25*s,palette.brown2);
+ for(let xx of [-.62,.62])for(let zz of [-.72,.75])part('sphere',xx*s,(.48+(xx*zz>0?walk:-walk)+((zz<0)?atk*.38:0))*s,(zz-atk*.24)*s,.52*s,.93*s,.58*s,body);
+ part('sphere',0,1.71*s,-1.39*s,1.38*s,1.11*s,1.13*s,b.boss?0x543e40:palette.brown2);
+ for(let xx of [-.48,.48])part('sphere',xx*s,2.22*s,-1.48*s,.4*s,.42*s,.38*s,body);
+ part('sphere',0,(1.5-atk*.13)*s,-(1.95+atk*.12)*s,.85*s,.58*s,.52*s,palette.cream);
+ part('sphere',0,1.68*s,-2.2*s,.3*s,.23*s,.24*s,palette.black);
+ for(let xx of [-.35,.35])part('sphere',xx*s,1.89*s,-1.89*s,.115*s,.15*s,.13*s,0x0d1720);
+ if(b.boss||b.elite){
+   part('sphere',0,2.65*s,-.32*s,.63*s,.22*s,.62*s,b.boss?0xb8e7fc:0xffdc8e);
+   for(let a of [-1,1])part('cone',a*.73*s,2.52*s,-.12*s,.28*s,.54*s,.28*s,b.boss?0xa9dbef:0xf3b86e);
+   draw('ring',x,.16,z,b.boss?4.6:3.3,1,b.boss?4.6:3.3,b.boss?0x8cdde9:0xf4c47a,0,.55+Math.sin(t*2)*.16);
+ }
+}
+function floatingText(txt,x,y,{size=13,color='#fff',bold=false,align='center',outline=true}={}){
+ ctx.font=`${bold?800:600} ${size}px system-ui,-apple-system,"Segoe UI",sans-serif`;
+ ctx.textAlign=align;ctx.textBaseline='middle';
+ if(outline){ctx.lineWidth=4;ctx.strokeStyle='rgba(18,36,49,.86)';ctx.strokeText(txt,x,y)}
+ ctx.fillStyle=color;ctx.fillText(txt,x,y)
+}
+function healthbar(posX,posY,w,h,pct,c){
+ ctx.fillStyle='rgba(14,37,48,.83)';ctx.beginPath();ctx.roundRect(posX-w/2-2,posY-2,w+4,h+4,5);ctx.fill();
+ ctx.fillStyle='#4b5c63';ctx.fillRect(posX-w/2,posY,w,h);
+ ctx.fillStyle=c;ctx.fillRect(posX-w/2,posY,w*clamp(pct,0,1),h)
+}
+function label3D(text,x,y,z,opts={}){const p=project(x,y,z);if(!p.visible)return;floatingText(text,p.x,p.y,opts)}
+function renderUI(dt){
+ ctx.clearRect(0,0,W,H);
+ // vignette for readable world and unobtrusive prompts
+ let g=ctx.createLinearGradient(0,0,0,130);g.addColorStop(0,'rgba(5,20,36,.53)');g.addColorStop(1,'rgba(5,20,36,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,130);
+ const margin=clamp(W*.04,16,34);
+ ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=(W<620?'800 15px':'800 19px')+' system-ui';ctx.fillText('❄ FROSTLINE OUTPOST',margin,34);
+ ctx.fillStyle='#d8f6ff';ctx.font=(W<620?'600 9px':'600 11px')+' system-ui';ctx.fillText(W<620?'v3.1 • WEAPONS':'v3.1 LIVING COMBAT • 8 WEAPONS',margin,53);
+ // Minimal coin and supplies readout, not a status bar or button.
+ ctx.textAlign='right';ctx.font='750 17px system-ui';ctx.fillStyle='#ffe59a';ctx.fillText('◉ '+state.coins, W-margin,35);
+ ctx.font='650 12px system-ui';ctx.fillStyle='#eefaff';ctx.fillText('🥩 '+pretty(state.meat)+'  •  📦 '+(state.bag+state.warehouseGoods)+'  •  💎 '+state.crystals+'  •  '+currentWeapon().short+' Lv.'+currentWeaponLevel(),W-margin,W<620?73:53);
+ // The current magazine is readable without opening a status menu.
+ const am=currentWeapon(), weaponText=am.name+'  '+(hero.reload>0?'RELOADING '+Math.ceil(hero.reload*10)/10+'s':hero.ammo+'/'+am.mag);
+ ctx.textAlign='right';ctx.fillStyle=hero.reload>0?'#ffd2aa':'#d8faff';ctx.font='650 11px system-ui';
+ ctx.fillText(weaponText,W-margin,W<620?89:69);
+ if(hero.reload>0){const barw=clamp(W*.18,75,145),y=W<620?96:76;
+  ctx.fillStyle='rgba(16,39,50,.72)';ctx.fillRect(W-margin-barw,y,barw,4);
+  ctx.fillStyle='#ffdc9c';ctx.fillRect(W-margin-barw,y,barw*(1-hero.reload/am.reload),4);
+ }
+ // Persistent single-line objective: visible even when no loot is nearby.
+ if(state.activeQuest){
+  const q=state.activeQuest,cur=questProgress(),w=clamp(W*.43,140,292);
+  const by=W<620?91:H<540?69:74;
+  ctx.fillStyle='rgba(18,43,53,.76)';ctx.beginPath();ctx.roundRect(margin,by,w,43,10);ctx.fill();
+  ctx.fillStyle='#d5f7f5';ctx.font='700 12px system-ui';ctx.textAlign='left';
+  ctx.fillText((questHold>0?'✔ สำเร็จ! ':'ภารกิจ '+(state.questCount+1)+' • ')+q.label,margin+10,by+17);
+  ctx.fillStyle='#a8bbc3';ctx.beginPath();ctx.roundRect(margin+10,by+27,w-20,6,3);ctx.fill();
+  if(cur>0){ctx.fillStyle='#8cefc7';ctx.beginPath();ctx.roundRect(margin+10,by+27,(w-20)*clamp(cur/q.amount,0,1),6,3);ctx.fill()}
+  ctx.textAlign='right';ctx.fillStyle='#fff3bb';ctx.font='700 11px system-ui';
+  ctx.fillText(cur+'/'+q.amount,W>680?margin+w-10:margin+w-10,by+18);
+ }
+ if(raid.active){
+  const w=Math.min(W-30,330),bx=(W-w)/2,by=H<560?H-109:H-115;
+  ctx.fillStyle='rgba(65,22,27,.88)';ctx.beginPath();ctx.roundRect(bx,by,w,49,9);ctx.fill();
+  floatingText('⚠ ฐานถูกโจมตี • ศัตรูเหลือ '+bears.filter(b=>b.raid&&b.alive).length,W/2,by+15,{size:13,bold:true,color:'#ffd9be',outline:false});
+  ctx.fillStyle='#4c3a3d';ctx.fillRect(bx+12,by+31,w-24,8);
+  ctx.fillStyle='#ff8c74';ctx.fillRect(bx+12,by+31,(w-24)*clamp(raid.hp/raid.maxHp,0,1),8);
+ }else if(raid.next>0&&raid.next<25){
+  floatingText('⚠ ฝูงหมีใกล้บุกฐาน '+Math.ceil(raid.next)+'s',W/2,H-88,{size:13,bold:true,color:'#ffccaa'});
+ }
+
+ // Text is kept short and anchored to large animated 3D machines.
+ label3D('ขาย',-6.8,4.15+Math.sin(t*3)*.1,5.2,{size:17,bold:true,color:'#b8ffd8'});
+ label3D(state.bag>0?'รับ +'+state.bagValue+' เหรียญ':'เดินมาเมื่อมีของ',-6.8,3.68+Math.sin(t*3)*.1,5.2,{size:11,color:'#f0fff3'});
+ label3D('UPGRADE',7.2,4.16+Math.sin(t*3)*.1,5.2,{size:15,bold:true,color:'#ffe1aa'});
+ label3D(currentWeaponLevel()>=50?'MAX':' '+currentWeapon().short+' '+currentWeaponLevel()+' → '+(currentWeaponLevel()+1)+'  ◉ '+upgradeCost(),7.2,3.73+Math.sin(t*3)*.1,5.2,{size:11,color:'#fff3d8'});
+ label3D(state.gate?'ผ่านได้แล้ว':'UNLOCK  ◉60',0,5.35,13,{size:15,bold:true,color:state.gate?'#bdffc9':'#ffe5ad'});
+ // Main progress is anchored to the 3D worksite rather than an intrusive status HUD.
+ const buildHere=project(BUILD.x,5.4,BUILD.z);
+ if(buildHere.visible){
+   const pc=effects.buildComplete>0?100:buildPercentage();
+   const bw=clamp(W*.18,126,174),bh=14;
+   const bx=buildHere.x-bw/2,by=buildHere.y+15;
+   ctx.fillStyle='rgba(14,36,44,.8)';ctx.beginPath();ctx.roundRect(bx-8,by-30,bw+16,69,10);ctx.fill();
+   floatingText(effects.buildComplete>0?'ป้อมเสร็จ!':'ป้อม Lv.'+(state.fortLevel+1),buildHere.x,by-15,
+    {size:12,bold:true,color:effects.buildComplete>0?'#aeffd6':'#ffe0cc',outline:false});
+   ctx.fillStyle='#233a43';ctx.beginPath();ctx.roundRect(bx,by,bw,bh,5);ctx.fill();
+   if(pc>0){ctx.fillStyle=pc===100?'#65ed9d':'#f1a37f';ctx.beginPath();ctx.roundRect(bx,by,bw*pc/100,bh,5);ctx.fill()}
+   floatingText(pc+'%  •  '+(effects.buildComplete>0?'DONE':state.buildStored+'/'+buildGoal()),buildHere.x,by+27,{size:12,bold:true,color:'#fff',outline:false});
+ }
+ if(freeMeat()>0&&Math.hypot(hero.x-BUILD.x,hero.z-BUILD.z)<6.9){
+   // Depot is unmistakable through the world-space meat icon and fill bar.
+   // A separate label is deliberately avoided to keep the view clear.
+ }
+ label3D('OUTPOST',-11,4.52,4.2,{size:12,bold:true,color:'#e9fbff'});
+ label3D('คลังสินค้า',WAREHOUSE.x,2.95,WAREHOUSE.z,{size:12,bold:true,color:'#b6fff1'});
+ label3D('รับเนื้อ '+state.warehouseMeat,WAREHOUSE.x,2.65,WAREHOUSE.z,{size:10,color:'#e2e3d3'});
+ for(let c of chests)if(c.cool<=0&&dist(c,hero)<19)label3D('◆ สมบัติ',c.x,2.45,c.z,{size:12,bold:true,color:'#ffe5a2'});
+ for(let [i,s] of turrets.entries())if(s.active&&dist(s,hero)<21)label3D('GUARD '+towerGuards(i)+' • Lv.'+towerLevel(i),s.x,towerHeight(i)+3.2,s.z,{size:10,bold:true,color:'#beeeff'});
+ for(let a of ARMORY_PADS)if(dist(a,hero)<18){
+  const owned=!!state.unlockedWeapons[a.id];
+  const desc=owned?(a.id===state.equippedWeapon?'● EQUIPPED':'✓ EQUIP'):'◉'+a.cost+(a.crystals?' ◆'+a.crystals:'')+(a.cores?' ★'+a.cores:'');
+  label3D(a.short+' '+desc,a.x,2.68+Math.sin(t*2+a.x)*.13,a.z,{size:11,bold:true,color:a.id===state.equippedWeapon?'#99ffd0':owned?'#e3f7ff':'#ffdfa9'});
+ }
+ label3D('ARMORY • เดินเลือกปืน',22,7.15,-.75,{size:14,bold:true,color:'#f4fbff'});
+ if(raid.active){label3D('ฐาน '+Math.max(0,Math.ceil(raid.hp))+'/'+raid.maxHp,0,5.35,1.1,{size:13,bold:true,color:'#ffb8a0'});} 
+ if(state.gate)label3D('ALPHA TERRITORY',-5,3.7,27,{size:12,bold:true,color:'#ffe0cb'});
+ // Resource counts are displayed above real drops (no buttons or inventory dialog).
+ for(let p of pickups){
+  if(dist(p,hero)>17)continue;
+  const q=project(p.x,p.kind==='meat'?1.9:2.0,p.z);
+  if(q.visible)floatingText((p.kind==='meat'?'🥩 ':'📦 ')+'×'+p.count,q.x,q.y,
+   {size:12,bold:true,color:p.attract?'#b9fff0':'#fff3d4'});
+ }
+ // health above hero; no conventional status HUD
+ let hp=project(hero.x,3.35+Math.max(0,meatLayers(displayMeat)-5)*.31,hero.z);
+ if(hp.visible){healthbar(hp.x,hp.y,66,8,hero.health/hero.maxHealth,hero.health<35?'#ff656c':'#70eda5');floatingText(Math.round(hero.health)+'',hp.x,hp.y-10,{size:10,color:'#e8fff4'})}
+ for(let b of bears){if(!b.alive||dist(b,hero)>17)continue;let p=project(b.x,b.boss?6.3:b.type==='reindeer'?4.4:b.elite?4.8:3.55,b.z);if(p.visible)healthbar(p.x,p.y,b.boss?98:b.elite?70:52,5,b.hp/b.maxHp,b.boss?'#abdbf8':b.elite?'#ffd080':'#eebf7c')}
+ // in-world information messages
+ for(let m of messages){
+  let p=project(m.x,3.65+(m.full-m.life)*1.1,m.z);if(!p.visible)continue;
+  ctx.globalAlpha=clamp(m.life/.65,0,1);
+  floatingText(m.msg,p.x,p.y,{size:clamp(W*.026,13,19),color:m.color,bold:true});ctx.globalAlpha=1;
+ }
+ // One big temporary feedback animation for actual actions. No dialogs or pause.
+ if(banner){
+  let age=banner.duration-banner.life;
+  let fade=Math.min(1,age/.22,banner.life/.45);
+  let width=Math.min(W-28,390),height=86;
+  let bx=W*.5-width*.5, by=Math.min(100,H*.18)+Math.max(0,1-age/.22)*-18;
+  ctx.globalAlpha=clamp(fade,0,1);
+  ctx.fillStyle='rgba(12,35,47,.84)';
+  ctx.strokeStyle=banner.color;ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.roundRect(bx,by,width,height,17);ctx.fill();ctx.stroke();
+  let icon=banner.type==='sell'?'◉':banner.type==='upgrade'?'★':banner.type==='unlock'?'◆':banner.type==='death'?'✚':'!';
+  ctx.fillStyle=banner.color;
+  ctx.beginPath();ctx.arc(bx+39,by+42,22+Math.sin(age*14)*2.5,0,TAU);ctx.fill();
+  floatingText(icon,bx+39,by+41,{size:26,color:'#173440',bold:true,outline:false});
+  floatingText(banner.title,bx+72,by+31,{size:clamp(W*.031,17,22),color:'#fff',bold:true,align:'left',outline:false});
+  floatingText(banner.detail,bx+72,by+59,{size:clamp(W*.021,12,15),color:banner.color,align:'left',outline:false});
+  ctx.globalAlpha=1;
+ }
+ // snowfall
+ ctx.fillStyle='rgba(244,253,255,.71)';
+ for(let snow of screenSnow){
+  snow.x+=snow.vx*dt*.1;snow.y+=snow.vy*dt;
+  if(snow.y>1.02){snow.y=-.02;snow.x=Math.random()}
+  if(snow.x<-.02)snow.x=1.02;
+  ctx.globalAlpha=.4+snow.z*.32;
+  ctx.beginPath();ctx.arc(snow.x*W,snow.y*H,snow.z*1.2,0,TAU);ctx.fill();
+ }
+ ctx.globalAlpha=1;
+ if(pointer.active){
+  const r=58,cx=pointer.x,cy=pointer.y,dx=pointer.dx,dy=pointer.dy;
+  ctx.fillStyle='rgba(13,43,60,.22)';ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.arc(cx,cy,r+8,0,TAU);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(196,246,255,.45)';ctx.strokeStyle='rgba(255,255,255,.75)';
+  ctx.beginPath();ctx.arc(cx+dx,cy+dy,24,0,TAU);ctx.fill();ctx.stroke();
+ }
+ let tip=Math.max(0,9-t);if(tip>0){ctx.globalAlpha=Math.min(1,tip/2);floatingText('ลากนิ้วเดิน • ARMORY ทางขวาของฐาน • ยิงอัตโนมัติ',W/2,H-36,{size:clamp(W*.024,11,15),color:'#fff'});ctx.globalAlpha=1}
+ if(hero.hit>.01){
+  ctx.strokeStyle='rgba(255,74,76,'+(hero.hit*.35)+')';ctx.lineWidth=hero.hit*24;ctx.strokeRect(0,0,W,H)
+ }
+}
+function frameLoop(ms){
+ if(!now)now=ms;
+ const dt=clamp((ms-now)/1000,0,.035);now=ms;t+=dt;frame++;
+ heroUpdate(dt);bearsUpdate(dt);bulletsUpdate(dt);turretsUpdate(dt);
+ chestsUpdate(dt);workersUpdate(dt);raidUpdate(dt);questUpdate(dt);
+ checkPads();armoryUpdate(dt);unloadUpdate(dt);cameraUpdate(dt);
+ render3D();renderUI(dt);
+ if(frame%480===0)save();
+ requestAnimationFrame(frameLoop)
+}
+overlay.addEventListener('pointerdown',ev=>{
+ if(ev.button!==0&&ev.pointerType==='mouse')return;
+ initSound();ev.preventDefault();if(pointer.active)return;
+ pointer.active=true;pointer.id=ev.pointerId;pointer.x=ev.clientX;pointer.y=ev.clientY;pointer.dx=pointer.dy=0;
+ try{overlay.setPointerCapture(ev.pointerId)}catch(e){}
+},{passive:false});
+overlay.addEventListener('pointermove',ev=>{
+ if(!pointer.active||ev.pointerId!==pointer.id)return;ev.preventDefault();
+ let dx=ev.clientX-pointer.x,dy=ev.clientY-pointer.y,m=Math.hypot(dx,dy);
+ if(m>58){dx=dx/m*58;dy=dy/m*58}pointer.dx=dx;pointer.dy=dy;
+},{passive:false});
+function release(ev){if(ev.pointerId!==pointer.id)return;pointer.active=false;pointer.dx=pointer.dy=0;pointer.id=null}
+overlay.addEventListener('pointerup',release);overlay.addEventListener('pointercancel',release);overlay.addEventListener('lostpointercapture',release);
+window.addEventListener('keydown',ev=>{let k=ev.key.toLowerCase();if('wasd'.includes(k)&&k.length===1||k.startsWith('arrow')){ev.preventDefault();keys.add(k);initSound()};});
+window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
+window.addEventListener('blur',()=>{keys.clear();pointer.active=false});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+window.addEventListener('beforeunload',save);
+// Diagnostics are available only when explicitly opening the local file with ?test=1.
+if(location.search.includes('test=1'))window.__FROSTLINE_TEST__={
+ snapshot:()=>({x:hero.x,z:hero.z,crystals:state.crystals,cores:state.cores,warehouseGoods:state.warehouseGoods,warehouseMeat:state.warehouseMeat,quest:state.activeQuest,questCount:state.questCount,gunLevel:state.level,weapon:state.equippedWeapon,ammo:hero.ammo,reload:hero.reload,owned:Object.keys(state.unlockedWeapons).filter(k=>state.unlockedWeapons[k]),weaponLevels:{...state.weaponLevels},guards:turrets.filter(t=>t.active).length,gate:state.gate,raid:{active:raid.active,next:raid.next,hp:raid.hp,wave:raid.wave,alive:bears.filter(b=>b.raid&&b.alive).length,enemyHealth:bears.filter(b=>b.raid&&b.alive).reduce((sum,b)=>sum+b.hp,0)},workers:workers.map(w=>({x:w.x,z:w.z,carry:w.carry,phase:w.phase})),chests:chests.map(c=>({id:c.id,cool:c.cool,open:c.open})),animalKinds:bears.filter(b=>!b.raid).map(b=>b.type),meat:state.meat,reserved:meatReserved,level:state.fortLevel,stored:state.buildStored,goal:buildGoal(),bag:state.bag,coins:state.coins,flights:depositFlights.length,unloading:hero.unloading,pickups:pickups.map(p=>({kind:p.kind,count:p.count,x:p.x,z:p.z,attract:p.attract})),radius:MAGNET.radius}),
+ setPosition:(x,z)=>{hero.x=x;hero.z=z;camera.x=x;camera.z=z},
+ addMeat:n=>{harvestMeat(Math.max(0,Math.floor(n)),hero.x,hero.z)},
+ quietBears:()=>{for(let b of bears){b.alive=false;b.respawn=1000000}},
+ dropTest:(kind,count,x,z)=>spawnDrop(kind,count,x,z),
+ getGlError:()=>gl.getError(),
+ debugStartRaid:()=>{raid.next=0;startRaid()},
+ debugClearRaid:()=>{for(let b of bears)if(b.raid&&b.alive)killBear(b);raidUpdate(.016)},
+ debugRaidNear:()=>{for(let b of bears)if(b.raid){b.x=4+rand(-2,2);b.z=-13-rand(0,1);}},
+ debugOpenChest:i=>{const c=chests[i||0];c.cool=0;openChest(c)},
+ debugAddMetric:(key,n)=>metric(key,n),
+ debugStepQuest:(key,n)=>{metric(key,n);questUpdate(.016)},
+ debugSpawn:(kind,x,z)=>{const b=spawnBear(0,0,kind);b.x=x;b.z=z;b.homeX=x;b.homeZ=z;bears.push(b);return b.type},
+ debugWorkerDrop:(kind,n,x,z)=>spawnDrop(kind,n,x,z),
+ debugGiveGoods:n=>{state.bag+=n;state.bagValue+=n*16},
+ debugSetCoins:n=>{state.coins=n},
+ debugSetFort:n=>{state.fortLevel=n},
+ getQuest:()=>state.activeQuest,
+ gunCatalog:()=>WEAPONS.map(w=>({id:w.id,range:w.range,damage:w.dmg,mag:w.mag,rate:w.rate})),
+ debugEquip:id=>{let w=WEAPONS.find(w=>w.id===id);if(!w)return false;state.unlockedWeapons[id]=true;state.equippedWeapon=id;hero.ammo=w.mag;hero.reload=0;hero.swap=0;return true},
+ debugShoot:()=>{let b=bears.find(b=>b.alive&&dist(b,hero)<currentWeapon().range);if(!b)return false;hero.yaw=Math.atan2(hero.x-b.x,hero.z-b.z);hero.shoot=0;fireWeapon(b);return true},
+ debugForceReload:()=>{hero.ammo=1;startReload()},
+ debugUpgradeWeapon:()=>{state.coins=100000;const p={type:'upgrade',x:7.2,z:5.2};hero.x=7.2;hero.z=5.2;padInside.upgrade=false;checkPads();return currentWeaponLevel()},
+ debugGuardShoot:()=>{startRaid();for(let b of bears)if(b.raid){b.x=4;b.z=-12}},
+ debugArmoryEnter:id=>{const p=ARMORY_PADS.find(a=>a.id===id);if(!p)return false;hero.x=p.x;hero.z=p.z;p.wasInside=false;armoryUpdate(.016);return true},
+ getRawState:()=>state
+};
+notice('v3.1 • ARMORY ทางขวา • ทหารประจำป้อม • 8 ปืน',0,4,'#e6faff',3);
+requestAnimationFrame(frameLoop);
+})();
+</script>
+</body>
+</html>
