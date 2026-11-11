@@ -629,9 +629,18 @@ const torchShadeCtx=torchShadeCanvas.getContext('2d',{alpha:true});
 function torchLightHolders(){
  if(!game)return [];
  const result=[game.p],time=performance.now();
+ // Include every on-screen hunter: remote players and AI hunters both carry
+ // torches in drawPlayer(). The previous 7-light cap and 1.6 s timeout
+ // could leave visible hunters in darkness even though they held a flame.
+ const visibleMargin=clamp(270*screenScale,155,410)/Math.max(.05,screenScale)+90;
+ const visible=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&isVisible(p.x,p.y,visibleMargin);
+ for(const b of game.bots||[]){
+  if(!b.dead&&visible(b))result.push(b);
+ }
  for(const r of peers.values()){
-  if(result.length>=7)break; // Bound both rendering time and light count.
-  if(r.init&&time-r.last<1600&&isVisible(r.x,r.y,380))result.push(r);
+  // Match drawRemotePlayers() so an on-screen remote is never unlit while
+  // waiting for its next network packet.
+  if(r.init&&time-r.last<6500&&visible(r))result.push(r);
  }
  return result;
 }
@@ -639,7 +648,7 @@ function torchScreenPosition(p){
  const face=(p.dir||1)<0?-1:1;
  return {
   x:w/2+(p.x+face*24-cam.x)*screenScale,
-  y:h/2+(p.y-47-cam.y)*screenScale,
+  y:h/2+(p.y-57-cam.y)*screenScale,
   radius:clamp(270*screenScale,155,410)
  };
 }
