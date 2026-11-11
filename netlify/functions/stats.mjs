@@ -1,5 +1,5 @@
 /**
- * SURVIVAL HUB shared analytics (7 games).
+ * SURVIVAL HUB shared analytics (8 registered game IDs; including legacy lastlight).
  * Uses one immutable Netlify Blob per event and one per anonymous browser ID.
  * This avoids lost-update races from read/modify/write aggregate counters.
  * This reports activity, NOT concurrent online players.
@@ -15,6 +15,7 @@ const GAME_ORIGINS = Object.freeze({
   lastlight: 'https://singular-cactus-134b11.netlify.app',
   devourer: 'https://darling-haupia-1391a2.netlify.app',
   zebra: null,
+  catdog: null,
 });
 const GAME_IDS = Object.keys(GAME_ORIGINS);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
