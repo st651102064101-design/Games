@@ -329,7 +329,7 @@ const STR={th:{master:'หลัก',combat:'เสียงต่อสู้',
 let paused=false,game=null,mode='menu',input={up:false,down:false,left:false,right:false,pointerId:null,ox:0,oy:0,x:0,y:0,dx:0,dy:0};
 // Legacy embedded Zebra printer image removed; procedural fantasy props need no downloads.
 const OBS_W=52,OBS_H=54;
-const world=7200*1.25,half=world/2,decor=[],particle=[],petals=[]; // v3.4: width and height each 50% of preceding 18,000-unit map
+const world=7200*1.875,half=world/2,decor=[],particle=[],petals=[]; // map expanded by 50% per side: 9,000 -> 13,500 world units; coast/props scale with world
 
 // FROSTLINE Natural World: one deterministic curved coastline shared by ALL stages,
 // network clients, wildlife, bot AI, drops, holes and teleport targets.
