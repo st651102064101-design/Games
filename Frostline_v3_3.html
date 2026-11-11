@@ -400,7 +400,7 @@ function updatePeers(dt){const ts=performance.now();for(const [id,r] of peers){i
 function drawRemotePlayers(){const ts=performance.now();for(const r of peers.values()){if(ts-r.last>6500)continue;ctx.save();ctx.translate(r.x,r.y);ellipse(0,14,22,9,'#35607540');ellipse(0,-10,12,19,'#c76275');ellipse(0,-32,11,12,'#ffdfb6');roundRect(-10,-45,20,7,3,'#793a5b');ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.strokeStyle='#294658';ctx.lineWidth=3;ctx.strokeText(r.name,0,-60);ctx.fillText(r.name,0,-60);roundRect(-21,-53,42,5,2,'#243e55');roundRect(-21,-53,42*clamp(r.hp/r.maxHp,0,1),5,2,'#ed7785');ctx.restore();
  for(const blade of (r.blades?.length?r.blades:[...Array(Math.min(r.count,24))].map((_,k)=>({a:r.angle+k*TAU/r.count,reach:r.reach})))){const a=blade.a,x=r.x+Math.cos(a)*blade.reach,y=r.y+Math.sin(a)*blade.reach;ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);line(0,9,0,-17,5,'#6e5354');line(-8,-11,8,-11,4,'#e7c4be');poly([[-4,-12],[-4,-38],[0,-51],[4,-38],[4,-12]],'#fff4ed');ctx.restore()}}
 }
-async function connectOnline(){if(network==='connecting'||network==='p2p'||network==='local')return;
+async function connectOnline(){if(network==='connecting'||network==='p2p'||network==='ready')return;
  // Offline and cross-tab fallback are always available, even if CDN or relay is blocked.
  if(!localChannel&&typeof BroadcastChannel!=='undefined'){
   try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-3-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
