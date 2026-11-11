@@ -282,6 +282,7 @@ function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!is
  const L=70+t*170;for(const pts of h.bolts){for(const pass of [0,1]){ctx.strokeStyle=pass?'rgba(255,60,90,'+a+')':'rgba(5,0,8,'+a+')';ctx.lineWidth=pass?2:6*a+1.5;ctx.beginPath();ctx.moveTo(0,0);for(const q of pts)ctx.lineTo(q[0]*L,q[1]*L);ctx.stroke()}}
  if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,26*(1-t/.25)+6,0,TAU);ctx.fill()}
  ctx.restore()}}
+function drawWeaponCount(p){const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
 
 // ===== Loot racks: 2 rows x 6 columns, or random scatter =====
 function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.length>=3)g.racks.shift();
@@ -291,8 +292,7 @@ function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.le
  g.racks.push({x:cx,y:cy,grid,age:0});
  items.forEach((it,i)=>{let x,y;if(grid){x=cx+(i%6-2.5)*gx;y=cy+(Math.floor(i/6)-.5)*gy}else{x=clamp(cx+rand(-230,230),-half+90,half-90);y=clamp(cy+rand(-130,130),-half+90,half-90)}
   spawnDrop(x,y,it[0],it[1],it[2]);const dr=g.drops[g.drops.length-1];if(dr){dr.vx=0;dr.vy=0;dr.age=-1}});
- note(grid?'🎁 พบชั้นวางของ 2 แถว × 6 ช่อง!':'🎁 พบกองของตกกระจายอยู่แถวนี้!')}
-function drawRacks(){const g=game;if(!g.racks)return;for(const r of g.racks){if(!r.grid||!isVisible(r.x,r.y,300))continue;ctx.save();ctx.translate(r.x,r.y);roundRect(-258,-90,516,180,16,'rgba(120,190,215,.28)');ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.roundRect(-258,-90,516,180,16);ctx.stroke();ctx.restore()}}
+ note('🎁 พบกองของตกอยู่แถวนี้!')}
 
 // ===== Random pop-up holes =====
 const HOLE_COUNT=20;
@@ -490,14 +490,14 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d),width=Math.max(50,ctx.measureText(label).width+18),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*game.shake,h/2+(Math.random()-.5)*game.shake);ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- drawHoles();drawRacks();
+ drawHoles();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp')d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else drawPlayer(a.obj)}
-  drawSwords(game.p);drawExtraWeapons(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
+  drawSwords(game.p);drawExtraWeapons(game.p);drawWeaponCount(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  drawEnemyArrows();
