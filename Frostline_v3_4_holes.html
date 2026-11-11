@@ -298,13 +298,13 @@ function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.le
 const HOLE_COUNT=20;
 function spawnHole(initial=false){const g=game,p=g.p;let x,y;for(let t=0;t<20;t++){const a=rand(0,TAU),d=rand(initial?260:500,initial?1500:2400);x=clamp(p.x+Math.cos(a)*d,-half+120,half-120);y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<350))break}g.holes.push({x,y,r:rand(46,66),age:0,life:rand(22,40)})}
 function teleportTo(e,pad=120){const g=game;let x,y;for(let t=0;t<20;t++){x=rand(-half+pad,half-pad);y=rand(-half+pad,half-pad);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+120))break}sparks(e.x,e.y,'#bdeaff',14);e.x=x;e.y=y;sparks(x,y,'#e5ffff',18)}
-function updateHoles(dt){const g=game,p=g.p;if(g.haki)for(let i=g.haki.length-1;i>=0;i--){g.haki[i].life-=dt;if(g.haki[i].life<=0)g.haki.splice(i,1)}
+function updateHoles(dt){const g=game,p=g.p;if(g.holeBlink>0)g.holeBlink-=dt;if(g.haki)for(let i=g.haki.length-1;i>=0;i--){g.haki[i].life-=dt;if(g.haki[i].life<=0)g.haki.splice(i,1)}
  g.rackTimer=(g.rackTimer??5)-dt;if(g.rackTimer<=0){spawnRack();g.rackTimer=rand(45,75)}
 g.holeCd=Math.max(0,g.holeCd-dt);
  for(let i=g.holes.length-1;i>=0;i--){const o=g.holes[i];o.age+=dt;if(o.age>=o.life){g.holes.splice(i,1);spawnHole()}}
  while(g.holes.length<HOLE_COUNT)spawnHole();
  for(const o of g.holes){const grow=Math.min(1,o.age/1.2)*Math.min(1,(o.life-o.age)/1.2);o.k=grow;
-  if(g.holeCd<=0&&grow>.6&&Math.hypot(p.x-o.x,p.y-o.y)<o.r*.7){teleportTo(p,200);cam.x=p.x;cam.y=p.y;g.holeCd=3;p.inv=Math.max(p.inv,1.2);g.shake=Math.max(g.shake,8);announce('ตกหลุมน้ำแข็ง!','วาร์ปไปที่อื่นแบบสุ่ม',1.6);break}
+  if(g.holeCd<=0&&grow>.6&&Math.hypot(p.x-o.x,p.y-o.y)<o.r*.7){teleportTo(p,200);cam.x=p.x;cam.y=p.y;g.holeCd=3;p.inv=Math.max(p.inv,2.5);g.holeBlink=2.5;g.shake=Math.max(g.shake,8);announce('ตกหลุมน้ำแข็ง!','วาร์ปไปที่อื่นแบบสุ่ม · อมตะ 2.5 วิ',2);break}
   for(const m of g.mobs){if(!m.boss&&!(m.holeCd>0)&&grow>.6&&Math.hypot(m.x-o.x,m.y-o.y)<o.r*.6){teleportTo(m,100);m.holeCd=4}}}
  for(const m of g.mobs)if(m.holeCd>0)m.holeCd-=dt}
 function drawHoles(){const g=game;for(const o of g.holes){if(!isVisible(o.x,o.y,o.r+80))continue;const k=o.k===undefined?1:o.k,r=o.r*k,pulse=1+Math.sin(now*3+o.x)*.04;
@@ -496,8 +496,8 @@ function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(M
  // Bear collapse animation remains beneath the fighting characters.
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
- let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else drawPlayer(a.obj)}
-  drawSwords(game.p);drawExtraWeapons(game.p);drawWeaponCount(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
+ let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;drawPlayer(a.obj);ctx.globalAlpha=1}}
+  if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;drawSwords(game.p);drawExtraWeapons(game.p);ctx.globalAlpha=1;drawWeaponCount(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawHaki();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  drawEnemyArrows();
