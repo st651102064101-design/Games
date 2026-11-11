@@ -876,6 +876,25 @@ function drawCuteJelly(o){
  ellipse(-12,2,6,3,body);ellipse(12,2,6,3,body);
  ctx.restore();
 }
+
+function drawVisibleCuteObstacles(){
+ if(!game)return;
+ const hx=w/Math.max(.05,screenScale)*.5+85,hy=h/Math.max(.05,screenScale)*.5+90;
+ const minX=Math.floor((cam.x-hx)/200),maxX=Math.floor((cam.x+hx)/200);
+ const minY=Math.floor((cam.y-hy)/200),maxY=Math.floor((cam.y+hy)/200);
+ const cells=(maxX-minX+1)*(maxY-minY+1);
+ // On unusually extreme zoom levels, a linear scan is cheaper than thousands
+ // of empty grid lookups; ordinary gameplay draws from only nearby cells.
+ if(!game.obsGrid||cells>Math.max(1600,game.obstacles.length*.35)){
+  for(const o of game.obstacles)if(Math.abs(o.x-cam.x)<hx&&Math.abs(o.y-cam.y)<hy)drawObstacle(o);
+  return;
+ }
+ for(let gx=minX;gx<=maxX;gx++)for(let gy=minY;gy<=maxY;gy++){
+  const bucket=game.obsGrid.get(gx+','+gy);if(!bucket)continue;
+  for(const o of bucket)if(Math.abs(o.x-cam.x)<hx&&Math.abs(o.y-cam.y)<hy)drawObstacle(o);
+ }
+}
+
 function drawObstacle(o){
  const stage=game?.stage||1,kind=cutePropType(o,stage);
  ctx.save();
@@ -1537,7 +1556,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(!lowGraphics()&&d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d);ctx.font='900 15px system-ui';const width=Math.max(58,ctx.measureText(label).width+20),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 15px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- for(const o of game.obstacles)if(isVisible(o.x,o.y,OBS_W))drawObstacle(o);
+ drawVisibleCuteObstacles();
  drawHoles();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
