@@ -229,7 +229,7 @@ function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?
 function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
- game.dog={x:game.p.x+80,y:game.p.y+50,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];for(let i=0;i<5;i++)game.bots.push(spawnBot(i));for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
+ game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];for(let i=0;i<5;i++)game.bots.push(spawnBot(i));for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -462,8 +462,8 @@ function drawHoles(){const g=game;for(const o of g.holes){if(!isVisible(o.x,o.y,
 function updateSnowDog(dt){
  const g=game,d=g&&g.dog;if(!d)return;
  const p=g.p,motion=Math.hypot(p.mx||0,p.my||0),following=motion>14;
- const tx=following?p.x-(p.dir||1)*73:p.x+Math.sin(now*.88)*91;
- const ty=following?p.y+49:p.y+53+Math.sin(now*.62)*9;
+ const tx=following?p.x-(p.dir||1)*57:p.x+Math.sin(now*.88)*65;
+ const ty=following?p.y+20:p.y+20+Math.sin(now*.62)*6;
  let dx=tx-d.x,dy=ty-d.y,dist=Math.hypot(dx,dy);
  if(dist>500){d.x=tx;d.y=ty;d.moving=false;d.step=0}
  else{
@@ -476,10 +476,10 @@ function updateSnowDog(dt){
   }else{d.moving=false;d.step=0}
  }
  d.x=clamp(d.x,-half+35,half-35);d.y=clamp(d.y,-half+35,half-35);
- resolveObs(d,14);
+ resolveObs(d,5);
  // Keep the pet out of dangerous holes.
  for(const hole of g.holes){
-  const ox=d.x-hole.x,oy=d.y-hole.y,r=hole.r+27,dist=Math.hypot(ox,oy);
+  const ox=d.x-hole.x,oy=d.y-hole.y,r=hole.r+12,dist=Math.hypot(ox,oy);
   if(dist<r){const k=r/Math.max(dist,.001);if(dist<.001){d.x=hole.x+r;d.y=hole.y}else{d.x=hole.x+ox*k;d.y=hole.y+oy*k}}
  }
 }
@@ -610,6 +610,8 @@ function drawSnowDog(d){
  const stride=d.moving?Math.sin(d.walk):0;
  const bob=d.moving?Math.abs(Math.sin(d.walk))*2.1:Math.sin(now*2.7)*.7;
  ctx.save();ctx.translate(d.x,d.y);
+ // 18% original sprite size: about 17px tall, knee-height relative to the player.
+ ctx.scale(.18,.18);
  ellipse(1,3,31,7,'#27647c3e');
  ctx.translate(0,-bob);ctx.scale(d.dir||1,1);
  // A warm, fluffy corgi tail with a gentle wag.
@@ -653,9 +655,9 @@ function drawSnowDog(d){
  ctx.restore();ctx.restore();
  // Text is drawn separately so it never mirrors with the character.
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
- roundRect(d.x-24,d.y-77,48,17,8,'#234a60d6');
- ctx.font='bold 11px system-ui,sans-serif';ctx.fillStyle='#fff8e4';
- ctx.fillText('🐾 โมจิ',d.x,d.y-68.5);
+ roundRect(d.x-18,d.y-35,36,12,6,'#234a60d6');
+ ctx.font='bold 8px system-ui,sans-serif';ctx.fillStyle='#fff8e4';
+ ctx.fillText('🐾 โมจิ',d.x,d.y-29);
  ctx.restore();
 }
 
