@@ -513,7 +513,7 @@
       </section>
     </main>
 
-    <p class="stats-disclaimer">* เข้าเกมไม่ซ้ำ = จำนวนเบราว์เซอร์โดยประมาณที่เปิดหน้าเกมจริง เมื่อใส่ Game Tracker ในเว็บเกมแต่ละเกมแล้ว • ไม่ใช่จำนวนบุคคลที่ยืนยันตัวตนหรือผู้เล่นออนไลน์ • “ครั้งที่กดเล่น” นับเฉพาะคนกดผ่าน HUB</p>
+    <p class="stats-disclaimer">* กดเล่นไม่ซ้ำ = จำนวนเบราว์เซอร์โดยประมาณที่กดผ่าน HUB • เมื่อมี Game Tracker จึงแสดง “เข้าเกมไม่ซ้ำ” จากการเปิดหน้าเกมจริง • ไม่ใช่จำนวนบุคคลที่ยืนยันตัวตนหรือผู้เล่นออนไลน์</p>
     <footer class="footer">
       <span>© <span id="year">2026</span> SURVIVAL HUB. SELECT • SURVIVE • REPEAT.</span>
       <span class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="15" height="15" rx="2"/><path d="M9 9h12v12H9z"/></svg>เปิดไฟล์เกมในโฟลเดอร์เดียวกันในแท็บใหม่ • ใช้ Relative Path</span>
@@ -554,7 +554,7 @@
       const help = document.getElementById('stats-help');
       const refresh = document.getElementById('refresh-stats');
       const formatter = new Intl.NumberFormat('th-TH');
-      let lastLoadedAt = 0, busy = false, pendingRefresh = false, fallbackId = null;
+      let lastLoadedAt = 0, busy = false, pendingRefresh = false, fallbackId = null, nextAutomaticRetryAt = 0;
       const uuid = () => (crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(1))[0] & 15 : Math.floor(Math.random()*16);
         return (c === 'x' ? r : ((r & 3) | 8)).toString(16);
@@ -571,7 +571,8 @@
       }
       function setStatus(message, state) { status.textContent = message; status.dataset.state = state; }
       function showHelp(message) { help.innerHTML = message; help.classList.toggle('visible', Boolean(message)); }
-      async function refreshStats() {
+      async function refreshStats(manual = false) {
+        if (!manual && Date.now() < nextAutomaticRetryAt) return;
         if (busy) { pendingRefresh = true; return; }
         busy = true; refresh.disabled = true;
         if (lastLoadedAt === 0) setStatus('กำลังเชื่อมต่อสถิติ', 'loading');
@@ -595,29 +596,32 @@
             if (g.trackingActive) trackers++;
             const real = card.querySelector('[data-stat="browsers"]');
             const starts = card.querySelector('[data-starts]');
-            real.textContent = g.trackingActive ? formatter.format(g.visitors) : '—';
-            real.classList.toggle('is-untracked', !g.trackingActive);
+            real.textContent = formatter.format(g.trackingActive ? g.visitors : g.browsers);
+            real.classList.toggle('is-untracked', false);
+            const realLabel = real.closest('.metric')?.querySelector('.metric-label');
+            if (realLabel) realLabel.textContent = g.trackingActive ? 'เข้าเกมไม่ซ้ำ*' : 'กดเล่นไม่ซ้ำ*';
             card.querySelector('[data-stat="launches"]').textContent = formatter.format(g.launches);
-            starts.textContent = !g.trackingActive ? 'รอติดตั้ง Tracker ในเกม' :
-              (g.plays ? `เริ่มเล่นจริง ${formatter.format(g.plays)} ครั้ง` : 'ยังไม่ได้เชื่อมปุ่มเริ่มเล่น');
+            starts.textContent = !g.trackingActive ? 'นับจากการกดผ่าน HUB' :
+              (g.plays ? `เริ่มเล่นจริง ${formatter.format(g.plays)} ครั้ง` : 'เข้าถึงเกมแล้ว • รอเชื่อมปุ่ม Start');
             if (g.launches > best) { bestId=id; best=g.launches; tie=false; }
             else if (g.launches === best) tie=true;
           }
           cards.forEach(card=>card.querySelector('.popular')?.classList.toggle('visible',best>=3&&!tie&&card.dataset.game===bestId));
           lastLoadedAt=Date.now();
-          setStatus('ระบบนับคลิกพร้อมใช้งาน', 'ok');
-          hint.textContent = `ระบบเข้าเกมจริง: เชื่อมแล้ว ${trackers}/${cards.length} เกม`;
-          if (trackers<cards.length) showHelp('ยอดคลิกผ่าน HUB ทำงานแล้ว แต่ยอด <strong>เข้าเกมจริง</strong> ยังต้องเพิ่มสคริปต์ <code>game-tracker.js</code> ลงในเว็บไซต์แต่ละเกม ตาม README ที่อยู่ในไฟล์ ZIP');
-          else showHelp('');
+          nextAutomaticRetryAt = 0;
+          setStatus('ระบบสถิติออนไลน์', 'ok');
+          hint.textContent = trackers ? `เกมที่เชื่อมการเข้าเล่นจริง ${trackers}/${cards.length} • ที่เหลือนับคลิกผ่าน HUB` : 'คลิกและผู้กดเล่นไม่ซ้ำ • นับผ่าน HUB';
+          showHelp('');
         } catch(err) {
           const e=String(err?.message||'');
+          nextAutomaticRetryAt=Date.now()+90000; // avoid repeated failing requests on focus / visibility
           setStatus(e==='LOCAL_FILE'?'ไฟล์ทดลอง • ไม่เชื่อมฐานข้อมูล': 'เชื่อมต่อสถิติไม่ได้', 'offline');
           hint.textContent = 'เกมยังเปิดเล่นได้ตามปกติ';
           if(e==='LOCAL_FILE') showHelp('กำลังเปิดเมนูผ่านไฟล์บนเครื่อง: เกมยังเล่นได้จากโฟลเดอร์เดียวกัน แต่สถิติรวมทุกคนต้องมี Netlify Functions (หรือ Backend) จึงจะใช้งานได้');
           else if(e==='HTTP_404' || e==='BAD_RESPONSE') showHelp('ไม่พบ Netlify Function ที่ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a> หรือได้คำตอบผิดรูปแบบ โปรด Deploy <strong>ทั้งโปรเจกต์ผ่าน GitHub หรือ Netlify CLI</strong> ไม่ใช่อัปโหลด HTML/ZIP แบบ static เท่านั้น');
           else if(e==='HTTP_503'||e==='HTTP_500'||e==='HTTP_502') showHelp('ฟังก์ชันเซิร์ฟเวอร์มีข้อผิดพลาด โปรดดู Netlify → Logs → Functions → stats และตรวจสอบการติดตั้ง @netlify/blobs');
           else showHelp('ถ้าใช้เซิร์ฟเวอร์ไฟล์อย่างเดียว (เช่น Python http.server) ระบบนับรวมจะไม่ทำงาน ต้อง Deploy Netlify Functions ด้วย ตรวจสอบ <a href="/api/stats" target="_blank" rel="noopener">/api/stats</a>');
-        } finally { busy=false; refresh.disabled=false; if(pendingRefresh) { pendingRefresh=false; void refreshStats(); } }
+        } finally { busy=false; refresh.disabled=false; if(pendingRefresh) { pendingRefresh=false; if (Date.now() >= nextAutomaticRetryAt) void refreshStats(); } }
       }
       async function recordLaunch(id) {
         if (!ids.has(id) || location.protocol === 'file:') return;
@@ -639,7 +643,7 @@
         try { localStorage.setItem(storageKey,game); } catch {}
         void recordLaunch(game);
       }));
-      refresh.addEventListener('click',refreshStats);
+      refresh.addEventListener('click',()=>refreshStats(true));
       window.addEventListener('focus',()=>{if(Date.now()-lastLoadedAt>20000) void refreshStats();});
       document.addEventListener('visibilitychange',()=>{if(!document.hidden && Date.now()-lastLoadedAt>20000) void refreshStats();});
       document.getElementById('year').textContent=String(new Date().getFullYear());
