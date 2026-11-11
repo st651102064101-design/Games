@@ -620,22 +620,46 @@ const PERKS=[
 ];
 const FIELD_ITEMS=[{id:'radar',icon:'📡',name:'เรดาร์'},...['sword','boots','bag','armor'].map((id,i)=>({id,icon:['⚔️','🥾','🧲','🛡️'][i],name:['อาวุธ','รองเท้า','แม่เหล็ก','เกราะ'][i]})),{id:'furArmor',icon:'🧥',name:'เสื้อหนังหมี'},{id:'leatherPack',icon:'🎒',name:'กระเป๋าหนัง'},{id:'ration',icon:'🍲',name:'อาหารสำรอง'},...PERKS.map(p=>({id:'perk:'+p.id,icon:p.icon,name:p.title}))];
 function spawnAbility(near=false,index=-1){if(!game)return;const p=game.p,a=rand(0,TAU),d=rand(near?150:450,near?600:2200),x=clamp(p.x+Math.cos(a)*d,-half+90,half-90),y=clamp(p.y+Math.sin(a)*d,-half+90,half-90),item=index>=0?FIELD_ITEMS[index%FIELD_ITEMS.length]:choose(FIELD_ITEMS);spawnDrop(x,y,'ability',1,{id:item.id})}
-function applyFieldItem(id){const g=game,item=FIELD_ITEMS.find(x=>x.id===id);if(!item)return false;if(id==='radar')g.radar=true;else if(['sword','boots','bag','armor'].includes(id)){if(g.upd[id]>=8)return false;g.upd[id]++;if(id==='armor'){g.p.maxHp+=8;g.p.hp=Math.min(g.p.maxHp,g.p.hp+8)}}else if(id==='furArmor'){if(g.craft.furArmor)return false;g.craft.furArmor=true;g.p.maxHp+=15;g.p.hp+=15}else if(id==='leatherPack'){if(g.craft.leatherPack)return false;g.craft.leatherPack=true}else if(id==='ration'){g.p.hp=Math.min(g.p.maxHp,g.p.hp+70)}else if(id.startsWith('perk:')){const key=id.slice(5),perk=PERKS.find(p=>p.id===key);if(!perk||(g.perks[key]||0)>=perk.max)return false;g.perks[key]=(g.perks[key]||0)+1;if(key==='twin')g.weapons.push({id:CLIENT_ID+'field'+(++weaponSeq),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'})}else return false;sparks(g.p.x,g.p.y,'#9ff4e5',8);return true}
+function applyFieldItem(id){const g=game,item=FIELD_ITEMS.find(x=>x.id===id);if(!item)return false;if(id==='radar'){if(g.radar)return false;g.radar=true;}else if(['sword','boots','bag','armor'].includes(id)){if(g.upd[id]>=8)return false;g.upd[id]++;if(id==='armor'){g.p.maxHp+=8;g.p.hp=Math.min(g.p.maxHp,g.p.hp+8)}}else if(id==='furArmor'){if(g.craft.furArmor)return false;g.craft.furArmor=true;g.p.maxHp+=15;g.p.hp+=15}else if(id==='leatherPack'){if(g.craft.leatherPack)return false;g.craft.leatherPack=true}else if(id==='ration'){if(g.p.hp>=g.p.maxHp)return false;g.p.hp=Math.min(g.p.maxHp,g.p.hp+70)}else if(id.startsWith('perk:')){const key=id.slice(5),perk=PERKS.find(p=>p.id===key);if(!perk||(g.perks[key]||0)>=perk.max)return false;g.perks[key]=(g.perks[key]||0)+1;if(key==='twin'){if(g.weapons.length>=MAX_ACTIVE_EXTRA)earnXP(12);g.weapons.push({id:CLIENT_ID+'field'+(++weaponSeq),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'})}}else return false;sparks(g.p.x,g.p.y,'#9ff4e5',8);return true}
 function earnXP(v){const g=game;g.xp+=v;let gained=0;while(g.xp>=g.nextXP&&gained<8){g.xp-=g.nextXP;g.level++;g.nextXP=Math.round(g.nextXP*1.25+6);g.p.maxHp+=4;g.p.hp=Math.min(g.p.maxHp,g.p.hp+9);gained++}if(gained){playSound('level');sparks(g.p.x,g.p.y,'#79f8e5',24);note('✨ เลเวล '+g.level)}updateHud()}
 function showLevelChoice(){return; if(!game||game.pendingLevels<1||mode!=='playing')return;mode='levelup';clearInput();$('levelChoice').hidden=false;$('levelHeading').textContent=`เลเวล ${game.level} · เลือกพลัง`;let options=PERKS.filter(p=>(game.perks[p.id]||0)<p.max).sort(()=>Math.random()-.5).slice(0,3);
  $('perkChoices').innerHTML=options.map(p=>`<button class="perkCard" data-perk="${p.id}"><span class="perkIcon">${p.icon}</span><span><strong>${p.title}</strong><small>${p.desc}</small><span class="perkTag">LV. ${(game.perks[p.id]||0)+1} / ${p.max}</span></span></button>`).join('');
  $('perkChoices').querySelectorAll('[data-perk]').forEach(b=>b.onclick=()=>{let id=b.dataset.perk;game.perks[id]=(game.perks[id]||0)+1;game.pendingLevels--;sparks(game.p.x,game.p.y,'#81f0ff',20);$('levelChoice').hidden=true;mode='playing';note(`${PERKS.find(p=>p.id===id).icon} ${PERKS.find(p=>p.id===id).title} อัปเกรดแล้ว`);updateHud();last=performance.now();});
 }
-function collect(d){if(d.type==='weapon'&&WEAPON_TYPES.find(t=>t.id===d.weapon?.type)?.gun&&!d.weapon.fromBoss)return;playSound(d.weapon?.rarity==='legendary'?'rare':'pickup');const g=game;if(d.type==='ability'&&d.weapon){applyFieldItem(d.weapon.id)}else if(d.type==='weapon'&&d.weapon){if(WEAPON_TYPES.find(t=>t.id===d.weapon.type)?.gun&&!d.weapon.fromBoss)return;
- // Never replace the current or previous weapon. Every pickup is a new individual object.
- g.weapons.push({...d.weapon});const info=weaponInfo(d.weapon);sparks(d.x,d.y,info.r.color,14);
- }else if(d.type==='speed'){g.sprint=5;playSound('rare');}else if(d.type==='plus'){for(let i=0;i<d.amt;i++)g.weapons.push(randWeapon(false,choose(ARSENAL.filter(t=>!t.gun&&t.tier<=2)).id));playSound('pickup');}else if(d.type==='xp'){earnXP(d.amt);sparks(d.x,d.y,'#8aedff',5)}else if(d.type==='meat'&&g.p.hp<g.p.maxHp-34){let heal=Math.min(g.p.maxHp-g.p.hp,28+g.level);g.p.hp+=heal;sparks(d.x,d.y,'#a1f8bf',6)}else if(MAT_KEYS.includes(d.type)){g.inv[d.type]+=d.amt;}
- saveProgress();updateHud()}
+// Materials from the retired crafting menu grant immediate, useful rewards.
+function collectMaterial(g,type,amount){
+ const n=Math.max(1,Math.min(100,Math.floor(Number(amount)||1)));
+ if(type==='meat'&&g.p.hp<g.p.maxHp){g.p.hp=Math.min(g.p.maxHp,g.p.hp+28+g.level+Math.max(0,n-1)*3);sparks(g.p.x,g.p.y,'#a1f8bf',6);return}
+ const xpPerItem={meat:3,hide:3,bone:4,claw:6,frost:6};
+ earnXP(n*(xpPerItem[type]||3));
+}
+function collect(d){
+ if(d.type==='weapon'&&WEAPON_TYPES.find(t=>t.id===d.weapon?.type)?.gun&&!d.weapon.fromBoss)return;
+ const g=game,amount=Math.max(1,Math.min(100,Math.floor(Number(d.amt)||1)));
+ playSound(d.weapon?.rarity==='legendary'?'rare':'pickup');
+ if(d.type==='ability'&&d.weapon){if(!applyFieldItem(d.weapon.id))earnXP(12)}
+ else if(d.type==='weapon'&&d.weapon){
+  const wasFull=g.weapons.length>=MAX_ACTIVE_EXTRA;
+  g.weapons.push({...d.weapon});
+  if(wasFull)earnXP(12);
+  const info=weaponInfo(d.weapon);sparks(d.x,d.y,info.r.color,14);
+ }else if(d.type==='speed'){if(g.sprint>=4.95)earnXP(8);g.sprint=Math.max(g.sprint,5);playSound('rare')}
+ else if(d.type==='plus'){
+  const before=g.weapons.length;
+  for(let i=0;i<amount;i++)g.weapons.push(randWeapon(false,choose(ARSENAL.filter(t=>!t.gun&&t.tier<=2)).id));
+  const reserves=Math.max(0,g.weapons.length-MAX_ACTIVE_EXTRA)-Math.max(0,before-MAX_ACTIVE_EXTRA);
+  if(reserves)earnXP(reserves*4);
+ }else if(d.type==='xp'){earnXP(amount);sparks(d.x,d.y,'#8aedff',5)}
+ else if(d.type==='coin'){g.coins+=amount}
+ else if(MAT_KEYS.includes(d.type)){collectMaterial(g,d.type,amount)}
+ else {earnXP(3)}
+ saveProgress();updateHud()
+}
 function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่มีเนื้อหมี');return}if(game.p.hp>=game.p.maxHp){note('เลือดเต็มแล้ว');return}game.inv.meat--;const heal=Math.min(game.p.maxHp-game.p.hp,35+game.level*2);game.p.hp+=heal;sparks(game.p.x,game.p.y,'#9ff9ba',14);addFloat(game.p.x,game.p.y-35,`+${Math.ceil(heal)} ♥`,'#a6ffca');saveProgress();updateHud();if(mode==='inventory')renderInventory()}
 function swingDamage(){let base=(16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0))*PLAYER_DAMAGE_MULTIPLIER;return base*(1+(game.perks.sharp||0)*.2)}
 function swordCount(){return 0}
 function swordRange(){return (48+(game.upd.sword-1)*3)*(1+(game.perks.range||0)*.08)*(game.growS||1)}
-function magnetRadius(weaponRange){return weaponRange+60}
+function magnetRadius(weaponRange){const g=game;return weaponRange+60+(g.upd.bag-1)*48+(g.perks.magnet||0)*48+(g.craft.leatherPack?42:0)}
 function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
 // Fixed orbit slots: a dropped blade leaves a gap; the other blades keep their positions and the ring keeps spinning
 function slotOffset(w){const g=game;g.ringSize=g.ringSize||1;const used=allActiveWeapons().filter(x=>x!==w&&x.slot!==undefined).map(x=>x.slot);if(w.slot===undefined||w.slot<0||w.slot>=g.ringSize||used.includes(w.slot)){let j=-1;for(let k=0;k<g.ringSize;k++){if(!used.includes(k)){j=k;break}}if(j<0){j=g.ringSize;g.ringSize++}w.slot=j}return w.slot*TAU/g.ringSize}
