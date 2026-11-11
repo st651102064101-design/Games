@@ -551,7 +551,7 @@ function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
 function dropLabel(d){if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return spec?.name||'อาวุธ'}if(d.type==='coin')return 'เหรียญ';if(d.type==='plus')return 'เพิ่มอาวุธ';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
-function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);ctx.scale(2,2);let rare=r==='claw'||r==='frost';
+function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);ctx.scale(1.2,1.2);let rare=r==='claw'||r==='frost';
  ellipse(0,11,12,4,'#2e7d9c36');
  {const BR={coin:[0,13],xp:[-2,17],meat:[0,15],hide:[0,16],bone:[0,16],claw:[-2,18],frost:[-2,19],ability:[-3,25],weapon:[-3,24]}[r]||[0,16],by=BR[0],br=BR[1]+Math.sin(now*2.4+d.glow)*.6;
  ctx.fillStyle='rgba(205,242,255,.22)';ctx.beginPath();ctx.arc(0,by,br,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.6;ctx.stroke();
