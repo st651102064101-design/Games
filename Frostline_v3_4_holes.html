@@ -148,7 +148,8 @@ function playFootstep(speed){if(!audioCtx||audioCtx.state!=='running')return;if(
 
 // ===== Procedural rock music =====
 let rockNext=0,rockStep=0,rockDist=null,rockBus=null,rockNoise=null;
-function rockMusic(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime,vol=audioSettings.music;if(vol<=0.001)return;
+function rockMusic(){try{rockMusicInner()}catch(e){}}
+function rockMusicInner(){if(!audioCtx||audioCtx.state!=='running'||!audioMaster||document.hidden)return;const t=audioCtx.currentTime,vol=audioSettings.music;if(vol<=0.001)return;
  if(!rockBus){rockBus=audioCtx.createGain();rockBus.connect(audioMaster);const n=2048,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/n*2-1;c[i]=Math.tanh(x*7)}rockDist=audioCtx.createWaveShaper();rockDist.curve=c;rockDist.oversample='2x';const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;rockDist.connect(lp);lp.connect(rockBus);const len=audioCtx.sampleRate;rockNoise=audioCtx.createBuffer(1,len,audioCtx.sampleRate);const d=rockNoise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1}
  rockBus.gain.value=vol*.5;
  const bpm=148,step=60/bpm/4;if(rockNext<t-.5||rockNext===0){rockNext=t+.08;rockStep=0}
