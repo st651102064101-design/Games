@@ -7,7 +7,7 @@
  */
 import {getStore} from '@netlify/blobs';
 
-const ROOM = 'arena-v3-4/';
+const ROOM = 'arena-v3-5/';
 const VISIBLE_MS = 14000;
 const CLEANUP_MS = 90000;
 const MAX_PLAYERS = 32;
@@ -21,13 +21,13 @@ const cleanText = (v) => String(v||'นักล่า').replace(/[<>\u0000-\u00
 const storage = () => getStore({name:'frostline-public-pvp',consistency:'strong'});
 
 export default async function handler(request) {
-  if (request.method === 'GET') return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:2});
+  if (request.method === 'GET') return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:3});
   if (request.method !== 'POST') return respond({error:'Method not allowed'},405);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
   if (!(request.headers.get('content-type')||'').startsWith('application/json')) return respond({error:'JSON required'},415);
   const raw = await request.text();
-  if (raw.length > 9000) return respond({error:'Payload too large'},413);
+  if (raw.length > 16000) return respond({error:'Payload too large'},413);
   let body;
   try { body = JSON.parse(raw); } catch { return respond({error:'Invalid JSON'},400); }
   if (!body || !ID_RE.test(body.id||'')) return respond({error:'Invalid player ID'},400);
@@ -46,8 +46,8 @@ export default async function handler(request) {
       s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,60),h:num(s?.h,100,0,10000)
     })).sort((a,b)=>a.t-b.t);
     const blades = Array.isArray(body.blades) ? body.blades.slice(0,24).map(b=>({
-      o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
-      type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
+      id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
+      type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
     const me = {
@@ -57,6 +57,8 @@ export default async function handler(request) {
         armor:num(body.look?.armor,1,1,8),furArmor:body.look?.furArmor===true,
         leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
         weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel'},
+      shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-1800,1800),y:num(b.y,0,-1800,1800),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),t:num(b.t,now,now-5000,now+1000)})):[],
+      clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'main').slice(0,20),t:num(c.t,now,now-5000,now+1000)})):[],
       updatedAt:now
     };
     await store.setJSON(key, me);
@@ -83,3 +85,4 @@ export default async function handler(request) {
 }
 
 export const config = {path:'/api/frostline-pvp'};
+

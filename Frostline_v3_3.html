@@ -72,6 +72,7 @@ body.low-graphics #xpDock{filter:none}
 #graphicsMode{font:inherit;color:#275970;background:#fff;border:1px solid #9fcbd8;border-radius:8px;padding:6px}
 #bagBtn,#eatBtn{display:none!important}
 #bottomHud{justify-content:center}
+.arsenalCatalog{margin:12px 0;color:#315e73;font-size:13px}.arsenalCatalog summary{cursor:pointer;padding:8px}.arsenalCatalog ol{max-height:200px;overflow:auto;padding-left:30px}.arsenalCatalog li{padding:5px}.arsenalCatalog small{color:#648798}
 </style>
 </head>
 <body>
@@ -97,7 +98,7 @@ body.low-graphics #xpDock{filter:none}
  <div class="keyline">🗡️ <b>ดาบหมุน</b> โจมตีอัตโนมัติ · หมีตายแล้วมีไอเทมกระเด็น<br>✦ <b>ผลึก</b> เพิ่มเลเวล แล้วกดปุ่มเลือกสกิลเอง · 🥩 <b>เนื้อ</b> ฟื้นพลัง<br>🦴 <b>กระดูก หนัง กรงเล็บ และผลึกน้ำแข็ง</b> ใช้คราฟต์<br>🟡 <b>เหรียญ</b> ซื้ออัปเกรด · 🗡️ <b>อาวุธบนพื้น</b> สุ่มชนิดและค่าสถานะ เก็บแล้วสะสมเพิ่ม</div>
  <div class="divider"></div><p class="keyline">คอมพิวเตอร์: <b>WASD / ลูกศร</b> &nbsp;·&nbsp; มือถือ: <b>ลากนิ้วจากจุดใดก็ได้</b><br>กด <b>B</b> ร้าน / คราฟต์ · <b>I</b> กระเป๋า · <b>H</b> ใช้เนื้อ · <b>Esc</b> ปิดเมนู</p>
  <p class="keyline" style="text-align:center">กราฟิก: <select id="graphicsMode" aria-label="คุณภาพกราฟิก"><option value="auto">อัตโนมัติ</option><option value="low">ประหยัด (เครื่องสเปกต่ำ)</option><option value="normal">ปกติ</option></select></p>
- <p class="keyline" style="text-align:center;margin:10px 0">🌐 PvP ออนไลน์: สุ่มชื่อและจุดเกิด · พบผู้เล่นที่อยู่ในห้องเดียวกันโดยอัตโนมัติ · หากออฟไลน์ยังเล่นคนเดียวได้</p><button class="primary" id="playBtn">PLAY NOW →</button>
+ <p class="keyline" style="text-align:center;margin:10px 0">🌐 PvP ออนไลน์: สุ่มชื่อและจุดเกิด · พบผู้เล่นที่อยู่ในห้องเดียวกันโดยอัตโนมัติ · หากออฟไลน์ยังเล่นคนเดียวได้</p><details class="arsenalCatalog"><summary>คลังอาวุธ 30 ชนิด</summary><ol><li>Survival Knife <small>DMG 8 · ประชิด</small></li><li>Shadow Dagger <small>DMG 9 · ประชิด</small></li><li>Wolf Karambit <small>DMG 11 · ประชิด</small></li><li>Hunter Bowie <small>DMG 14 · ประชิด</small></li><li>Jungle Machete <small>DMG 17 · ประชิด</small></li><li>Iron Baton <small>DMG 18 · ประชิด</small></li><li>Rust Crowbar <small>DMG 21 · ประชิด</small></li><li>Lumber Hatchet <small>DMG 25 · ประชิด</small></li><li>Twin Fang <small>DMG 13 · ประชิด</small></li><li>Chain Sickle <small>DMG 27 · ประชิด</small></li><li>Steel Shortsword <small>DMG 30 · ประชิด</small></li><li>Ronin Katana <small>DMG 34 · ประชิด</small></li><li>Knight Longsword <small>DMG 39 · ประชิด</small></li><li>Viper Spear <small>DMG 35 · ประชิด</small></li><li>Guardian Halberd <small>DMG 43 · ประชิด</small></li><li>Skull Crusher <small>DMG 49 · ประชิด</small></li><li>Berserker Axe <small>DMG 53 · ประชิด</small></li><li>Frost Sabre <small>DMG 48 · ประชิด</small></li><li>Stormbreaker Blade <small>DMG 56 · ประชิด</small></li><li>Titan Greatsword <small>DMG 68 · ประชิด</small></li><li>Ranger Pistol <small>DMG 18 · ปืน</small></li><li>Iron Revolver <small>DMG 35 · ปืน</small></li><li>Falcon Burst Pistol <small>DMG 15 · ปืน</small></li><li>Viper SMG <small>DMG 11 · ปืน</small></li><li>Thunder Shotgun <small>DMG 9 · ปืน</small></li><li>Arctic Assault Rifle <small>DMG 21 · ปืน</small></li><li>Phantom Sniper <small>DMG 95 · ปืน</small></li><li>Juggernaut LMG <small>DMG 19 · ปืน</small></li><li>Titan Minigun <small>DMG 14 · ปืน</small></li><li>Doombringer RPG <small>DMG 160 · ปืน</small></li></ol><small>หาอาวุธระดับสูงได้เมื่อผ่านด่านลึกขึ้น · เก็บอาวุธจากสนามและศัตรู</small></details><button class="primary" id="playBtn">PLAY NOW →</button>
  <p id="bestText" style="color:#789aaa;font-size:11px;text-align:center;margin:15px 0 0"></p>
 </div></div>
 <div id="fatal"></div>
@@ -121,7 +122,17 @@ const world=3600,half=world/2,decor=[],particle=[],petals=[];
 const BEST_KEY='frostline_snow_survival_best_v1',LEGACY_SAVE_KEY='frostline_survival_v3_2_save',SAVE_KEY='frostline_survival_v3_3_save'; // migrate old saves without overwriting v3.2
 const ITEM_META={meat:{icon:'🥩',name:'เนื้อหมี',sub:'ใช้ฟื้นเลือดหรือปรุงอาหาร'},hide:{icon:'🟫',name:'หนังหมี',sub:'คราฟต์เกราะและกระเป๋า'},bone:{icon:'🦴',name:'กระดูกหมี',sub:'ตีดาบและอัปเกรด'},claw:{icon:'🐾',name:'กรงเล็บ',sub:'สร้างดาบโลหิต'},frost:{icon:'💎',name:'ผลึกน้ำแข็ง',sub:'สร้างดาบแช่แข็ง'}};
 const MAT_KEYS=Object.keys(ITEM_META);
-const WEAPON_TYPES=[
+// ARSENAL_CORE_START
+// Pure weapon definitions and collision helpers, shared by runtime and tests.
+const ARSENAL_NAMES=['Survival Knife','Shadow Dagger','Wolf Karambit','Hunter Bowie','Jungle Machete','Iron Baton','Rust Crowbar','Lumber Hatchet','Twin Fang','Chain Sickle','Steel Shortsword','Ronin Katana','Knight Longsword','Viper Spear','Guardian Halberd','Skull Crusher','Berserker Axe','Frost Sabre','Stormbreaker Blade','Titan Greatsword','Ranger Pistol','Iron Revolver','Falcon Burst Pistol','Viper SMG','Thunder Shotgun','Arctic Assault Rifle','Phantom Sniper','Juggernaut LMG','Titan Minigun','Doombringer RPG'];
+const ARSENAL_DAMAGE=[8,9,11,14,17,18,21,25,13,27,30,34,39,35,43,49,53,48,56,68,18,35,15,11,9,21,95,19,14,160];
+const ARSENAL_SHAPES=['knife','dagger','karambit','bowie','machete','baton','crowbar','hatchet','twin','chain','shortsword','katana','longsword','spear','halberd','hammer','axe','frost','storm','greatsword','pistol','revolver','burst','smg','shotgun','rifle','sniper','lmg','minigun','rpg'];
+const ARSENAL=ARSENAL_NAMES.map((name,i)=>({id:'ars'+String(i+1).padStart(2,'0'),name,base:ARSENAL_DAMAGE[i],tier:Math.floor(i/5)+1,shape:ARSENAL_SHAPES[i],icon:i<20?'⚔️':i===29?'🚀':'🔫',reach:90,rate:1,gun:i>=20,range:i===26?850:i===29?760: i===24?340:600,fireRate:i===21?.9:i===20?2.8:i===28?13:i===27?7:i===25?4:i===23?8:i===22?2:i===29?.38:i===26?.65:i===24?.9:1.8,mag:i===29?1:i===26?5:i===24?6:i===28?90:24,reload:i===29?3.2:i===28?3:1.6}));
+function segmentDistanceSquared(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy,t=len?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/len)):0;return (px-ax-dx*t)**2+(py-ay-dy*t)**2}
+function stepGun(state,spec,dt,trigger){state.cool=Math.max(0,(state.cool||0)-dt);state.heat=Math.max(0,(state.heat||0)-dt*.28);if(state.reload>0){state.reload=Math.max(0,state.reload-dt);if(!state.reload)state.ammo=spec.mag;return false}if(state.ammo===undefined)state.ammo=spec.mag;if(state.heat>=1)state.overheated=true;if(state.overheated&&state.heat<.25)state.overheated=false;state.spin=Math.max(0,Math.min(1,(state.spin||0)+(trigger?dt:-dt*2)));if(!trigger||state.cool>0||state.overheated||(spec.shape==='minigun'&&state.spin<.35))return false;if(state.ammo<=0){state.reload=spec.reload;return false}state.ammo--;state.cool=1/spec.fireRate;if(spec.shape==='minigun')state.heat=Math.min(1.08,state.heat+.055);return true}
+
+// ARSENAL_CORE_END
+const LEGACY_WEAPON_TYPES=[
  {id:'sword',icon:'🗡️',name:'ดาบนักล่า',base:17,reach:86,rate:1.0},
  {id:'axe',icon:'🪓',name:'ขวานหิมะ',base:28,reach:78,rate:.68},
  {id:'spear',icon:'🔱',name:'หอกน้ำแข็ง',base:20,reach:120,rate:.9},
@@ -129,11 +140,12 @@ const WEAPON_TYPES=[
  {id:'scythe',icon:'🌙',name:'เคียวนักล่า',base:23,reach:105,rate:.78},
  {id:'hammer',icon:'🔨',name:'ค้อนรบ',base:31,reach:72,rate:.62}
 ];
+const WEAPON_TYPES=[...ARSENAL,...LEGACY_WEAPON_TYPES];
 const RARITIES=[{id:'common',name:'ธรรมดา',color:'#f4f9ff',mult:1},{id:'rare',name:'หายาก',color:'#5ed5ff',mult:1.3},{id:'epic',name:'มหากาพย์',color:'#bc91ff',mult:1.85},{id:'legendary',name:'ตำนาน',color:'#ffd36b',mult:2.55}];
 let weaponSeq=0;
 const choose=a=>a[Math.floor(Math.random()*a.length)];
-const randWeapon=(elite=false)=>{let t=choose(WEAPON_TYPES),roll=Math.random(),rar=RARITIES[roll<(elite?.10:.04)?3:roll<(elite?.33:.16)?2:roll<(elite?.70:.43)?1:0];return {id:`w${Date.now().toString(36)}_${(++weaponSeq).toString(36)}_${Math.floor(Math.random()*1e5)}`,type:t.id,rarity:rar.id,damage:Math.round(t.base*rar.mult*rand(.85,1.2)),reach:Math.round(t.reach*rand(.90,1.13)),rate:Math.round(t.rate*rand(.91,1.12)*100)/100,crit:Math.round(rand(4,17)+(rar.mult-1)*10),element:Math.random()<(elite?.5:.27)?choose(['ice','fire','bleed']):'normal'};};
-const safeWeapons=(a)=>Array.isArray(a)?a.filter(v=>v&&WEAPON_TYPES.some(t=>t.id===v.type)&&RARITIES.some(r=>r.id===v.rarity)).map(v=>({id:String(v.id||'w'+Math.random()).slice(0,80),type:v.type,rarity:v.rarity,damage:clamp(Number(v.damage)||10,1,200),reach:clamp(Number(v.reach)||65,35,180),rate:clamp(Number(v.rate)||1,.3,2.5),crit:clamp(Number(v.crit)||5,0,60),element:['normal','ice','fire','bleed'].includes(v.element)?v.element:'normal'})):[];
+const randWeapon=(elite=false)=>{let t=choose(ARSENAL.filter(w=>w.tier<=Math.min(6,1+Math.floor(((game?.stage||1)-1)/2)+(elite?1:0)))),roll=Math.random(),rar=RARITIES[roll<(elite?.10:.04)?3:roll<(elite?.33:.16)?2:roll<(elite?.70:.43)?1:0];return {id:`w${Date.now().toString(36)}_${(++weaponSeq).toString(36)}_${Math.floor(Math.random()*1e5)}`,type:t.id,rarity:rar.id,damage:Math.round(t.base*rar.mult*rand(.85,1.2)),reach:Math.round(t.reach*rand(.90,1.13)),rate:Math.round(t.rate*rand(.91,1.12)*100)/100,crit:Math.round(rand(4,17)+(rar.mult-1)*10),element:Math.random()<(elite?.5:.27)?choose(['ice','fire','bleed']):'normal'};};
+const safeWeapons=(a)=>Array.isArray(a)?a.filter(v=>v&&WEAPON_TYPES.some(t=>t.id===v.type)&&RARITIES.some(r=>r.id===v.rarity)).map(v=>({id:String(v.id||'w'+Math.random()).slice(0,80),type:v.type,rarity:v.rarity,damage:clamp(Number(v.damage)||10,1,600),reach:clamp(Number(v.reach)||65,35,180),rate:clamp(Number(v.rate)||1,.3,2.5),crit:clamp(Number(v.crit)||5,0,60),element:['normal','ice','fire','bleed'].includes(v.element)?v.element:'normal'})):[];
 const weaponInfo=w=>{const t=WEAPON_TYPES.find(x=>x.id===w.type)||WEAPON_TYPES[0],r=RARITIES.find(x=>x.id===w.rarity)||RARITIES[0];return {t,r};};
 const MAX_ACTIVE_EXTRA=18;
 // A unique ID per tab, intentionally not tied to an email or account.
@@ -157,7 +169,7 @@ let rngSeed=219907;function seeded(){rngSeed=(Math.imul(rngSeed,1664525)+1013904
 function initDecor(){rngSeed=2112;for(let i=0;i<840;i++){let x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded(),kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch',scale=.65+seeded()*.85;if(d2(x,y)<270*270&&kind!=='patch')continue;decor.push({x,y,kind,scale,v:seeded(),id:i})}decor.sort((a,b)=>a.y-b.y)}
 function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?22:85,Math.floor(w*h/9500));i++)particle.push({x:rand(0,w),y:rand(0,h),r:rand(.6,2.4),vx:rand(-18,-4),vy:rand(14,36),p:rand(0,TAU)})}
 function newGame(){
- let saved=loadSave();game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:8,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0};
+ let saved=loadSave();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();if(!saved.weapons.length)saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:8,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0};
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);for(let i=0;i<5;i++)spawnGroundWeapon(true);for(let i=0;i<14;i++)spawnGroundWeapon(false);announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -209,18 +221,19 @@ function collect(d){const g=game;if(d.type==='weapon'&&d.weapon){
  saveProgress();updateHud()}
 function useMeat(){if(!game||game.inv.meat<=0){if(game)note('ยังไม่มีเนื้อหมี');return}if(game.p.hp>=game.p.maxHp){note('เลือดเต็มแล้ว');return}game.inv.meat--;const heal=Math.min(game.p.maxHp-game.p.hp,35+game.level*2);game.p.hp+=heal;sparks(game.p.x,game.p.y,'#9ff9ba',14);addFloat(game.p.x,game.p.y-35,`+${Math.ceil(heal)} ♥`,'#a6ffca');saveProgress();updateHud();if(mode==='inventory')renderInventory()}
 function swingDamage(){let base=16+(game.upd.sword-1)*10+(game.weapon==='bone'?10:game.weapon==='ice'?7:game.weapon==='blood'?8:0);return base*(1+(game.perks.sharp||0)*.2)}
-function swordCount(){return Math.min(7,1+(game.upd.sword>=3?1:0)+(game.upd.sword>=5?1:0)+(game.perks.twin||0))}
+function swordCount(){return Math.max(0,Math.min(7,1+(game.upd.sword>=3?1:0)+(game.upd.sword>=5?1:0)+(game.perks.twin||0))-(game.mainBroken||0))}
 function swordRange(){return (75+(game.upd.sword-1)*5)*(1+(game.perks.range||0)*.12)}
 function magnetRadius(weaponRange,bagLevel,pack,perk){return weaponRange+(bagLevel-1)*48+(pack?42:0)+perk*48}
-function allActiveWeapons(){return game.weapons.slice(0,MAX_ACTIVE_EXTRA)}
+function allActiveWeapons(){if(game.activeLength!==game.weapons.length){game.activeWeapons=game.weapons.slice(0,MAX_ACTIVE_EXTRA);game.activeLength=game.weapons.length}return game.activeWeapons||[]}
 function orbitOffset(index,total){return total>0?index*TAU/total:0}
 function orbitCount(){return swordCount()+Math.min(game.weapons.length,MAX_ACTIVE_EXTRA)}
 function orbitAngle(index){return game.swordPhase+orbitOffset(index,orbitCount())}
 function hitWithExtraWeapon(m, w, n, total){
+ if(combatSpec(w).gun)return false;
  const g=game, p=g.p,a=orbitAngle(swordCount()+n),reach=swordRange(),sx=p.x+Math.cos(a)*reach,sy=p.y+Math.sin(a)*reach;
  if(m.hitTime>0||d2(sx-m.x,sy-m.y)>(m.r+24)**2)return false;
- let damage=w.damage*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
- m.hp-=damage;m.hitTime=.22;m.flash=.25;m.stun=w.element==='ice'?.6:.10;
+ let damage=w.damage*(w.type==='ars09'?2:1)*(1+(g.perks.sharp||0)*.13);if(Math.random()*100<w.crit)damage*=1.65;
+ m.hp-=damage;m.hitTime=.22;m.flash=.25;m.stun=w.type==='ars16'?.75:w.element==='ice'||w.type==='ars18'?.6:.10;if(w.type==='ars06'||w.type==='ars07'){const d=Math.hypot(m.x-p.x,m.y-p.y)||1;m.x+=(m.x-p.x)/d*18;m.y+=(m.y-p.y)/d*18}if(w.type==='ars19')for(const other of g.mobs)if(other!==m&&d2(other.x-m.x,other.y-m.y)<85**2){other.hp-=damage*.25;other.flash=.2}
  if(w.element==='bleed'||w.element==='fire'){m.bleed=Math.max(m.bleed||0,w.element==='fire'?2:3);m.bleedPower=w.element==='fire'?7:3.5}
  const color=w.element==='fire'?'#ff9d54':w.element==='ice'?'#8cf4ff':w.element==='bleed'?'#fa708f':'#f4ffff';
  sparks(m.x,m.y,color,6);addFloat(m.x,m.y-22,String(Math.round(damage)),color);return true;
@@ -252,7 +265,7 @@ function update(dt){if(mode!=='playing'||!game)return;const g=game,p=g.p;now+=dt
  for(let i=g.corpses.length-1;i>=0;i--){g.corpses[i].life-=dt;if(g.corpses[i].life<=0)g.corpses.splice(i,1)}
  for(let i=g.fx.length-1;i>=0;i--){let f=g.fx[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=Math.exp(-dt*3);f.vy*=Math.exp(-dt*3);if(f.life<=0)g.fx.splice(i,1)}
  for(let i=g.float.length-1;i>=0;i--){let f=g.float[i];f.life-=dt;f.y+=f.vy*dt;if(f.life<=0)g.float.splice(i,1)}
- updatePeers(dt);sendMyState(dt);if(performance.now()>cloudNextSync&&!cloudInFlight)syncCloud();if(frame%6===0)updateHud();if(frame%360===0)saveProgress();if((network==='offline'||network==='local')&&performance.now()>nextNetworkRetry&&navigator.onLine!==false)connectOnline();
+ updatePeers(dt);if(mode==='playing'){updateClashes(dt);updateArsenal(dt)}sendMyState(dt);if(performance.now()>cloudNextSync&&!cloudInFlight)syncCloud();if(frame%6===0)updateHud();if(frame%360===0)saveProgress();if((network==='offline'||network==='local')&&performance.now()>nextNetworkRetry&&navigator.onLine!==false)connectOnline();
 }
 function endGame(killerName=null,killerId=null){if(mode==='dead')return;if(killerId)publishNet('kill',{to:killerId,by:CLIENT_ID,victim:PLAYER_NAME,killId:CLIENT_ID+'_'+Date.now()});publishNet('state',{alive:false,name:PLAYER_NAME,x:game.p.x,y:game.p.y});if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}saveBest();saveProgress();mode='dead';clearInput();$('hud').hidden=true;$('bottomHud').hidden=true;$('announce').classList.remove('visible');let min=Math.floor(game.elapsed/60),sec=Math.floor(game.elapsed%60);$('overlayPanel').innerHTML=`<div class="logoTop">❄ FROSTLINE · RUN COMPLETE</div><h2 style="margin-top:12px">การเดินทางสิ้นสุดแล้ว</h2><p class="lead">${killerName?`⚔️ คุณถูก ${escapeHTML(killerName)} กำจัดในสนาม PvP`:'หมีบนภูเขาหิมะหยุดคุณได้ในครั้งนี้ แต่การเดินทางครั้งใหม่เริ่มได้ทันที'}</p><div class="keyline" style="font-size:15px"><b>ด่าน ${game.stage} · เฟส ${game.phase}</b><br>⏱️ รอดชีวิต ${min}:${String(sec).padStart(2,'0')} นาที<br>🐻 กำจัดหมี ${game.kills} ตัว · เลเวล ${game.level}</div><div class="divider"></div><button class="primary" id="again">เล่นอีกครั้ง →</button>`;$('overlay').hidden=false;$('again').onclick=newGame;}
 const upgrades=[
@@ -356,7 +369,7 @@ function drawSwordModel(x,y,a,wc='steel'){
 }
 function drawSwords(p){for(let k=0;k<swordCount();k++){const a=orbitAngle(k),rad=swordRange();drawSwordModel(p.x+Math.cos(a)*(rad-45),p.y+Math.sin(a)*(rad-45),a,game.weapon)}}
 function drawWeaponModel(x,y,a,weapon){
- const {t,r}=weaponInfo(weapon);
+ const {t,r}=weaponInfo(weapon);if(t.id.startsWith('ars')){drawArsenalModel(x,y,a,weapon,t,r);return}
  ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.shadowBlur=lowGraphics()?0:9;ctx.shadowColor=r.color;
  line(0,8,0,-20,5,'#415566');line(-8,-7,8,-7,4,'#734b48');
  if(t.id==='axe')poly([[-3,-13],[-14,-23],[-10,-37],[9,-34],[6,-14]],r.color);
@@ -367,7 +380,7 @@ function drawWeaponModel(x,y,a,weapon){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.length;k++){
- const weapon=extra[k],a=orbitAngle(swordCount()+k),reach=swordRange();
+ const weapon=extra[k],a=combatSpec(weapon).gun&&Number.isFinite(weapon.fire?.aim)?weapon.fire.aim:orbitAngle(swordCount()+k),reach=swordRange();
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);
 }}
 function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.translate(d.x,d.y+bob);let rare=r==='claw'||r==='frost';
@@ -388,7 +401,7 @@ function drawGame(){drawGround();if(!game)return;ctx.save();ctx.translate(w/2+(M
  for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else drawPlayer(a.obj)}
-  drawSwords(game.p);drawExtraWeapons(game.p);drawRemotePlayers();
+  drawSwords(game.p);drawExtraWeapons(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.restore();
  // snowfall foreground (screen-space particles).
@@ -408,6 +421,44 @@ window.addEventListener('keyup',e=>{let key=e.key.toLowerCase();if(key==='w'||ke
 $('levelReady').onclick=showLevelChoice; $('playBtn').onclick=newGame;$('coinBtn').onclick=()=>openShop();$('closeShop').onclick=closeShop;$('shopInventory').onclick=()=>{closeShop();openInventory()};$('tabUpgrade').onclick=()=>{shopTab='upgrade';renderShop()};$('tabCraft').onclick=()=>{shopTab='craft';renderShop()};$('bagBtn').onclick=openInventory;$('eatBtn').onclick=()=>{if(mode==='playing')useMeat()};$('closeBag').onclick=closeInventory;$('useMeat').onclick=useMeat;$('useRation').onclick=useRation;$('fromBagShop').onclick=()=>openShop('craft');$('shop').addEventListener('click',e=>{if(e.target===$('shop'))closeShop()});$('inventory').addEventListener('click',e=>{if(e.target===$('inventory'))closeInventory()});
 let b=readBest();$('bestText').textContent=b.time?`สถิติสูงสุด: ${Math.floor(b.time/60)}:${String(b.time%60).padStart(2,'0')} นาที · ด่าน ${b.stage}`:'เล่นได้ทั้งมือถือและคอมพิวเตอร์ · ไม่ต้องเชื่อมต่ออินเทอร์เน็ต';
 initDecor();resize();requestAnimationFrame(tick);
+
+function drawArsenalModel(x,y,a,w,t,r){ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);const metal=t.shape==='frost'?'#8cecff':t.shape==='storm'?'#bba3ff':r.color,dark='#365363';line(0,8,0,-15,5,'#72574a');
+ if(t.gun){if(w.fire?.reload>0)ctx.rotate(Math.sin(now*9)*.17);if(w.fire?.flash>0)ctx.translate(0,4);const len=t.shape==='sniper'?64:t.shape==='rpg'?60:t.shape==='pistol'?25:43;roundRect(-7,-len,14,len-6,3,dark);line(0,-len,0,-len-10,t.shape==='rpg'?13:5,metal);roundRect(1,-17,6,18,2,'#6f5d4d');if(['rifle','smg','lmg','minigun'].includes(t.shape))roundRect(-5,-24,10,15,2,'#172e3b');if(t.shape==='revolver')ellipse(0,-20,9,8,'#869aa3');if(t.shape==='burst')line(-7,-30,7,-30,3,metal);if(t.shape==='shotgun'){line(-4,-45,-4,-60,4,metal);line(4,-45,4,-60,4,metal)}if(t.shape==='sniper'){roundRect(-4,-46,8,19,2,'#182e3c');ellipse(0,-46,4,4,'#72dff4')}if(t.shape==='lmg')roundRect(-15,-28,13,16,2,'#70805d');if(t.shape==='minigun'){for(let i=0;i<6;i++){const off=Math.sin(now*25*(w.fire?.spin||0)+i*TAU/6)*9;line(off,-32,off,-62,3,w.fire?.heat>.8?'#ff946c':metal)}ellipse(0,-33,12,4,dark)}if(t.shape==='rpg'){poly([[-11,-58],[0,-80],[11,-58],[7,-41],[-7,-41]],'#91a36a')}if(w.fire?.flash>0){poly([[0,-len-25],[-9,-len-8],[9,-len-8]],'#ffe6a0')}ctx.restore();return}
+ const sh=t.shape;
+ if(['baton','crowbar','chain'].includes(sh)){line(0,0,0,-50,sh==='baton'?8:4,metal);if(sh==='crowbar')line(0,-50,13,-58,5,metal);if(sh==='chain'){for(let k=0;k<5;k++)ellipse(0,-16-k*6,3,5,dark);ctx.beginPath();ctx.arc(-10,-48,18,-2.8,.7);ctx.lineWidth=5;ctx.strokeStyle=metal;ctx.stroke()}}
+ else if(['hatchet','axe','halberd','hammer'].includes(sh)){line(0,4,0,-52,5,'#8c6950');if(sh==='hammer')roundRect(-17,-56,34,18,3,metal);else{poly([[0,-53],[-19,-62],[-23,-39],[0,-35]],metal);if(sh==='axe')poly([[0,-53],[19,-62],[23,-39],[0,-35]],metal);if(sh==='halberd')poly([[0,-80],[-6,-55],[6,-55]],metal)}}
+ else if(sh==='spear'){line(0,7,0,-60,4,'#8a6a52');poly([[0,-84],[-8,-57],[8,-57]],metal)}
+ else if(sh==='karambit'){ctx.beginPath();ctx.arc(-12,-22,18,-2.9,.8);ctx.strokeStyle=metal;ctx.lineWidth=7;ctx.stroke();ellipse(0,8,6,6,dark)}
+ else if(sh==='twin'){for(const off of [-8,8])poly([[off-3,-8],[off-3,-38],[off,-48],[off+3,-38],[off+3,-8]],metal)}
+ else {const lengths={knife:28,dagger:34,bowie:39,machete:47,shortsword:45,katana:60,longsword:62,frost:56,storm:58,greatsword:72},len=lengths[sh]||45,width=sh==='greatsword'?12:sh==='machete'||sh==='bowie'?9:5,curve=sh==='katana'?10:0;poly([[-width,-12],[-width+curve,-len],[curve,-len-10],[width+curve,-len],[width,-12]],metal);line(-11,-10,11,-10,4,dark);line(curve,-len+3,0,-16,1,'#ffffffa0');if(sh==='frost')poly([[-4,-22],[-12,-34],[0,-42],[9,-29]],'#c4ffff');if(sh==='storm'){line(0,-55,8,-40,2,'#fff4a0');line(8,-40,-5,-29,2,'#fff4a0')}}ctx.restore()}
+
+const shotPool=[],shots=[],recentShots=[],clashes=[],seenCombat=new Map();let combatSeq=0;
+function combatSpec(w){return WEAPON_TYPES.find(t=>t.id===w.type)||WEAPON_TYPES[0]}
+function emitShot(w,spec,x,y,a,owner=CLIENT_ID,id=null){
+ const b=shotPool.pop()||{};Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,vx:Math.cos(a)*(spec.shape==='rpg'?430:1000),vy:Math.sin(a)*(spec.shape==='rpg'?430:1000),life:spec.range/(spec.shape==='rpg'?430:1000),damage:w.damage||spec.base,shape:spec.shape,blast:spec.shape==='rpg'?100:0});
+ if(shots.length>=160){shotPool.push(shots.shift())}shots.push(b);return b;
+}
+function weaponImpact(m,b){m.hp-=b.damage;m.flash=.3;m.stun=Math.max(m.stun||0,.10);sparks(m.x,m.y,b.blast?'#ffb65b':'#fff2bf',b.blast?10:3);addFloat(m.x,m.y-24,String(Math.round(b.damage)),'#fff0b4')}
+function updateArsenal(dt){
+ for(const w of allActiveWeapons()){const spec=combatSpec(w);if(!spec.gun)continue;w.fire=w.fire||{};let target=null,best=spec.range**2;for(const m of game.mobs){const d=d2(m.x-game.p.x,m.y-game.p.y);if(m.hp>0&&d<best){best=d;target=m}}for(const r of peers.values()){const d=d2(r.x-game.p.x,r.y-game.p.y);if(r.init&&performance.now()-r.last<6500&&d<best){best=d;target=r}}
+ if(w.fire.burstLeft>0){w.fire.burstTimer-=dt;if(w.fire.burstTimer<=0){w.fire.burstLeft--;w.fire.burstTimer=.07;w.fire.ammo--;const b=emitShot(w,spec,game.p.x,game.p.y,w.fire.aim);recentShots.push({id:b.id,type:w.type,x:b.x,y:b.y,a:w.fire.aim,damage:b.damage,t:Date.now()});while(recentShots.length>18)recentShots.shift()}}
+ if(stepGun(w.fire,spec,dt,!!target)){const a=Math.atan2(target.y-game.p.y,target.x-game.p.x),count=spec.shape==='shotgun'?8:1;w.fire.aim=a;w.fire.flash=.09;if(spec.shape==='burst'){w.fire.burstLeft=Math.min(2,w.fire.ammo);w.fire.burstTimer=.07;}for(let k=0;k<count;k++){const aa=a+(k-(count-1)/2)*(spec.shape==='shotgun'?.065:.023),b=emitShot(w,spec,game.p.x,game.p.y,aa);recentShots.push({id:b.id,type:w.type,x:b.x,y:b.y,a:aa,damage:b.damage,t:Date.now()})}while(recentShots.length>18)recentShots.shift()}
+ w.fire.flash=Math.max(0,(w.fire.flash||0)-dt);
+ }
+ for(let i=shots.length-1;i>=0;i--){const b=shots[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;let hit=null;if(b.owner===CLIENT_ID){for(const m of game.mobs)if(m.hp>0&&segmentDistanceSquared(m.x,m.y,b.px,b.py,b.x,b.y)<(m.r+5)**2){hit=m;break}if(hit){if(b.blast){for(const m of game.mobs)if(m.hp>0&&d2(m.x-hit.x,m.y-hit.y)<b.blast*b.blast)weaponImpact(m,b);game.fx.push({x:hit.x,y:hit.y,vx:0,vy:0,life:.3,max:.3,r:b.blast,color:'#ffc16c',ring:true})}else weaponImpact(hit,b)}}else if(game.p.inv<=0&&segmentDistanceSquared(game.p.x,game.p.y,b.px,b.py,b.x,b.y)<26**2){hit=game.p;const damage=Math.min(65,b.damage*.5);game.p.hp-=damage;game.p.inv=.4;game.hitFlash=.3;sparks(game.p.x,game.p.y,'#ffa0a0',5);if(game.p.hp<=0){game.p.hp=0;endGame(peers.get(b.owner)?.name,b.owner)}}if(hit||b.life<=0){shots.splice(i,1);if(shotPool.length<160)shotPool.push(b)}}
+ for(let i=game.mobs.length-1;i>=0;i--)if(game.mobs[i].hp<=0){kill(game.mobs[i]);game.mobs.splice(i,1)}
+ for(const [id,ts] of seenCombat)if(Date.now()-ts>10000)seenCombat.delete(id);
+}
+function drawProjectiles(){for(const b of shots){if(!isVisible(b.x,b.y,100))continue;line(b.x-b.vx*.012,b.y-b.vy*.012,b.x,b.y,b.shape==='rpg'?6:2,b.shape==='rpg'?'#ffb968':'#ffe5a0')}}
+function receiveShots(event){if(!Array.isArray(event.shots))return;for(const b of event.shots.slice(-18)){if(!b||typeof b.id!=='string'||!b.id.startsWith(event.id+'s')||b.id.length>100||seenCombat.has(b.id))continue;const spec=WEAPON_TYPES.find(t=>t.id===b.type&&t.gun);if(!spec||!Number.isFinite(b.t)||Math.abs(Date.now()-b.t)>3000)continue;seenCombat.set(b.id,Date.now());emitShot({damage:clean(b.damage,spec.base,1,600)},spec,clean(b.x),clean(b.y),clean(b.a,0,-100,100),event.id,b.id)}}
+function breakBlade(id,x,y,type){if(!game)return false;if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0||combatSpec(game.weapons[i]).gun)return false;game.weapons.splice(i,1)}game.flyWeapons=game.flyWeapons||[];if(game.flyWeapons.length<20)game.flyWeapons.push({x,y,a:rand(0,TAU),vx:rand(-180,180),vy:rand(-220,-100),life:.55,type});sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
+function receiveClashes(event){if(!Array.isArray(event.clashes))return;for(const c of event.clashes.slice(-6)){if(!c||c.to!==CLIENT_ID||typeof c.id!=='string'||seenCombat.has(c.id)||!Number.isFinite(c.t)||Math.abs(Date.now()-c.t)>5000)continue;if(!peers.has(event.id)||Math.hypot(peers.get(event.id).x-game.p.x,peers.get(event.id).y-game.p.y)>500)continue;seenCombat.set(c.id,Date.now());breakBlade(String(c.blade||''),game.p.x,game.p.y,c.type)}}
+function updateClashes(dt){
+ const p=game.p;for(const r of peers.values()){if(!r.init||performance.now()-r.last>1500||d2(p.x-r.x,p.y-r.y)>500**2)continue;const own=ownBlades().filter(b=>!combatSpec({type:b.type}).gun),other=remoteBlades(r).filter(b=>!combatSpec({type:b.type}).gun);if(!own.length||!other.length)continue;let dx=p.x-r.x,dy=p.y-r.y,d=Math.hypot(dx,dy),minimum=Math.max(swordRange(),...other.map(b=>b.reach))+30;if(d<minimum){if(d<.001){dx=CLIENT_ID<r.id?1:-1;dy=0;d=1}p.x=clamp(r.x+dx/d*minimum,-half+50,half-50);p.y=clamp(r.y+dy/d*minimum,-half+50,half-50)}if(CLIENT_ID>r.id||now<(r.nextClash||0)||d>450)continue;
+ outer:for(const a of own){const aa=game.swordPhase+a.o,ax=p.x+Math.cos(aa)*a.reach,ay=p.y+Math.sin(aa)*a.reach;for(const b of other){if(!b.id)continue;const bx=r.x+Math.cos(b.a)*b.reach,by=r.y+Math.sin(b.a)*b.reach;if(d2(ax-bx,ay-by)<32**2){if(breakBlade(a.id,ax,ay,a.type)){clashes.push({id:CLIENT_ID+'c'+(++combatSeq),to:r.id,blade:b.id,type:b.type,t:Date.now()});if(clashes.length>6)clashes.shift();r.bl=r.bl.filter(v=>v.id!==b.id);r.nextClash=now+.45}break outer}}}}
+ if(game.flyWeapons)for(let i=game.flyWeapons.length-1;i>=0;i--){const f=game.flyWeapons[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=500*dt;f.a+=dt*14;if(f.life<=0)game.flyWeapons.splice(i,1)}
+}
+function drawFlyingWeapons(){for(const f of game.flyWeapons||[]){ctx.save();ctx.globalAlpha=Math.max(0,f.life/.55);drawWeaponModel(f.x,f.y,f.a,{type:f.type,rarity:'rare'});ctx.restore()}}
 
 // --- Online P2P (public room, Trystero over Nostr signaling, no account) ---
 // Other clients are not authoritative: this is friendly-casual PvP, not anti-cheat esports.
@@ -446,10 +497,11 @@ function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)
  if(rt>=last.t){const e=Math.min(rt-last.t,250)/1000;return {x:clamp(last.x+last.vx*e,-half+50,half-50),y:clamp(last.y+last.vy*e,-half+50,half-50),s:last.s+last.w*e}}
  for(let i=n-1;i>0;i--){const a=buf[i-1],c=buf[i];if(rt>=a.t){const f=(rt-a.t)/Math.max(1,c.t-a.t);if(Math.hypot(c.x-a.x,c.y-a.y)>450)return f<1?a:c;return {x:lerp(a.x,c.x,f),y:lerp(a.y,c.y,f),s:lerp(a.s,c.s,f)}}}
  return buf[0]}
-function remoteBlades(r){return r.bl?r.bl.map(b=>({a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity})):[]}
+function remoteBlades(r){return r.bl?r.bl.map(b=>({id:b.id,a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity})):[]}
 function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_ID||typeof event.id!=='string'||event.id.length>100)return;
  if(event.kind==='kill'){if(event.to===CLIENT_ID){if(event.killId&&seenKills.has(event.killId))return;if(event.killId){seenKills.add(event.killId);if(seenKills.size>250)seenKills.clear()}pvpKills++;if(game)note(`⚔️ กำจัดผู้เล่นแล้ว! รวม ${pvpKills}`);updateOnlineInfo()}return}
  if(event.kind!=='state')return;
+ if(game&&mode==='playing'){receiveShots(event);receiveClashes(event)}
  if(event.alive===false){peers.delete(event.id);updateOnlineInfo();return}
  if(!event.alive&&!Array.isArray(event.samples)&&event.t===undefined)return;
  const arrive=nowMs(),raw=Array.isArray(event.samples)&&event.samples.length?event.samples.slice(-16):[event],list=[];
@@ -468,18 +520,18 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  const tp=performance.now();if(peer.lastArr)peer.gap=lerp(peer.gap,Math.min(tp-peer.lastArr,1500),.2);peer.lastArr=tp;peer.last=tp;
  peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
  if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
- if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:b.type==='main'||WEAPON_TYPES.some(t=>t.id===b.type)?b.type:'main',rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
+ if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,120),type:b.type==='main'||WEAPON_TYPES.some(t=>t.id===b.type)?b.type:'main',rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
  if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'}}
  updateOnlineInfo();
 }
-function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main'});
- allActiveWeapons().forEach((w,k)=>list.push({o:Math.round(orbitOffset(n+k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity}));return list.slice(0,24)}
+function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main'});
+ allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(orbitOffset(n+k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity}));return list.slice(0,24)}
 function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp)}}
 function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
  const sample=ownSample();mySamples.push(sample);if(mySamples.length>40)mySamples.shift();
  if(!localChannel&&!sendStateFn)return;
- const msg={alive:true,seq:++stateSequence,...sample},meta=ownMeta(),key=JSON.stringify(meta),tp=performance.now();
+ const msg={alive:true,seq:++stateSequence,...sample,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500)},meta=ownMeta(),key=JSON.stringify(meta),tp=performance.now();
  // Gear/blade layout rarely changes: send it on change and once per second, not at 20 Hz.
  if(key!==lastMetaKey||tp-lastMetaAt>1000){Object.assign(msg,meta);lastMetaKey=key;lastMetaAt=tp}
  publishNet('state',msg);
@@ -487,7 +539,7 @@ function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;i
 // Cross-device HTTP relay: posts every sample since the last success, so remote players still get a smooth path.
 async function syncCloud(){if(!game||mode!=='playing'||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),5000);
  const fresh=mySamples.filter(s=>s.t>cloudSentT),batch=(fresh.length?fresh:mySamples.slice(-1)).slice(-14);if(!batch.length){cloudInFlight=false;clearTimeout(timer);cloudNextSync=performance.now()+100;return}
- try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,...ownMeta()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?150:2500);updateOnlineInfo();}
+ try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500),...ownMeta()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?150:2500);updateOnlineInfo();}
  catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(30000,cloudRetryMs*1.5);updateOnlineInfo();}
  finally{clearTimeout(timer);cloudInFlight=false;}
 }
@@ -503,7 +555,7 @@ function updatePeers(dt){const ts=performance.now(),wall=nowMs();for(const [id,r
  // The recipient still validates approximate hits locally; this is casual PvP.
  if(!game||mode!=='playing'||game.p.inv>0)continue;
  const p=game.p,dist=Math.hypot(r.x-p.x,r.y-p.y);if(dist>230)continue;
- const struck=remoteBlades(r).find(b=>d2((r.x+Math.cos(b.a)*b.reach)-p.x,(r.y+Math.sin(b.a)*b.reach)-p.y)<42*42);
+ const struck=remoteBlades(r).find(b=>!combatSpec({type:b.type}).gun&&d2((r.x+Math.cos(b.a)*b.reach)-p.x,(r.y+Math.sin(b.a)*b.reach)-p.y)<42*42);
  if(struck){const reduction=Math.min(.55,(game.upd.armor-1)*.045+(game.perks.guard||0)*.04);const dealt=Math.max(3,Math.round(Math.min(34,struck.damage*.5)*(1-reduction)));p.hp-=dealt;p.inv=.75;game.hitFlash=.30;game.shake=5;sparks(p.x,p.y,'#f9a4ba',8);addFloat(p.x,p.y-44,`⚔️ -${dealt}`,'#ffc1bf');if(p.hp<=0){p.hp=0;endGame(r.name,id)}break}
 }
 }
@@ -524,14 +576,14 @@ function drawRemotePlayers(){const ts=performance.now();for(const r of peers.val
 async function connectOnline(){if(network==='connecting'||network==='p2p'||network==='ready')return;
  // Offline and cross-tab fallback are always available, even if CDN or relay is blocked.
  if(!localChannel&&typeof BroadcastChannel!=='undefined'){
-  try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-4-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
+  try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-5-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
  }
  if(typeof navigator!=='undefined'&&navigator.onLine===false){updateOnlineInfo();return}
  network='connecting';updateOnlineInfo();
  try{
   const {joinRoom}=await Promise.race([import('https://esm.sh/trystero@0.26.0?bundle'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('network timeout')),8500))]);
   if(!game)return;
-  onlineRoom=joinRoom({appId:'games.frostline.survival.pvp.v3.4.public'},ROOM_ID);
+  onlineRoom=joinRoom({appId:'games.frostline.survival.pvp.v3.5.public'},ROOM_ID);
   const stateAction=onlineRoom.makeAction('state'),killAction=onlineRoom.makeAction('kill');
   stateAction.onMessage=(event)=>handleNet(event);killAction.onMessage=(event)=>handleNet(event);
   sendStateFn=stateAction;sendKillFn=killAction;
@@ -544,7 +596,7 @@ async function connectOnline(){if(network==='connecting'||network==='p2p'||netwo
 window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}});
 
 // Read-only health check for automated smoke tests; does not alter gameplay.
-Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3',mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,playerName:PLAYER_NAME,pvpKills})});
+Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3-arsenal',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,playerName:PLAYER_NAME,pvpKills})});
 })()
 </script>
 </body>
