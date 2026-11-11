@@ -21,7 +21,7 @@ const cleanText = (v) => String(v||'นักล่า').replace(/[<>\u0000-\u00
 const storage = () => getStore({name:'frostline-public-pvp',consistency:'strong'});
 
 export default async function handler(request) {
-  if (request.method === 'GET') return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:3});
+  if (request.method === 'GET') { if(new URL(request.url).searchParams.get('presence')!=='1')return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:3}); try { const store=storage(), listing=await store.list({prefix:ROOM}); if(listing.blobs.length>MAX_LIST||listing.has_more||listing.next_cursor||listing.nextCursor)return respond({ok:false,error:'Presence list incomplete'},503); const now=Date.now(),values=await Promise.all(listing.blobs.map(b=>store.get(b.key,{type:'json'}))); const count=values.filter(v=>v&&ID_RE.test(v.id||'')&&v.alive&&now-Number(v.updatedAt)>=0&&now-Number(v.updatedAt)<VISIBLE_MS).length;return respond({ok:true,count,serverTime:now}); }catch{return respond({ok:false,error:'Presence unavailable'},503)} }
   if (request.method !== 'POST') return respond({error:'Method not allowed'},405);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
