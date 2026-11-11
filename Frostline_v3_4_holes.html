@@ -1615,8 +1615,10 @@ function drawWildlifeShape(a,s,boss=false){
  const kind=s.kind,t=now*2+a.phase,wiggle=Math.sin(a.walk||0),fly=['owl','bat','toucan','eagle','phoenix','butterfly','dragon'].includes(kind);
  const bob=fly?-8-Math.sin(t*2)*4:kind==='rabbit'||kind==='frog'?-Math.abs(wiggle)*5:Math.sin(t)*.8;
  ctx.save();ctx.translate(a.x,a.y+bob);
- ctx.scale((a.dir||1)<0?-1:1,1);
- if(boss)ctx.scale(1.48,1.48);
+ // Ambient wildlife cannot be killed, so render them at exactly half size.
+ // Combat creatures and bosses retain their original larger size.
+ const size=boss?1.48:.5;
+ ctx.scale(((a.dir||1)<0?-1:1)*size,size);
  const body=s.coat,trim=s.accent;
  ellipse(0,22,23,6,'#294d6340');
  if(kind==='butterfly'){
