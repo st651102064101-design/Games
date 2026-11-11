@@ -230,7 +230,10 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
 @media(max-width:440px){#wildlifeBtn{top:calc(64px + env(safe-area-inset-top,0px));padding:6px 8px}.wildlifeGrid{grid-template-columns:repeat(3,1fr)}.wildlifeBox{padding:12px}}
 
 </style>
-<style>#tiltStatus{position:fixed;z-index:6;pointer-events:none;top:calc(86px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);border-radius:99px;background:#153d59e8;border:1px solid #c9eef1;color:#f8fcff;padding:6px 13px;font:800 12px system-ui;box-shadow:0 4px 13px #14365150;white-space:nowrap}#tiltStatus[hidden]{display:none!important}</style>
+<style>#tiltStatus{position:fixed;z-index:6;pointer-events:none;top:calc(86px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);border-radius:99px;background:#153d59e8;border:1px solid #c9eef1;color:#f8fcff;padding:6px 13px;font:800 12px system-ui;box-shadow:0 4px 13px #14365150;white-space:nowrap}#tiltStatus[hidden]{display:none!important}/* Short screens: the shop list never collapses; the panel scrolls instead */
+#shopList{min-height:132px!important;flex:1 0 auto!important}
+.shopBox{overflow-y:auto!important}
+</style>
 </head>
 <body>
 <canvas id="game" aria-label="สนามเกมเอาตัวรอด Frostline"></canvas><div id="tiltStatus" hidden aria-live="off"></div>
