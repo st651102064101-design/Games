@@ -196,7 +196,27 @@ body.low-graphics .homeArt svg{animation:none}
 @keyframes warpTap{0%,20%,45%,65%,100%{transform:translateY(0)}28%,52%{transform:translateY(8px)}}
 @media(prefers-reduced-motion:reduce){.warpHero,.warpFinger{animation:none!important}}
 body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
-</style></head>
+</style><style>
+
+#wildlifeBtn{position:fixed;top:calc(68px + env(safe-area-inset-top,0px));right:12px;z-index:6;border:1px solid #b9e9d8;border-radius:13px;background:#edfff5ee;color:#235e54;padding:8px 10px;font:900 12px system-ui;box-shadow:0 3px 12px #184b6250;cursor:pointer;touch-action:manipulation}
+#wildlifeBtn[hidden],#wildlifePanel[hidden]{display:none!important}
+#wildlifePanel{position:fixed;inset:0;z-index:11;background:#07283ba8;backdrop-filter:blur(5px);display:grid;place-items:center;padding:12px}
+.wildlifeBox{background:#f0fcff;border:1px solid #b1e4eb;box-shadow:0 12px 50px #082b3f66;border-radius:22px;width:min(94vw,630px);max-height:min(90dvh,780px);display:flex;flex-direction:column;padding:17px;gap:7px}
+.wildlifeHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wildlifeHead h2{font:900 22px system-ui;color:#245970;margin:0}
+#wildlifeClose{font:900 24px system-ui;border:0;border-radius:12px;padding:5px 12px;background:#d2edf5;color:#27536b;cursor:pointer}
+#wildlifeProgress{font:900 13px system-ui;color:#378177}
+#wildlifeList{overflow:auto;touch-action:pan-y;overscroll-behavior:contain}
+.wildlifeStage{margin:10px 0 17px}.wildlifeStage h3{font:900 15px system-ui;color:#275970;margin:0 0 9px;border-bottom:1px solid #badce7;padding-bottom:6px;display:flex;justify-content:space-between}
+.wildlifeStage h3 span{color:#498b8a}
+.wildlifeGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:7px}
+.wildlifeEntry{text-align:center;padding:8px 4px;border-radius:12px;background:#fff;border:1px solid #d2eaf0;min-height:93px;box-sizing:border-box}
+.wildlifeEntry.found{background:#e4fff0;border-color:#a9e1c4}.wildlifeEntry.unknown{background:#e9f0f4;color:#7e929d}
+.wildlifeEntry>span{display:block;font-size:29px}.wildlifeEntry b{display:block;font:800 11px system-ui;margin:2px 0;line-height:1.25}.wildlifeEntry small{font:700 10px system-ui;color:#6b92a1}
+@media(max-width:440px){#wildlifeBtn{top:calc(64px + env(safe-area-inset-top,0px));padding:6px 8px}.wildlifeGrid{grid-template-columns:repeat(3,1fr)}.wildlifeBox{padding:12px}}
+
+</style>
+</head>
 <body>
 <canvas id="game" aria-label="สนามเกมเอาตัวรอด Frostline"></canvas>
 <div id="vignette"></div>
@@ -224,8 +244,8 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
  <details class="menuCategory"><summary><span class="homeCategoryIcon" aria-hidden="true">⚙️</span><span data-i18n="settings">ตั้งค่า</span><span aria-hidden="true">›</span></summary><div class="settingsBox categoryBody" id="settingsBox"><label class="setRow"><span data-i18n="music">เพลง</span><input type="range" id="set-music" min="0" max="100" aria-label="เพลง"></label><label class="setRow"><span data-i18n="master">หลัก</span><input type="range" id="set-master" min="0" max="100" aria-label="หลัก"></label><label class="setRow"><span data-i18n="shake">สั่นจอ</span><input type="checkbox" id="set-shake" checked></label><div class="setRow"><span data-i18n="language">ภาษา</span><div class="seg" role="group"><button type="button" id="lang-th" aria-pressed="true">TH</button><button type="button" id="lang-en" aria-pressed="false">ENG</button></div></div><small id="audio-status" aria-live="polite" style="display:none"></small></div></details><button type="button" data-shop="1" class="shopCta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า <span class="shopCoin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="walletCoins">0</span></span></button><p class="shopHint">ฆ่าผู้เล่นอื่นรับ <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> 5 · ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า</p><div class="nameBox"><label for="nameInput" data-i18n="name">ชื่อของคุณ</label><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"></div><button class="primary" id="playBtn"><span aria-hidden="true" class="bigPlayIcon">▶</span> <span data-home-play>เล่นเลย!</span></button>
  <p id="bestText" style="color:#789aaa;font-size:11px;text-align:center;margin:15px 0 0"></p>
 </div></div>
-<div id="firstGuide" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guideCard"><div id="guideStep" aria-hidden="true"></div><h2 id="guideTitle"></h2><p id="guideSub"></p><div id="guideContent"></div><div class="guideNav"><button type="button" class="secondary guideBack" id="guideBack"></button><button type="button" class="primary guideNext" id="guideNext"></button></div></div></div><div id="categoryPage" hidden role="dialog" aria-modal="true" aria-labelledby="categoryPageTitle"><div class="categoryPageCard"><div class="categoryPageHeader"><button type="button" class="categoryBack" id="categoryBack" aria-label="Back">←</button><h2 id="categoryPageTitle"></h2></div><div id="categoryPageBody"></div></div></div><div id="warpGuide" hidden role="dialog" aria-modal="true" aria-labelledby="warpGuideTitle"><div class="warpGuideCard"><h2 id="warpGuideTitle">พุ่งวาร์ป!</h2><div class="warpDemo" aria-hidden="true"><div class="warpSnow warpSnowA"></div><div class="warpSnow warpSnowB"></div><div class="warpPine warpPineA"></div><div class="warpPine warpPineB"></div><div class="warpStart"></div><div class="warpPath"></div><div class="warpDestination"><i></i><i></i></div><div class="warpSpark">✦</div><img class="warpCharacter" id="warpCharacter" alt=""><div class="warpTapHint"><span>👆</span><b>×2</b></div></div><p id="warpGuideInstruction">แตะจุดหมาย 2 ครั้งเร็ว ๆ</p><p id="warpGuideCooldown">⏳ รอ 7 วินาที แล้วใช้ใหม่ได้</p><button type="button" class="primary" id="warpGuideDone">เข้าใจแล้ว ▶</button></div></div><button id="pauseBtn" aria-label="หยุดชั่วคราว" title="หยุดชั่วคราว (P)" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button><div id="pauseMenu" hidden><div class="pausePanel"><div class="pauseArt" aria-hidden="true">❄️</div><h2 id="pauseTitle">พักเกม</h2><button class="primary pauseResume" id="resumeBtn"><span aria-hidden="true">▶</span> <span id="resumeText">เล่นต่อ</span></button><button type="button" class="secondary pauseHome" id="homeBtn"><span aria-hidden="true">⌂</span> <span id="homeText">หน้าหลัก</span></button><small id="pauseHint">กด P หรือ Esc เพื่อเล่นต่อ</small></div></div>
-<div id="sprintHud" hidden><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="sprintRing" cx="22" cy="22" r="18"/></svg><b id="sprintNum"></b></div><div id="shopPanel" hidden><div class="shopBox"><button type="button" class="shopX" id="shopClose" aria-label="ปิด"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า</h2><div class="walletLine"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="shopWallet">0</span></div><div class="shopCategoryTabs" role="tablist" aria-label="หมวดร้านค้า"><button type="button" data-shop-tab="weapons" role="tab" aria-selected="true">⚔️ อาวุธ</button><button type="button" data-shop-tab="skins" role="tab" aria-selected="false">👕 ตัวละคร (15)</button></div>
+<div id="firstGuide" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guideCard"><div id="guideStep" aria-hidden="true"></div><h2 id="guideTitle"></h2><p id="guideSub"></p><div id="guideContent"></div><div class="guideNav"><button type="button" class="secondary guideBack" id="guideBack"></button><button type="button" class="primary guideNext" id="guideNext"></button></div></div></div><div id="categoryPage" hidden role="dialog" aria-modal="true" aria-labelledby="categoryPageTitle"><div class="categoryPageCard"><div class="categoryPageHeader"><button type="button" class="categoryBack" id="categoryBack" aria-label="Back">←</button><h2 id="categoryPageTitle"></h2></div><div id="categoryPageBody"></div></div></div><div id="warpGuide" hidden role="dialog" aria-modal="true" aria-labelledby="warpGuideTitle"><div class="warpGuideCard"><h2 id="warpGuideTitle">พุ่งวาร์ป!</h2><div class="warpDemo" aria-hidden="true"><div class="warpSnow warpSnowA"></div><div class="warpSnow warpSnowB"></div><div class="warpPine warpPineA"></div><div class="warpPine warpPineB"></div><div class="warpStart"></div><div class="warpPath"></div><div class="warpDestination"><i></i><i></i></div><div class="warpSpark">✦</div><img class="warpCharacter" id="warpCharacter" alt=""><div class="warpTapHint"><span>👆</span><b>×2</b></div></div><p id="warpGuideInstruction">แตะจุดหมาย 2 ครั้งเร็ว ๆ</p><p id="warpGuideCooldown">⏳ รอ 7 วินาที แล้วใช้ใหม่ได้</p><button type="button" class="primary" id="warpGuideDone">เข้าใจแล้ว ▶</button></div></div><button type="button" id="wildlifeBtn" hidden aria-label="สมุดสะสมสัตว์ 50 ชนิด">🐾 <span id="wildlifeCount">0/50</span></button><button id="pauseBtn" aria-label="หยุดชั่วคราว" title="หยุดชั่วคราว (P)" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button><div id="pauseMenu" hidden><div class="pausePanel"><div class="pauseArt" aria-hidden="true">❄️</div><h2 id="pauseTitle">พักเกม</h2><button class="primary pauseResume" id="resumeBtn"><span aria-hidden="true">▶</span> <span id="resumeText">เล่นต่อ</span></button><button type="button" class="secondary pauseHome" id="homeBtn"><span aria-hidden="true">⌂</span> <span id="homeText">หน้าหลัก</span></button><small id="pauseHint">กด P หรือ Esc เพื่อเล่นต่อ</small></div></div>
+<div id="wildlifePanel" hidden role="dialog" aria-modal="true" aria-label="สมุดสะสมสัตว์"><div class="wildlifeBox"><div class="wildlifeHead"><h2>🐾 สมุดสัตว์ 50 ชนิด</h2><button type="button" id="wildlifeClose" aria-label="ปิดสมุดสัตว์">×</button></div><div id="wildlifeProgress">พบแล้ว 0 / 50</div><div id="wildlifeList"></div></div></div><div id="sprintHud" hidden><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="sprintRing" cx="22" cy="22" r="18"/></svg><b id="sprintNum"></b></div><div id="shopPanel" hidden><div class="shopBox"><button type="button" class="shopX" id="shopClose" aria-label="ปิด"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า</h2><div class="walletLine"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="shopWallet">0</span></div><div class="shopCategoryTabs" role="tablist" aria-label="หมวดร้านค้า"><button type="button" data-shop-tab="weapons" role="tab" aria-selected="true">⚔️ อาวุธ</button><button type="button" data-shop-tab="skins" role="tab" aria-selected="false">👕 ตัวละคร (15)</button></div>
  <div id="skinPreview" class="skinPreview" hidden><canvas id="skinPreviewCanvas" width="144" height="144" aria-label="ตัวอย่างสกินตัวละคร"></canvas><div class="skinPreviewInfo"><b id="skinPreviewName"></b><small id="skinPreviewDetails"></small></div></div>
  <p class="shopNote" id="shopNote"></p><div id="shopList"></div></div></div><div id="fatal"></div>
 <script>
@@ -516,7 +536,7 @@ function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?
 function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
- game.p.skin=safeSkinId(saved.skinEquipped);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];game.nextBotId=0;game.nextBotBalance=0;reconcileBots();for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
+ game.p.skin=safeSkinId(saved.skinEquipped);wildlifeStart(1);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];game.nextBotId=0;game.nextBotBalance=0;reconcileBots();for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();showWarpGuideOnce();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -536,6 +556,104 @@ function translateGameText(value){if(lang!=='en'||typeof value!=='string')return
 function announce(title,sub,duration=2){$('announceTitle').textContent=translateGameText(title);$('announceSub').textContent=translateGameText(sub);$('announce').classList.add('visible');if(game)game.announceTimer=duration}
 function note(text){$('notice').textContent=translateGameText(text);$('notice').classList.add('visible');if(game)game.noticeTimer=2}
 const BEAST_PRESET={'bear': [80, 0.32, 0.22, 'sawtooth', 0.9], 'wolf': [420, 0.22, 0.16, 'sawtooth', 0.2], 'boar': [120, 0.2, 0.18, 'square', 0.3], 'lynx': [900, 0.14, 0.13, 'triangle', 0.2], 'moose': [150, 0.28, 0.17, 'sine', 0.3], 'fox': [1100, 0.12, 0.1, 'triangle', 0.2], 'yak': [95, 0.3, 0.19, 'sawtooth', 0.4], 'owl': [1300, 0.18, 0.11, 'sine', 0.3], 'wolverine': [210, 0.18, 0.2, 'square', 0.3], 'polar': [65, 0.36, 0.24, 'sawtooth', 1]};
+
+// The Frostline wildlife collection: 50 real in-game Canvas creatures, 6 biomes.
+const WILDLIFE_CATALOG="1|1|กระต่ายหิมะ|🐰|rabbit|#f5f9ff|#92cbe1|hop\n2|1|จิ้งจอกขั้วโลก|🦊|fox|#f3f8f8|#c8e7fa|flee\n3|1|เพนกวิน|🐧|penguin|#314d6b|#faf3e0|play\n4|1|นกฮูกหิมะ|🦉|owl|#eaf2f7|#9ac5d8|fly\n5|1|สโตตขาว|🐾|ferret|#f2f1e5|#c7b49d|dash\n6|1|กวางเรนเดียร์|🦌|deer|#a77d64|#f1d9ae|roam\n7|1|หมาป่าหิมะ|🐺|wolf|#8fa6b5|#e4ecfa|guard\n8|1|หมีผ้าพันคอแดง|👑|bear|#8c6150|#f67b83|boss\n9|2|กระรอกแดง|🐿️|squirrel|#c57c48|#ffd2a0|dash\n10|2|แร็กคูนจอมซน|🦝|raccoon|#9698a5|#e7d7c7|play\n11|2|เม่นจิ๋ว|🦔|hedgehog|#a77f58|#edc7a4|roll\n12|2|แบดเจอร์|🦡|badger|#777d7f|#eee8dd|hide\n13|2|กวางป่า|🦌|deer|#c78d62|#f4e4cd|roam\n14|2|ค้างคาวป่า|🦇|bat|#7f6a89|#e7b6cc|fly\n15|2|นากขนฟู|🦦|otter|#b78a63|#f6dbac|play\n16|2|ราชาหมาป่าขาว|👑|wolf|#ecf4ff|#6f9ce0|boss\n17|3|กิ้งก่าไฟ|🦎|lizard|#e76741|#f6bc65|dash\n18|3|ซาลาแมนเดอร์เพลิง|🦎|salamander|#ec8c4c|#fff0a6|wander\n19|3|เต่าหินลาวา|🐢|turtle|#65636a|#ec8849|hide\n20|3|ค้างคาวเถ้าถ่าน|🦇|bat|#534b60|#ea8794|fly\n21|3|จิ้งจอกเพลิง|🦊|fox|#e66f3b|#ffd378|flee\n22|3|แพะภูเขาไฟ|🐐|goat|#938074|#f3bf70|hop\n23|3|ฟีนิกซ์น้อย|🐦|phoenix|#f9a544|#ffdc79|fly\n24|3|หมูป่าราชาลาวา|👑|boar|#9e5947|#ffb45a|boss\n25|4|กบต้นไม้|🐸|frog|#73c46f|#daeb91|hop\n26|4|คาเมเลียนสีรุ้ง|🦎|chameleon|#54baa2|#ffb6bd|hide\n27|4|นกทูแคน|🐦|toucan|#343c58|#f8c44f|fly\n28|4|ผีเสื้อเวทมนตร์|🦋|butterfly|#c997ed|#f7d4fc|fly\n29|4|สลอธขี้เซา|🦥|sloth|#b99983|#f0d9a8|slow\n30|4|คาปิบารา|🦫|capybara|#b68d6d|#e8c29f|play\n31|4|ลิงจอมซน|🐒|monkey|#ad7f55|#f6d2ac|dash\n32|4|งูเถาวัลย์|🐍|snake|#579b58|#abdb83|guard\n33|4|ราชาแมวป่าเถาวัลย์|👑|lynx|#d3a176|#a5e79a|boss\n34|5|แพะภูเขา|🐐|goat|#e4ddd0|#b5c8de|hop\n35|5|จามรีขนฟู|🦬|yak|#695f65|#c4b3a4|slow\n36|5|กระทิงหิมะ|🦬|bison|#756866|#d8d7df|guard\n37|5|เสือดาวหิมะ|🐆|leopard|#dce4ee|#7693b8|guard\n38|5|อินทรีภูเขา|🦅|eagle|#88725e|#f5e7cb|fly\n39|5|แพนด้าแดง|🐼|panda|#cf7849|#f2d7b5|play\n40|5|บีเวอร์น้ำแข็ง|🦫|beaver|#a58c78|#d7eef5|wander\n41|5|ราชากวางพายุ|👑|moose|#9b846e|#b9efff|boss\n42|6|กระต่ายจันทร์|🐇|rabbit|#f5efff|#e7c5ff|hop\n43|6|แมวน้ำผลึก|🦭|seal|#a0c5dd|#ecfaff|roll\n44|6|นากแสงเหนือ|🦦|otter|#95a6d4|#a5ffdf|play\n45|6|ยูนิคอร์นน้ำแข็ง|🦄|unicorn|#eeedff|#a5dfff|roam\n46|6|มังกรหิมะจิ๋ว|🐉|dragon|#70b9df|#c3f8f6|fly\n47|6|กวางดวงดาว|🦌|deer|#9b92d0|#f0eabf|roam\n48|6|นกยูงออโรร่า|🦚|peacock|#6a9bb6|#be94f5|play\n49|6|เฟอเร็ตผลึก|🐾|ferret|#c1cbee|#e5f6ff|dash\n50|6|จักรพรรดิจิ้งจอกผลึก|👑|fox|#a8b4f5|#d8c4ff|boss".trim().split('\n').map(row=>{
+ const [id,stage,name,emoji,kind,coat,accent,behavior]=row.split('|');
+ return {id:+id,stage:+stage,name,emoji,kind,coat,accent,behavior,
+  boss:behavior==='boss',rare:[7,15,23,28,32,37,42,45,46,48,49].includes(+id)};
+});
+const WILDLIFE_BY_ID=new Map(WILDLIFE_CATALOG.map(s=>[s.id,s]));
+const WILDLIFE_SAVE_KEY='frostline_wildlife_50_seen_v1';
+const wildlifeBiome=stage=>(Math.max(1,stage)-1)%6+1;
+const wildlifeBossId=stage=>[8,16,24,33,41,50][wildlifeBiome(stage)-1];
+let wildlifeSeen=new Set();
+try{let x=JSON.parse(localStorage.getItem(WILDLIFE_SAVE_KEY)||'[]');
+ wildlifeSeen=new Set((Array.isArray(x)?x:[]).filter(id=>WILDLIFE_BY_ID.has(id)))}catch{}
+function wildlifeBadge(){if($('wildlifeCount'))$('wildlifeCount').textContent=wildlifeSeen.size+'/50'}
+function wildlifeDiscover(id){
+ if(!WILDLIFE_BY_ID.has(id)||wildlifeSeen.has(id))return;
+ wildlifeSeen.add(id);
+ try{localStorage.setItem(WILDLIFE_SAVE_KEY,JSON.stringify([...wildlifeSeen]))}catch{}
+ wildlifeBadge();
+ if(game&&!lowGraphics())sparks(game.p.x,game.p.y,WILDLIFE_BY_ID.get(id).accent,3);
+}
+function wildlifeActor(s,ang,dist){
+ const p=game.p;
+ return {id:s.id,x:clamp(p.x+Math.cos(ang)*dist,-half+100,half-100),
+  y:clamp(p.y+Math.sin(ang)*dist,-half+100,half-100),
+  dir:Math.random()<.5?-1:1,heading:rand(0,TAU),phase:rand(0,TAU),walk:rand(0,TAU),
+  speed:rand(24,48),vx:0,vy:0,nextTurn:rand(.8,3),heartUntil:0,
+  petCd:0,attackCd:0,blinkT:rand(1,3)};
+}
+function wildlifeStart(stage){
+ if(!game)return;
+ const biome=wildlifeBiome(stage),specs=WILDLIFE_CATALOG.filter(s=>s.stage===biome&&!s.boss);
+ const limit=lowGraphics()?10:graphicsMode==='ultra'?17:14;
+ game.wildlife=specs.map((s,i)=>wildlifeActor(s,i*TAU/specs.length+rand(-.15,.15),rand(160,345)));
+ while(game.wildlife.length<limit)
+  game.wildlife.push(wildlifeActor(specs[Math.floor(rand(0,specs.length))],rand(0,TAU),rand(190,450)));
+ game.wildlifeBiome=biome;game.wildlifeAcc=0;wildlifeBadge();
+}
+function wildlifeTick(dt){
+ if(!game)return;
+ const g=game,p=g.p;
+ if(!g.wildlife||g.wildlifeBiome!==wildlifeBiome(g.stage))wildlifeStart(g.stage);
+ g.wildlifeAcc=(g.wildlifeAcc||0)+dt;
+ if(g.wildlifeAcc<.05)return;
+ const step=Math.min(.15,g.wildlifeAcc);g.wildlifeAcc=0;
+ for(const a of g.wildlife){
+  const s=WILDLIFE_BY_ID.get(a.id);if(!s)continue;
+  const dx=p.x-a.x,dy=p.y-a.y,dist=Math.hypot(dx,dy),behavior=s.behavior;
+  if(dist>1050){
+   const ang=rand(0,TAU),rad=rand(360,625);
+   a.x=clamp(p.x+Math.cos(ang)*rad,-half+90,half-90);
+   a.y=clamp(p.y+Math.sin(ang)*rad,-half+90,half-90);
+   a.nextTurn=0;a.vx=a.vy=0;continue;
+  }
+  if(dist<165)wildlifeDiscover(a.id);
+  a.petCd=Math.max(0,a.petCd-step);a.attackCd=Math.max(0,a.attackCd-step);
+  a.blinkT-=step;if(a.blinkT<=0)a.blinkT=rand(2.5,5);
+  a.nextTurn-=step;
+  if(a.nextTurn<=0){a.heading+=rand(-1.8,1.8);a.nextTurn=rand(1.3,3.4)}
+  const shy=['flee','dash','hide','hop'].includes(behavior);
+  const guard=behavior==='guard',fly=behavior==='fly';
+  if(shy&&dist<180){a.heading=Math.atan2(-dy,-dx);a.nextTurn=.4}
+  else if(guard&&dist<160&&dist>40)a.heading=Math.atan2(dy,dx);
+  else if(['play','roam'].includes(behavior)&&dist<145&&dist>80)a.heading=Math.atan2(dy,dx)+.65;
+  const factor=shy&&dist<180?1.9:fly?1.25:behavior==='slow'?.4:behavior==='roll'?.72:1;
+  const speed=a.speed*factor,ease=1-Math.exp(-step*4.8);
+  a.vx+=(Math.cos(a.heading)*speed-a.vx)*ease;
+  a.vy+=(Math.sin(a.heading)*speed-a.vy)*ease;
+  a.x=clamp(a.x+a.vx*step,-half+90,half-90);
+  a.y=clamp(a.y+a.vy*step,-half+90,half-90);
+  a.walk+=step*(fly?12:behavior==='hop'?11:7);
+  if(Math.abs(a.vx)>4)a.dir=a.vx<0?-1:1;
+  if(dist<580&&g.obsGrid)resolveObs(a,10);
+  if(!guard&&dist<56&&a.petCd===0){a.heartUntil=now+1;a.petCd=6}
+  if(guard&&dist<37&&a.attackCd===0&&p.inv<=0){
+   p.hp=Math.max(1,p.hp-3);p.inv=.3;
+   g.hitFlash=Math.max(g.hitFlash,.1);a.attackCd=2.2;
+   sparks(p.x,p.y,s.accent,3);
+  }
+ }
+ for(const m of g.mobs)if(m.speciesId&&d2(m.x-p.x,m.y-p.y)<165*165)wildlifeDiscover(m.speciesId);
+}
+function wildlifeRenderJournal(){
+ $('wildlifeProgress').textContent='ค้นพบ '+wildlifeSeen.size+' / 50 ชนิด';
+ $('wildlifeList').innerHTML=Array.from({length:6},(_,i)=>{
+  const stage=i+1,items=WILDLIFE_CATALOG.filter(s=>s.stage===stage);
+  return '<section class="wildlifeStage"><h3>ด่าน '+stage+' <span>'+items.filter(s=>wildlifeSeen.has(s.id)).length+'/'+items.length+'</span></h3><div class="wildlifeGrid">'+
+   items.map(s=>{const seen=wildlifeSeen.has(s.id);
+    return '<div class="wildlifeEntry '+(seen?'found':'unknown')+'"><span>'+ (seen?s.emoji:'❔')+'</span><b>'+ (seen?s.name:'ยังไม่พบ')+'</b><small>'+(s.boss?'👑 บอส':s.rare?'✨ หายาก':'🐾 ทั่วไป')+'</small></div>';
+   }).join('')+'</div></section>';
+ }).join('');
+}
+function wildlifeOpen(){if(!game||mode!=='playing'||paused)return;
+ mode='wildlife';$('wildlifePanel').hidden=false;wildlifeRenderJournal();clearInput();}
+function wildlifeClose(){if(mode!=='wildlife')return;
+ $('wildlifePanel').hidden=true;mode='playing';last=performance.now();}
+
 const STAGE_BEASTS=[['bear','หมี','#625c5a','#807773'],['wolf','หมาป่าหิมะ','#738b91','#afc2c4'],['boar','หมูป่าขั้วโลก','#665b51','#a7977d'],['lynx','แมวป่าหิมะ','#8d877c','#c2bba9'],['moose','กวางมูส','#68584c','#a38b70'],['fox','จิ้งจอกอาร์กติก','#ddd9cf','#fff8e8'],['yak','จามรีหิมะ','#514b47','#766d66'],['owl','นกฮูกหิมะ','#b9c5c6','#e8f0ed'],['wolverine','วูล์ฟเวอรีน','#554c4a','#84766d'],['polar','หมีขั้วโลก','#d7e2df','#f6ffff']];
 
 // Stage 4-6: distinct arena identities and boss encounters.
@@ -548,7 +666,7 @@ function spawnThemedBoss(stage){
  const config=STAGE_DESIGNS[stage],g=game;if(!config||!g||g.bossSpawned)return;
  const ang=rand(0,TAU),dist=rand(430,650),x=clamp(g.p.x+Math.cos(ang)*dist,-half+110,half-110),y=clamp(g.p.y+Math.sin(ang)*dist,-half+110,half-110);
  const hp={4:4500,5:6000,6:7800}[stage],speed={4:72,5:55,6:82}[stage];
- const m={id:++g.uid,x,y,hp,maxHp:hp,r:30,speed,themeBaseSpeed:speed,damage:{4:30,5:37,6:44}[stage],elite:true,boss:true,themedBoss:stage,beast:config.beast,
+ const m={id:++g.uid,x,y,hp,maxHp:hp,r:30,speed,themeBaseSpeed:speed,damage:{4:30,5:37,6:44}[stage],elite:true,boss:true,themedBoss:stage,speciesId:wildlifeBossId(stage),beast:config.beast,
  dir:1,walk:0,hitTime:0,contact:0,stun:0,flash:0,bleed:0,hits:0,needHits:45,specialCd:3.3};
  // Replace a far, ordinary enemy if arena reached the entity cap.
  if(g.mobs.length>=maxMobs()){
@@ -593,11 +711,11 @@ function updateThemedBosses(dt){
 function beastForStage(stage){return STAGE_BEASTS[(Math.max(1,stage)-1)%STAGE_BEASTS.length]}
 function spawnBear(initial=false){if(!game||game.mobs.length>=maxMobs()||(!initial&&game.bossDefeated))return;let p=game.p,ang=rand(0,TAU),dist=rand(initial?420:900,initial?875:1400),x=clamp(p.x+Math.cos(ang)*dist,-half+65,half-65),y=clamp(p.y+Math.sin(ang)*dist,-half+65,half-65);const strength=monsterPower(game.stage,game.phase),beast=beastForStage(game.stage);const boss=!initial&&(game.stageKills||0)>=34&&!game.bossSpawned;let elite=boss||Math.random()<strength.elite,mult=strength.hp;
  const leaper=beast[0]==='bear'&&(boss||(initial&&!game.mobs.some(m=>m.leaper))||Math.random()<.33);
- if(boss)game.bossSpawned=true;playSound('bear',x,y);game.mobs.push({id:++game.uid,x,y,hp:(boss?520:elite?100:34)*mult*5,maxHp:(boss?520:elite?100:34)*mult*5,r:22,speed:((boss?62:elite?53:65)+Math.random()*12)*strength.speed,damage:Math.round((boss?52:elite?28:18)*strength.damage),elite,boss,leaper,beast:beast[0],dir:1,walk:rand(0,TAU),hitTime:0,contact:0,stun:0,flash:0});}
+ if(boss)game.bossSpawned=true;playSound('bear',x,y);game.mobs.push({id:++game.uid,x,y,hp:(boss?520:elite?100:34)*mult*5,maxHp:(boss?520:elite?100:34)*mult*5,r:22,speed:((boss?62:elite?53:65)+Math.random()*12)*strength.speed,damage:Math.round((boss?52:elite?28:18)*strength.damage),elite,boss,leaper,speciesId:boss?wildlifeBossId(game.stage):null,beast:beast[0],dir:1,walk:rand(0,TAU),hitTime:0,contact:0,stun:0,flash:0});}
 function spawnDrop(x,y,type,amt=1,weapon=null){const fk=game?1+Math.min(1.2,game.weapons.length*.03):1;if(type==='weapon'&&WEAPON_TYPES.find(t=>t.id===weapon?.type)?.gun&&!weapon.fromBoss)return;const MIN=56,x0=x,y0=y;const inHole=()=>(game.holes||[]).some(h=>Math.hypot(h.x-x,h.y-y)<h.r+34)||obsNear(x,y).some(o=>Math.hypot(o.x-x,o.y-y)<OBS_W*.6+18);for(let t=0;t<16&&(game.drops.some(o=>Math.hypot(o.x-x,o.y-y)<MIN)||inHole());t++){const an=rand(0,TAU),dd=rand(MIN,MIN*1.8);x=x0+Math.cos(an)*dd;y=y0+Math.sin(an)*dd}if(game.drops.length>2100)game.drops.shift();game.drops.push({id:++game.uid,x,y,type,amt,weapon,t:0,glow:rand(0,TAU),vx:rand(-150,150)*fk,vy:rand(-185,90)*fk,bounce:rand(.2,.55),age:0});}
 function addFloat(x,y,text,color='#fff'){if(lowGraphics())return;game.float.push({x,y,text,color,life:1.05,vy:-29});if(game.float.length>55)game.float.shift()}
 function sparks(x,y,color,count=7){if(lowGraphics())count=Math.min(2,Math.ceil(count*.2));for(let i=0;i<count;i++){let a=rand(0,TAU),s=rand(40,165);game.fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.18,.48),max:.48,color,r:rand(1.5,4)})}if(game.fx.length>165)game.fx.splice(0,game.fx.length-165)}
-function kill(m){playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;if(m.boss)g.bossDefeated=true;g.stageKills=(g.stageKills||0)+1;g.corpses.push({x:m.x,y:m.y,elite:m.elite,boss:m.boss,leaper:!!m.leaper,beast:m.beast,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
+function kill(m){if(m.speciesId)wildlifeDiscover(m.speciesId);playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;if(m.boss)g.bossDefeated=true;g.stageKills=(g.stageKills||0)+1;g.corpses.push({x:m.x,y:m.y,elite:m.elite,boss:m.boss,leaper:!!m.leaper,speciesId:m.speciesId||null,beast:m.beast,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
  // Reward distribution is intentionally varied, with XP guaranteed.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
  if(Math.random()<(m.elite?.55:.16))spawnDrop(m.x,m.y,'ability',1,{id:choose(FIELD_ITEMS).id});
@@ -1225,10 +1343,10 @@ function updateSnowDog(dt){
 }
 
 function update(dt){if(mode==='dying'&&game){updateDying(dt);return}if(mode!=='playing'||!game||paused)return;const g=game,p=g.p;now+=dt;g.elapsed+=dt;g.sprint=Math.max(0,(g.sprint||0)-dt);g.sprintCd=Math.max(0,(g.sprintCd||0)-dt);g.growS=clamp(1+(g.weapons.length-1)*.035,1,1.7);g.themeMix=clamp((g.themeMix||0)+(g.stage>=3?dt*.5:-dt*.5),0,1);g.themeFlash=Math.max(0,(g.themeFlash||0)-dt*.8);viewGrow+=(clamp(1+Math.max(0,g.weapons.length-37)*.02,1,10)-viewGrow)*(1-Math.exp(-dt*3));screenScale=baseScale/viewGrow*userZoom;g.announceTimer-=dt;if(g.announceTimer<=0)$('announce').classList.remove('visible');g.noticeTimer=(g.noticeTimer||0)-dt;if(g.noticeTimer<=0)$('notice').classList.remove('visible');
- let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){const newStage=stage!==g.stage;const badge=$('pictureStage');badge.classList.remove('changed');void badge.offsetWidth;badge.classList.add('changed');g.stage=stage;g.phase=phase;if(stage===3||newStage&&STAGE_DESIGNS[stage])g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${STAGE_DESIGNS[stage]?.thai||beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,STAGE_DESIGNS[stage]?.color||'#e5ffff',22);if(phase===3&&STAGE_DESIGNS[stage])spawnThemedBoss(stage);saveBest()}
+ let {stage,phase}=phaseAt(g.elapsed);if(stage!==g.stage||phase!==g.phase){const newStage=stage!==g.stage;const badge=$('pictureStage');badge.classList.remove('changed');void badge.offsetWidth;badge.classList.add('changed');g.stage=stage;g.phase=phase;if(newStage)wildlifeStart(stage);if(stage===3||newStage&&STAGE_DESIGNS[stage])g.themeFlash=1;g.bossDefeated=false;g.bossSpawned=false;g.stageKills=0;announce(`ด่าน ${stage} · เฟส ${phase}`,`${STAGE_DESIGNS[stage]?.thai||beastForStage(stage)[1]} · ระดับ ${difficulty()}`,2.8);playSound('warn');sparks(p.x,p.y,STAGE_DESIGNS[stage]?.color||'#e5ffff',22);if(phase===3&&STAGE_DESIGNS[stage])spawnThemedBoss(stage);saveBest()}
  let dx=Number(input.right)-Number(input.left),dy=Number(input.down)-Number(input.up);if(!dx&&!dy&&input.pointerId!==null){dx=input.dx;dy=input.dy}if(pinchPts.size>=2){dx=0;dy=0}let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;mag=1}
  let speed=(228+(g.upd.boots-1)*27)*(1+(g.perks.swift||0)*.11)*(g.sprint>0?1.9:1);p.mx=dx*speed;p.my=dy*speed;p.x=clamp(p.x+p.mx*dt,-half+50,half-50);p.y=clamp(p.y+p.my*dt,-half+50,half-50);p.x+=(p.kvx||0)*dt;p.y+=(p.kvy||0)*dt;{const kd=Math.exp(-dt*9);p.kvx=(p.kvx||0)*kd;p.kvy=(p.kvy||0)*kd}resolveObs(p,16);p.bladeCd=Math.max(0,(p.bladeCd||0)-dt);pushFromBlades(p,dt);pushBodies(p);if(g.dash){const D=g.dash,el=now-D.t0;p.x=el<D.out?D.x0:D.x1;p.y=el<D.out?D.y0:D.y1;p.inv=Math.max(p.inv,.1);if(el>=D.out+D.inDur){g.dash=null;resolveObs(p,16);sparks(p.x,p.y,'#e5ffff',12)}}p.walk+=dt*mag*11;if(Math.abs(dx)>.05)p.dir=Math.sign(dx);p.inv=Math.max(0,p.inv-dt);g.shake=Math.max(0,g.shake-dt*22);g.hitFlash=Math.max(0,g.hitFlash-dt*2);
- updateSnowDog(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();buildBotTargetGrid();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
+ updateSnowDog(dt);wildlifeTick(dt);updateHoles(dt);for(const m of game.mobs)resolveObs(m,m.r*.7);updateBots(dt);if(frame%2===0)separateBots();buildBotTargetGrid();updateSlashes(dt);updateMeteors(dt);updateBearShots(dt);updateThemedBosses(dt);updateSpeedPickup(dt);updateCelestialT();
  let lerpFac=1-Math.exp(-dt*7);cam.x=lerp(cam.x,p.x,lerpFac);cam.y=lerp(cam.y,p.y,lerpFac);
  g.pickupTimer-=dt;if(g.pickupTimer<=0){spawnAbility(true);g.pickupTimer=rand(9,15)}
  g.ambientTimer=(g.ambientTimer??0)-dt;if(g.ambientTimer<=0){g.ambientTimer=.5;ensureScatter(g)}
@@ -1300,6 +1418,7 @@ function renderInventory(){$('materialList').innerHTML=MAT_KEYS.map(k=>`<div cla
  $('weaponSelect').innerHTML='';
  $('weaponSelect').querySelectorAll('[data-equip]').forEach(btn=>btn.onclick=()=>equipWeapon(btn.dataset.equip));$('useMeat').disabled=game.inv.meat<1||game.p.hp>=game.p.maxHp;$('useRation').disabled=!game.craft.ration||game.p.hp>=game.p.maxHp;$('useRation').textContent=`🍲 ใช้อาหารสำรอง (${game.craft.ration||0})`}
 function closeActivePanel(){
+ if(mode==='wildlife'){wildlifeClose();return}
  if(mode==='shop'){closeShop();return}
  if(mode==='inventory'){closeInventory();return}
  if(mode==='levelup'){mode='playing';$('levelChoice').hidden=true;updateHud();return}
@@ -1441,7 +1560,156 @@ function drawGround(){const st=game?.stage||0,jungle=st===4,storm=st===5,crystal
  drawWorldBoundary(minX,maxX,minY,maxY);
  ctx.restore()}
 function drawCrown(){ctx.save();ctx.translate(0,-52);ctx.shadowColor='#ffc928';ctx.shadowBlur=lowGraphics()?0:12;poly([[-17,2],[-17,-9],[-8,-2],[0,-15],[8,-2],[17,-10],[17,3]],'#f3bd24');roundRect(-17,1,34,6,2,'#c98712');ellipse(0,-5,3,3,'#fff1a0');ctx.shadowBlur=0;ctx.restore()}
-function drawBear(m){const beast=STAGE_BEASTS.find(v=>v[0]===m.beast)||STAGE_BEASTS[0];const st=1,jumper=!!m.leaper&&beast[0]==='bear';ctx.save();ctx.translate(m.x,m.y-(m.jumpHeight||0));const gm=game.growS||1;ctx.scale(gm,gm);ctx.scale(1+(1-st)*.22,1-(1-st)*.2);if(m.flash>0)ctx.globalAlpha=.6+Math.sin(m.flash*40)*.2;
+
+function drawWildlifeShape(a,s,boss=false){
+ const kind=s.kind,t=now*2+a.phase,wiggle=Math.sin(a.walk||0),fly=['owl','bat','toucan','eagle','phoenix','butterfly','dragon'].includes(kind);
+ const bob=fly?-8-Math.sin(t*2)*4:kind==='rabbit'||kind==='frog'?-Math.abs(wiggle)*5:Math.sin(t)*.8;
+ ctx.save();ctx.translate(a.x,a.y+bob);
+ ctx.scale((a.dir||1)<0?-1:1,1);
+ if(boss)ctx.scale(1.48,1.48);
+ const body=s.coat,trim=s.accent;
+ ellipse(0,22,23,6,'#294d6340');
+ if(kind==='butterfly'){
+  ctx.save();ctx.scale(1+.16*Math.sin(now*13+a.phase),1);
+  ellipse(-15,-13,15,22,body);ellipse(15,-13,15,22,body);
+  ellipse(-13,5,12,15,trim);ellipse(13,5,12,15,trim);ctx.restore();
+  ellipse(0,-8,4,24,'#445a67');ellipse(0,-24,6,6,'#536785');
+  line(-2,-27,-7,-39,1.4,'#516f70');line(2,-27,7,-39,1.4,'#516f70');
+ }else if(kind==='bat'){
+  const wing=Math.sin(now*11+a.phase)*.35;
+  poly([[-10,-13],[-23,-34+wing*20],[-38,-16+wing*18],[-27,-12],[-31,5],[-13,-3]],body);
+  poly([[10,-13],[23,-34+wing*20],[38,-16+wing*18],[27,-12],[31,5],[13,-3]],body);
+  ellipse(0,-9,14,19,body);ellipse(0,-24,14,14,trim);
+  poly([[-13,-31],[-12,-50],[-3,-36]],body);poly([[13,-31],[12,-50],[3,-36]],body);
+  ellipse(-5,-25,2.8,3,'#33465e');ellipse(5,-25,2.8,3,'#33465e');
+ }else if(['owl','toucan','eagle','phoenix','peacock','penguin'].includes(kind)){
+  if(kind==='peacock'){
+   for(let i=-3;i<=3;i++){const aa=i*.31;
+    ellipse(Math.sin(aa)*29,-19-Math.cos(aa)*25,8,20,i%2?trim:'#49aeb9');
+    ellipse(Math.sin(aa)*29,-27-Math.cos(aa)*25,4,5,'#f7d7f1')}
+  }
+  const wing=Math.sin(now*(kind==='penguin'?4:9)+a.phase)*6;
+  ellipse(0,-5,19,26,body);ellipse(0,-2,13,21,trim);
+  poly([[-14,-13],[-28,-4+wing],[-20,9],[-9,2]],body);
+  poly([[14,-13],[28,-4-wing],[20,9],[9,2]],body);
+  ellipse(0,-28,16,16,body);
+  if(kind==='owl'){ellipse(-7,-30,8,9,'#fff9ef');ellipse(7,-30,8,9,'#fff9ef');
+   ellipse(-6,-30,2.5,3,'#30384a');ellipse(7,-30,2.5,3,'#30384a');
+   poly([[-12,-40],[-16,-52],[-3,-43]],body);poly([[12,-40],[16,-52],[3,-43]],body)}
+  if(kind==='phoenix'){poly([[-10,-38],[-6,-55],[0,-42],[7,-60],[11,-40]],'#ffcf59');
+   poly([[-11,11],[-21,34],[-2,18],[10,34],[15,12]],'#ff9349')}
+  if(kind==='eagle'){poly([[-16,-39],[-7,-46],[7,-46],[16,-39]],'#f6f3ec')}
+  if(kind==='toucan'){poly([[2,-31],[32,-33],[36,-24],[3,-22]],'#f6c45c')}
+  else poly([[0,-29],[9,-25],[0,-19]],'#f7ae50');
+  ellipse(-5,-30,2.5,2.6,'#283e54');ellipse(6,-30,2.5,2.6,'#283e54');
+  line(-9,21,-6,27,2.5,'#e8a65f');line(9,21,6,27,2.5,'#e8a65f');
+ }else if(kind==='snake'){
+  ctx.beginPath();ctx.moveTo(-27,5);ctx.bezierCurveTo(-9,-26,3,18,10,0);ctx.bezierCurveTo(17,-12,6,-21,26,-21);
+  ctx.strokeStyle=body;ctx.lineWidth=15;ctx.lineCap='round';ctx.stroke();
+  ellipse(24,-23,12,9,body);ellipse(28,-24,2.3,2.8,'#263b45');
+  line(34,-19,42,-16,2,'#e88bb2');
+ }else if(['frog','lizard','salamander','chameleon','turtle','dragon'].includes(kind)){
+  if(kind==='frog'){
+   ellipse(0,-2,21,15,body);
+   ellipse(-14,-20,9,9,body);ellipse(14,-20,9,9,body);
+   ellipse(-14,-21,3.5,4,'#fff');ellipse(14,-21,3.5,4,'#fff');
+   ellipse(-13,-21,2,2.5,'#33435b');ellipse(15,-21,2,2.5,'#33435b');
+   ellipse(-20,12,9,5,trim);ellipse(20,12,9,5,trim);
+   ctx.beginPath();ctx.arc(0,0,5,0,Math.PI);ctx.strokeStyle='#4f6843';ctx.lineWidth=2;ctx.stroke();
+  }else{
+   if(kind!=='turtle')poly([[-14,-6],[-41,-13+wiggle*3],[-31,1],[-14,12]],body);
+   for(let i=-1;i<=1;i+=2){ellipse(i*15,11,8,5,trim);ellipse(i*21,8,7,4,body)}
+   ellipse(0,-4,25,14,body);ellipse(21,-14,14,12,body);
+   if(kind==='turtle'){ellipse(-3,-11,22,22,'#485f64');
+    poly([[-15,-13],[0,-30],[16,-13],[12,2],[-14,2]],trim);
+    line(-8,-13,11,-13,2,'#8e8c72')}
+   if(kind==='chameleon'){ctx.beginPath();ctx.arc(-28,-7,11,Math.PI*.2,Math.PI*1.8);
+    ctx.strokeStyle=trim;ctx.lineWidth=5;ctx.stroke();ellipse(19,-22,8,8,trim)}
+   if(kind==='dragon'){poly([[-15,-16],[-29,-48],[3,-25]],trim);
+    poly([[-5,-26],[0,-43],[6,-26],[14,-45],[18,-17]],'#baf7ff')}
+   if(kind==='salamander'){for(let i=0;i<3;i++)ellipse(-11+i*12,-13,3,3,trim)}
+   ellipse(26,-16,2.5,2.5,'#293e59');
+   if(kind==='lizard')ellipse(6,-17,3,3,trim);
+  }
+ }else if(['seal','otter'].includes(kind)){
+  poly([[-16,-3],[-36,11],[-20,18]],body);
+  ellipse(0,0,31,17,body);ellipse(18,-16,15,14,body);
+  ellipse(11,4,18,9,trim);
+  poly([[-12,6],[-26,20],[-2,13]],body);
+  ellipse(25,-20,2.6,2.6,'#2c4652');
+  ellipse(31,-12,4,3,'#4b5868');line(20,-7,36,-6,1,'#eaf8ff');
+  if(kind==='otter')ellipse(-16,-8,6,6,body);
+ }else{
+  // Mammal renderer: shared natural gait, species-specific ears, tails and horns.
+  const short=['rabbit','squirrel','hedgehog','ferret','raccoon','panda','badger','beaver','sloth'].includes(kind);
+  const long=kind==='ferret',big=['bear','yak','bison','moose','capybara'].includes(kind);
+  const leg=Math.sin(a.walk||0)*(big?2:4);
+  if(kind==='squirrel'){ctx.beginPath();ctx.arc(-24,-24,15,-Math.PI*.1,Math.PI*1.4);
+   ctx.strokeStyle=body;ctx.lineWidth=11;ctx.stroke()}
+  else if(['fox','wolf','lynx','leopard','panda'].includes(kind))poly([[-15,-12],[-42,-24],[-35,-4],[-18,3]],body);
+  else if(kind==='monkey'){ctx.beginPath();ctx.arc(-29,-12,13,0,Math.PI*1.7);ctx.strokeStyle=body;ctx.lineWidth=6;ctx.stroke()}
+  else if(kind==='beaver')poly([[-24,-9],[-43,-13],[-46,1],[-27,5]],'#725c53');
+  else if(kind==='deer'||kind==='unicorn')poly([[-17,-12],[-29,-6],[-24,2]],trim);
+  if(kind==='hedgehog')for(let i=0;i<7;i++)poly([[-27+i*7,-10],[-25+i*7,-30-((i%3)*4)],[-20+i*7,-17]],'#76644e');
+  for(const side of [-1,1])roundRect(side*13-6,7+leg*side,10,big?16:13,5,body);
+  ellipse(long?-7:0,-4,long?32:big?28:24,big?19:short?15:18,body);
+  ellipse(6,0,big?15:13,10,trim);
+  ellipse(19,-20,short?14:15,short?12:14,body);
+  if(kind==='rabbit'){ellipse(13,-44,5,23,body);ellipse(27,-42,5,21,body);
+   ellipse(13,-44,2.5,17,'#f4acb9');ellipse(27,-42,2.5,15,'#f4acb9')}
+  else if(['fox','wolf','lynx','leopard','panda','raccoon','ferret'].includes(kind)){
+   poly([[7,-26],[9,-42],[20,-33]],body);poly([[20,-30],[32,-42],[31,-25]],body)}
+  else{ellipse(10,-31,6,8,body);ellipse(27,-31,6,8,body)}
+  if(['deer','moose','goat','bison','yak','unicorn'].includes(kind)){
+   if(kind==='unicorn')poly([[12,-31],[16,-53],[22,-31]],trim);
+   else for(const side of [-1,1]){
+    const xx=19+side*9;
+    line(xx,-30,xx+side*5,-49,3,trim);
+    if(kind==='deer'||kind==='moose'){
+     line(xx+side*4,-43,xx+side*13,-52,2.6,trim);
+     if(kind==='moose')poly([[xx,-41],[xx+side*8,-58],[xx+side*16,-46]],trim)
+    }
+   }
+  }
+  if(kind==='boar')poly([[29,-11],[39,-17],[33,-7]],'#f9e0b9');
+  if(kind==='hedgehog')ellipse(23,-20,11,9,trim);
+  if(kind==='badger')poly([[11,-32],[17,-35],[19,-14],[13,-15]],trim);
+  if(kind==='raccoon'||kind==='panda')ellipse(18,-23,10,7,'#4f5566');
+  if(kind==='sloth')ellipse(17,-22,10,10,trim);
+  if(kind==='leopard')for(let i=0;i<5;i++)ellipse(-13+i*8,-15+(i%2)*7,2.8,2.7,'#72889d');
+  if(kind==='yak'||kind==='bison')for(let i=0;i<4;i++)ellipse(-13+i*9,8,8,9,body);
+  ellipse(29,-17,8,6,trim);ellipse(19,-23,2.8,2.8,'#273b4b');
+  ellipse(32,-17,2.5,2,'#35414c');
+  if(kind==='bear')roundRect(8,-13,23,6,3,'#ea6a73');
+  if(kind==='panda')for(let i=0;i<3;i++)line(-37+i*5,-8,-35+i*5,-4,2,trim);
+ }
+ if(s.rare||s.stage===6){if(!lowGraphics()&&Math.sin(now*3+a.phase)>.65){
+   ellipse(-27,-39,2,3,s.accent);ellipse(32,-44,2,3,'#fffaf0')}}
+ if(a.heartUntil>now){ctx.font='17px system-ui';ctx.textAlign='center';ctx.fillStyle='#f78da9';
+  ctx.fillText('♥',0,-64-Math.sin(now*6)*4)}
+ if(boss){poly([[-12,-50],[-14,-62],[-6,-56],[0,-70],[8,-56],[14,-63],[13,-50]],'#f0ca63');
+  roundRect(-14,-51,28,5,2,'#fff0b4')}
+ ctx.restore();
+}
+function drawWildlifeBoss(m){
+ const s=WILDLIFE_BY_ID.get(m.speciesId);
+ if(!s)return;
+ ctx.save();if(m.flash>0)ctx.globalAlpha=.6+.2*Math.sin(now*30);
+ const a={x:m.x,y:m.y-(m.jumpHeight||0),dir:m.dir||1,walk:m.walk||0,phase:m.id||0,heartUntil:0};
+ drawWildlifeShape(a,s,true);
+ ctx.restore();
+ if(m.hp<m.maxHp){const w=62;roundRect(m.x-w/2,m.y-77,w,6,3,'#2c395c');
+  roundRect(m.x-w/2,m.y-77,w*clamp(m.hp/Math.max(1,m.maxHp),0,1),6,3,s.accent)}
+}
+function drawWildlifeScene(){
+ if(!game||!game.wildlife)return;
+ const mx=w/Math.max(.05,screenScale)*.55,my=h/Math.max(.05,screenScale)*.55;
+ for(const a of game.wildlife)if(Math.abs(a.x-cam.x)<mx+70&&Math.abs(a.y-cam.y)<my+70){
+  const s=WILDLIFE_BY_ID.get(a.id);if(s)drawWildlifeShape(a,s);
+ }
+}
+
+function drawBear(m){if(m.speciesId){drawWildlifeBoss(m);return}const beast=STAGE_BEASTS.find(v=>v[0]===m.beast)||STAGE_BEASTS[0];const st=1,jumper=!!m.leaper&&beast[0]==='bear';ctx.save();ctx.translate(m.x,m.y-(m.jumpHeight||0));const gm=game.growS||1;ctx.scale(gm,gm);ctx.scale(1+(1-st)*.22,1-(1-st)*.2);if(m.flash>0)ctx.globalAlpha=.6+Math.sin(m.flash*40)*.2;
  ellipse(4,15,31,13,'#2c4e6333');let walk=Math.sin(m.walk)*4;
  // bulky bear with legs, ears and highlighted muzzle
  if(st>.5){roundRect(-18,-3+walk,13,26,7,beast[2]);roundRect(8,-3-walk,13,26,7,beast[2])}else{roundRect(-16,2+walk,8,14,3,beast[2]);roundRect(-5,2-walk,8,14,3,beast[2]);roundRect(4,2-walk,8,14,3,beast[2]);roundRect(12,2+walk,8,14,3,beast[2])}
@@ -1662,10 +1930,11 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  drawVisibleCuteObstacles();
  drawHoles();
+ drawWildlifeScene();
  // Drops under combatants.
  let vw=w/screenScale,vh=h/screenScale;for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
- for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,leaper:c.leaper,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
+ for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({x:c.x,y:c.y,elite:c.elite,boss:c.boss,leaper:c.leaper,speciesId:c.speciesId,beast:c.beast,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
  // Characters drawn in camera-relative depth order.
  let arr=game.mobs.filter(m=>Math.abs(m.x-cam.x)<vw*.55+60&&Math.abs(m.y-cam.y)<vh*.55+60).map(m=>({kind:'bear',y:m.y,obj:m}));arr.push({kind:'hero',y:game.p.y,obj:game.p});if(game.dog&&isVisible(game.dog.x,game.dog.y,100))arr.push({kind:'dog',y:game.dog.y,obj:game.dog});for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y,obj:b});arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else if(a.kind==='dog')drawSnowDog(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawBearShots();drawSlashes();
@@ -1735,7 +2004,7 @@ const battleMusic=new Audio('battle-music.mp3');battleMusic.loop=true;battleMusi
 function syncBattleMusic(){const want=mode==='playing'&&!paused&&!!game;const vol=clamp(audioSettings.music*audioSettings.master,0,1);
  try{const track=battleMusic;if(!want||vol<=.001){if(!track.paused)track.pause();return}track.volume=vol;track.playbackRate=musicIntense?1.08:1;if(track.paused)track.play().catch(()=>{})}catch(e){}}
 setInterval(syncBattleMusic,300);
-const pauseGame=on=>{if(on&&(mode!=='playing'||!game))return;paused=on;$('pauseMenu').hidden=!on;if(on)clearInput()};$('pauseBtn').onclick=()=>pauseGame(!paused);$('resumeBtn').onclick=()=>pauseGame(false);$('homeBtn').onclick=()=>{try{saveBest();saveProgress()}catch{}location.reload()};document.addEventListener('keydown',e=>{if(mode==='playing'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){e.preventDefault();pauseGame(!paused)}});setInterval(()=>{const on=mode==='playing'&&!!game;$('pauseBtn').hidden=!on;if(!on&&paused){paused=false;$('pauseMenu').hidden=true}},200);
+const pauseGame=on=>{if(on&&(mode!=='playing'||!game))return;paused=on;$('pauseMenu').hidden=!on;if(on)clearInput()};$('pauseBtn').onclick=()=>pauseGame(!paused);$('resumeBtn').onclick=()=>pauseGame(false);$('homeBtn').onclick=()=>{try{saveBest();saveProgress()}catch{}location.reload()};document.addEventListener('keydown',e=>{if(mode==='playing'&&(e.key==='p'||e.key==='P'||e.key==='Escape')){e.preventDefault();pauseGame(!paused)}});setInterval(()=>{const on=mode==='playing'&&!!game;$('wildlifeBtn').hidden=!on;$('pauseBtn').hidden=!on;if(!on&&paused){paused=false;$('pauseMenu').hidden=true}},200);
 let lastTap={t:0,x:0,y:0};document.addEventListener('pointerdown',e=>{if(mode!=='playing'||!game||paused||(e.target.closest&&e.target.closest('#pauseBtn,#pauseMenu,button,#shopPanel,#sprintHud')))return;const t=performance.now();if(t-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<50){lastTap.t=0;if((game.sprintCd||0)<=0){teleportHero(e.clientX,e.clientY);game.sprintCd=WARP_COOLDOWN_SECONDS}}else lastTap={t,x:e.clientX,y:e.clientY}});setInterval(()=>{const hud=$('sprintHud');if(!hud)return;const on=mode==='playing'&&!!game&&!paused;hud.hidden=!on;if(!on)return;const g=game,sp=g.sprint>0,cd=g.sprintCd>0;hud.classList.toggle('on',sp);const frac=sp?g.sprint/1.5:cd?(7-g.sprintCd)/7:1;$('sprintRing').style.strokeDashoffset=(113.1*(1-frac)).toFixed(1);$('sprintNum').textContent=sp?Math.ceil(g.sprint):cd?Math.ceil(g.sprintCd):'⚡'},100);
 
 const UI_EN={'ร้านสกินตัวละคร':'Character skins','ตัวละคร':'characters','ร้านค้า':'Shop','อัตโนมัติ':'Auto','ประหยัด':'Low','ปกติ':'Normal','สถิติสูงสุด:':'Best:','นาที':'min','ด่าน':'Stage','เฟส':'Phase','ฆ่าผู้เล่นอื่นรับ':'Defeat a player to earn','ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า':'Buy weapons for your next game','เล่นได้ทั้งมือถือและคอมพิวเตอร์':'Play on mobile or desktop','ไม่ต้องเชื่อมต่ออินเทอร์เน็ต':'Offline play available','อาวุธ':'Weapons','สกิน':'Skins','ปิด':'Close','เลือก':'Choose','หยุดชั่วคราว':'Paused','เล่นต่อ':'Resume','หน้าหลัก':'Home','กด P หรือ Esc เพื่อเล่นต่อ':'Press P or Esc to resume','เก่งมาก!':'Great job!','พร้อมออกผจญภัยอีกครั้งไหม?':'Ready for another adventure?','เล่นอีกครั้ง':'Play again','เวลา':'Time','กำจัด':'Defeated','กระเป๋าวัตถุดิบ':'Materials','กระเป๋าและใช้ไอเทม':'Inventory & items','ใช้เนื้อฟื้นเลือด':'Eat meat','ใช้อาหารสำรอง':'Use food','ไปคราฟต์อุปกรณ์':'Craft equipment','อัปเกรดอุปกรณ์':'Upgrade equipment','อัปเกรด':'Upgrade','คราฟต์':'Craft','สร้างแล้ว':'Crafted','เหรียญ':'coins','เลเวล':'Level','ฟรี':'Free','สวมใส่':'Equip','ใช้อยู่':'Equipped','ขาด':'Need','รับฟรี':'Claim free','ของตกแต่ง ไม่มีโบนัสพลังโจมตี':'Cosmetic only, no attack bonus','เลือกเพื่อดูตัวอย่าง · ซื้อครั้งเดียวใช้ได้ถาวร · สวมใส่แล้วมีผลในเกมรอบถัดไป':'Preview · Buy once · Equip for your next game','ซื้อได้ทุกชิ้น · ราคาตามความหายาก · ของที่ซื้อจะใช้ตอนเริ่มเกมครั้งถัดไป':'Buy weapons for your next game','รายชื่อ':'Players','ความสามารถ':'Ability','เนื้อหมี':'Meat','หนังหมี':'Hide','กระดูกหมี':'Bone','กรงเล็บ':'Claw','ผลึกน้ำแข็ง':'Ice crystal','เสื้อหนังหมี':'Fur armor','กระเป๋าหนัง':'Leather pack','อาหารสำรอง':'Food','ดาบคู่':'Twin blades','คมดาบ':'Sharp blade','ดาบยักษ์':'Long reach','ฟันเร็ว':'Fast spin','วิ่งไว':'Speed','ยืนหยัด':'Guard','ฟื้นฟู':'Regeneration','นักล่าชีวิต':'Lifesteal','คลื่นดาบ':'Blade wave','เรดาร์':'Radar','รองเท้า':'Boots','เกราะ':'Armor','แม่เหล็ก':'Magnet','กระเป๋า':'Bag'};
@@ -1766,7 +2035,12 @@ $('lang-th').onclick=()=>setLang('th');$('lang-en').onclick=()=>setLang('en');ap
 {const sm=$('set-music'),sh=$('set-shake');sm.value=Math.round(audioSettings.music*100);sh.checked=shakeOn;sm.addEventListener('input',()=>setAudioVolume('music',Number(sm.value)/100));for(const [id,key] of [['set-master','master']]){const el=$(id);el.value=Math.round(audioSettings[key]*100);el.addEventListener('input',()=>setAudioVolume(key,Number(el.value)/100))}sh.addEventListener('change',()=>{shakeOn=sh.checked;try{localStorage.setItem('frostline_shake',shakeOn?'1':'0')}catch{}})}
 $('levelReady').onclick=showLevelChoice; {const ni=$('nameInput');ni.value=PLAYER_NAME;const go=()=>{let v=ni.value.replace(/[<>]/g,'').trim().slice(0,14);if(!v)v='player'+String(1000+Math.floor(Math.random()*9000));PLAYER_NAME=v;try{localStorage.setItem('frostline_name',v)}catch{}newGame()};$('playBtn').onclick=go;maybeShowFirstGuide();ni.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')go()});ni.addEventListener('keyup',e=>e.stopPropagation())}$('coinBtn').onclick=()=>openShop();$('closeShop').onclick=closeShop;$('shopInventory').onclick=()=>{closeShop();openInventory()};$('tabUpgrade').onclick=()=>{shopTab='upgrade';renderShop()};$('tabCraft').onclick=()=>{shopTab='craft';renderShop()};$('bagBtn').onclick=openInventory;$('eatBtn').onclick=()=>{if(mode==='playing')useMeat()};$('closeBag').onclick=closeInventory;$('useMeat').onclick=useMeat;$('useRation').onclick=useRation;$('fromBagShop').onclick=()=>openShop('craft');$('shop').addEventListener('click',e=>{if(e.target===$('shop'))closeShop()});$('inventory').addEventListener('click',e=>{if(e.target===$('inventory'))closeInventory()});
 let b=readBest();$('bestText').textContent=b.time?`สถิติสูงสุด: ${Math.floor(b.time/60)}:${String(b.time%60).padStart(2,'0')} นาที · ด่าน ${b.stage}`:'เล่นได้ทั้งมือถือและคอมพิวเตอร์ · ไม่ต้องเชื่อมต่ออินเทอร์เน็ต';
-initDecor();resize();requestAnimationFrame(tick);
+ $('wildlifeBtn').onclick=wildlifeOpen;
+ $('wildlifeClose').onclick=wildlifeClose;
+ $('wildlifePanel').addEventListener('click',e=>{if(e.target===$('wildlifePanel'))wildlifeClose()});
+ document.addEventListener('keydown',e=>{if(mode==='wildlife'&&e.key==='Escape'){e.preventDefault();wildlifeClose()}});
+ wildlifeBadge();
+ initDecor();resize();requestAnimationFrame(tick);
 
 // Detailed gun models (barrel points toward -y in local space)
 function drawGun(t,w,metal,dark){
