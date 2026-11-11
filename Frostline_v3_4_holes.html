@@ -1062,12 +1062,18 @@ function torchLightHolders(){
  }
  return result;
 }
+// Visibility transitions smoothly from a nearby hunter to a distant torch marker.
+function torchVisibility(p){
+ if(!game||p===game.p)return 1;
+ const distance=Math.hypot(p.x-game.p.x,p.y-game.p.y),t=clamp((1000-distance)/600,0,1);
+ return t*t*(3-2*t);
+}
 function torchScreenPosition(p){
  const face=(p.dir||1)<0?-1:1;
  return {
   x:w/2+(p.x+face*24-cam.x)*screenScale,
   y:h/2+(p.y-57-cam.y)*screenScale,
-  radius:clamp(270*screenScale,155,410)
+  radius:clamp(270*screenScale,155,410)*(p===game.p?1:.13+.34*torchVisibility(p))
  };
 }
 function drawDayNight(){
@@ -1554,9 +1560,16 @@ function drawTorchInHand(p){
 function drawOtherTorchesAfterNight(){
  if(!torchIsLit())return;
  const holders=torchLightHolders();
- ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+ ctx.save();ctx.globalCompositeOperation='source-over';
  ctx.translate(w/2,h/2);ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
- for(let i=1;i<holders.length;i++)drawTorchInHand(holders[i]);
+ for(let i=1;i<holders.length;i++){
+  const p=holders[i],visibility=torchVisibility(p);
+  if(visibility>.01){ctx.globalAlpha=visibility;drawTorchInHand(p)}
+  if(visibility<.99){
+   const face=(p.dir||1)<0?-1:1,x=p.x+face*24,y=p.y-57;
+   ctx.globalAlpha=1-visibility;ellipse(x,y,7,7,'#ffad46');ellipse(x,y,3.5,3.5,'#fff3bb');
+  }
+ }
  ctx.restore();
 }
 // Add warm light after the existing night tint has been drawn.
