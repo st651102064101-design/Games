@@ -760,7 +760,7 @@ function teleportHero(sx,sy){const g=game,p=g.p;const wx=clamp(cam.x+(sx-w/2)/sc
 let userZoom=1;const pinchPts=new Map();let pinchD=0;
 function pinchDist(){const v=[...pinchPts.values()];return Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y)}
 canvas.addEventListener('pointerdown',e=>{pinchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinchPts.size===2)pinchD=pinchDist()},{passive:true});
-canvas.addEventListener('pointermove',e=>{if(!pinchPts.has(e.pointerId))return;pinchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinchPts.size===2){const d=pinchDist();if(pinchD>0&&d>0)userZoom=clamp(userZoom*(d/pinchD),1,2.5);pinchD=d}},{passive:true});
+canvas.addEventListener('pointermove',e=>{if(!pinchPts.has(e.pointerId))return;pinchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinchPts.size===2){const d=pinchDist();if(pinchD>0&&d>0)userZoom=clamp(userZoom*(d/pinchD),1,4);pinchD=d}},{passive:true});
 const pinchEnd=e=>{pinchPts.delete(e.pointerId);pinchD=pinchPts.size===2?pinchDist():0};canvas.addEventListener('pointerup',pinchEnd);canvas.addEventListener('pointercancel',pinchEnd);
 function writeMeta(patch){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');Object.assign(o,patch);localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch{}}
 function isGod(){return String(PLAYER_NAME||'').trim().toLowerCase()==='god'}
