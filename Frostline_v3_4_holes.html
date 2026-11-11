@@ -347,7 +347,7 @@ function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.le
 
 // ===== Printer walls: horizontal rows, mirrored alternately, block player and bears =====
 function makeObstacles(){const list=[],walls=3400;for(let k=0;k<walls;k++){let cx,cy,tries=0;do{cx=rand(-half+400,half-400);cy=rand(-half+400,half-400);tries++}while(tries<30&&Math.hypot(cx-game.p.x,cy-game.p.y)<420);
- const n=3+Math.floor(Math.random()*3),step=OBS_W*.92;for(let i=0;i<n;i++){list.push({x:cx+(i-(n-1)/2)*step,y:cy,flip:(i+k)%2===1})}}return list}
+ const n=6+Math.floor(Math.random()*5),step=OBS_W*.92;for(let i=0;i<n;i++){list.push({x:cx+(i-(n-1)/2)*step,y:cy,flip:false})}}return list}
 // Spatial grid for printers: collision only checks the 3x3 cells around an entity
 function buildObsGrid(){const grid=new Map();for(const o of game.obstacles){const k=Math.floor(o.x/200)+','+Math.floor(o.y/200);let arr=grid.get(k);if(!arr){arr=[];grid.set(k,arr)}arr.push(o)}game.obsGrid=grid}
 function obsNear(x,y){const out=[];if(!game.obsGrid)return game.obstacles||[];const cx=Math.floor(x/200),cy=Math.floor(y/200);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const arr=game.obsGrid.get((cx+i)+','+(cy+j));if(arr)for(const o of arr)out.push(o)}return out}
