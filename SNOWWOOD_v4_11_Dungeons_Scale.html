@@ -565,10 +565,12 @@ body.refHud #referencePause .referenceStage:after{display:none!important}
 #voxelHotbar button.quickBtn{touch-action:manipulation}
 #voxelHotbar button.quickBtn b{font-size:12px;right:5px;bottom:1px}
 @media(max-width:600px){#voxelHotbar .quickSlotIcon .vector-icon{width:22px;height:22px}}
+/* Clean play mode: remove all in-game HUD, hotbar, joystick, alerts and progress UI. */
+body.cleanPlay #hud{display:none!important;visibility:hidden!important;pointer-events:none!important}
 </style>
 <meta name="snowwood-version" content="4.10-No-Block-Mining"/>
 </head>
-<body class="visual-mintext refHud">
+<body class="visual-mintext refHud cleanPlay">
 <canvas id="world" aria-label="เกมผจญภัยตัดไม้ในป่าหิมะ: ต้นไม้หนึ่งต้นต่อหนึ่งช่องกริด"></canvas><div id="vignette"></div>
 <div id="hud"><div id="topVitals" aria-label="Player status"><div id="vitalsHearts" class="vitalsRow vitalsHearts"></div><div id="vitalsHunger" class="vitalsRow vitalsHunger"></div><div class="vitalsLower"><b id="vitalsLv">Lv. 1</b><div id="vitalsXP"><i id="vitalsXPFill"></i></div></div></div><div id="gameCompass" aria-hidden="true"><div class="compassRail"></div><span>W</span><span class="compassHighlight">❄ N</span><span>E</span></div>
  <div id="topLeft"><div class="brand"><div class="brand-icon" data-ico="snow"></div><div><b>SNOWWOOD</b><small>WINTER FRONTIER</small></div></div><div id="resources">
@@ -576,7 +578,7 @@ body.refHud #referencePause .referenceStage:after{display:none!important}
  </div></div>
  <div id="topRight"><button id="minimapBox" type="button" title="แผนที่" aria-label="เปิดแผนที่"><canvas id="minimap" width="232" height="204"></canvas><span id="mapTitle"><span data-ico="compass"></span></span></button><div class="topButtons"><button class="smallbtn" id="isoBtn" title="มุมมองหลัก" aria-label="มุมมองหลัก" hidden><span data-ico="compass"></span></button><button class="smallbtn" id="toolsToggle" title="กระเป๋าและเครื่องมือ" aria-label="เปิดเครื่องมือ" aria-expanded="false" aria-controls="toolDrawer"><span data-ico="bag"></span></button><button class="smallbtn" id="pauseBtn" title="เมนูเกม" aria-label="เมนูเกม"><span data-ico="gear"></span></button></div>
   <div id="toolDrawer" aria-label="เมนูเครื่องมือ"><div id="quickTools"><button class="smallbtn" id="inventoryBtn" title="กระเป๋า" aria-label="กระเป๋า"><span data-ico="bag"></span><small>กระเป๋า</small></button><button class="smallbtn" id="storageBtn" title="โกดัง" aria-label="โกดัง"><span data-ico="warehouse"></span><small>โกดัง</small></button><button class="smallbtn" id="craftBtn" title="คราฟต์" aria-label="คราฟต์"><span data-ico="craft"></span><small>คราฟต์</small></button></div>
-   <div class="drawerRow"><button class="smallbtn" id="buildBtn" title="สร้าง" aria-label="สร้าง"><span data-ico="build"></span><small>สร้าง</small></button><button class="smallbtn" id="upgradeBtn" title="อัปเกรด" aria-label="อัปเกรด"><span data-ico="upgrade"></span><small>อัปเกรด</small></button><button class="smallbtn" id="eatBtn" title="กินเบอร์รี" aria-label="กินเบอร์รี"><span data-ico="berry"></span><small>เบอร์รี</small></button></div>
+   <div class="drawerRow"><button class="smallbtn" id="upgradeBtn" title="อัปเกรด" aria-label="อัปเกรด"><span data-ico="upgrade"></span><small>อัปเกรด</small></button><button class="smallbtn" id="eatBtn" title="กินเบอร์รี" aria-label="กินเบอร์รี"><span data-ico="berry"></span><small>เบอร์รี</small></button></div>
    <div id="huntQuick"><button class="huntQBtn" id="huntBtn" title="ล่าสัตว์"><span data-ico="paw"></span><small>ล่า</small></button><button class="huntQBtn" id="foodBtn" title="ทำอาหาร"><span data-ico="pot"></span><small>อาหาร</small></button><button class="huntQBtn" id="tradeBtn" title="พ่อค้า"><span data-ico="trade"></span><small>ค้า</small></button></div>
    <div class="drawerRow drawerFoot"><button class="smallbtn" id="soundBtn" title="เสียง" aria-label="เสียง"><span data-ico="mute"></span><small>เสียง</small></button><button class="smallbtn" id="questBtn" title="ภารกิจ" aria-label="แสดงภารกิจ"><span data-ico="star"></span><small>ภารกิจ</small></button><button class="smallbtn" id="helpBtn" title="วิธีเล่น" aria-label="วิธีเล่น"><span data-ico="help"></span><small>วิธีเล่น</small></button></div>
   </div></div>
@@ -747,12 +749,7 @@ const buildings=[
  {id:'kennel',name:'คอกสุนัขคู่หู',icon:'pet',x:964,y:748,cost:{wood:23,stone:12,meat:4},desc:'คู่หูเดินตาม และช่วยสู้เฉพาะตอนที่ผู้เล่นโจมตี'}
 ];
 // Manual wood-delivery sites. Each site uses its own persistent tally.
-const forts=[
- {id:'outpost',name:'ป้อมเล็ก',icon:'home',x:1234,y:1121,need:20,style:0},
- {id:'palisade',name:'ป้อมป้องกัน',icon:'build',x:1446,y:1042,need:40,style:1},
- {id:'stronghold',name:'ป้อมใหญ่',icon:'tower',x:921,y:1308,need:100,style:2},
- {id:'watchfort',name:'หอคอยไม้',icon:'tower',x:1673,y:948,need:200,style:3}
-];
+const forts=[]; // Construction sites disabled; preserve legacy save entries.
 function fortData(f){return state?.forts?.[f.id]||{wood:0,complete:false}}
 function fortPercent(f){return Math.round(Math.min(f.need,fortData(f).wood)/f.need*100)}
 function insideFort(f,x=state.x,y=state.y){return Math.abs(x-f.x)<91&&Math.abs(y-f.y)<71}
@@ -765,15 +762,15 @@ const upgrades=[
 const quests=[
  {name:'เริ่มจากไม้ท่อนแรก',desc:'ตัดต้นสนให้ได้ไม้สะสม 9 ท่อน',target:9,metric:s=>s.stats.woodCollected,reward:8},
  {name:'หาหินตั้งแคมป์',desc:'ขุดหินสะสม 3 ก้อน',target:3,metric:s=>s.stats.stoneCollected,reward:6},
- {name:'กองไฟของนักสำรวจ',desc:'สร้างกองไฟในเมนู “สร้าง”',target:1,metric:s=>+!!s.built.fire,reward:12},
- {name:'โรงเลื่อยเริ่มทำงาน',desc:'สร้างโรงเลื่อยเพื่อผลิตไม้เรื่อย ๆ',target:1,metric:s=>+!!s.built.mill,reward:15},
- {name:'บ้านหลังแรก',desc:'สร้างกระท่อมกลางหิมะ',target:1,metric:s=>+!!s.built.cabin,reward:18},
- {name:'สำรวจแหล่งหิน',desc:'สร้างเหมืองหินเพื่อช่วยหาแร่',target:1,metric:s=>+!!s.built.quarry,reward:24},
- {name:'หอสังเกตการณ์',desc:'สร้างหอคอยปลดล็อกพื้นที่สำรวจ',target:1,metric:s=>+!!s.built.tower,reward:50},
- {name:'เจ้าแห่งป่าหิมะ',desc:'สะสมไม้ทั้งหมด 180 ท่อน',target:180,metric:s=>s.stats.woodCollected,reward:100},
- {name:'สร้างโกดัง',desc:'สร้างโกดังเก็บทรัพยากร',target:1,metric:s=>+!!s.built.warehouse,reward:30},
- {name:'ฝากทรัพยากร',desc:'ฝากของในโกดังสะสม 15 ชิ้น',target:15,metric:s=>s.stats.deposited||0,reward:35},
- {name:'คราฟต์อุปกรณ์',desc:'สร้างโรงคราฟต์และคราฟต์ของ 1 ชิ้น',target:1,metric:s=>s.stats.crafted||0,reward:40}
+ {name:'ออกหาเบอร์รี',desc:'เก็บเบอร์รี 6 ผล',target:6,metric:s=>s.stats.berriesCollected,reward:12},
+ {name:'นักตัดไม้',desc:'สะสมไม้ 30 ท่อน',target:30,metric:s=>s.stats.woodCollected,reward:15},
+ {name:'นักสำรวจหิน',desc:'สะสมหิน 12 ก้อน',target:12,metric:s=>s.stats.stoneCollected,reward:18},
+ {name:'ก้าวผ่านหิมะ',desc:'เดินสำรวจให้ครบ 250 หน่วย',target:250,metric:s=>s.stats.steps,reward:24},
+ {name:'เสบียงฤดูหนาว',desc:'เก็บเบอร์รีสะสม 35 ผล',target:35,metric:s=>s.stats.berriesCollected,reward:35},
+ {name:'เจ้าแห่งป่าหิมะ',desc:'สะสมไม้ 180 ท่อน',target:180,metric:s=>s.stats.woodCollected,reward:100},
+ {name:'นักเก็บผลึก',desc:'เก็บผลึก 3 ชิ้น',target:3,metric:s=>s.stats.crystalsCollected,reward:30},
+ {name:'นักล่าหิมะ',desc:'ล่าสัตว์ 2 ตัว',target:2,metric:s=>s.stats.animalKills||0,reward:35},
+ {name:'เดินทางไกล',desc:'เดินสำรวจสะสม 800 หน่วย',target:800,metric:s=>s.stats.steps,reward:40}
 ];
 const resourceIcons={wood:'ไม้',stone:'หิน',berry:'เบอร์รี',crystal:'ผลึก',ore:'แร่เหล็ก',coin:'เหรียญ',meat:'เนื้อ',hide:'หนัง',bone:'กระดูก',antler:'เขากวาง',fang:'เขี้ยว',fur:'ขนหมี',leather:'หนังฟอก',cooked:'อาหาร',arrow:'ลูกธนู'};
 const resourceNames={...resourceIcons};
@@ -893,7 +890,7 @@ function worldInit(){resetWorldChunks();trees=[];rocks=[];bushes=[];wildlife=[];
   const key=cellKey(i,j);if(placed.has(key))return false;
   const {x,y}=cellCenter(i,j);if(x<65||y<65||x>WW-65||y>HH-65)return false;
   if(dist(x,y,BASE_X,BASE_Y)<108)return false;
-  if(buildings.some(b=>dist(x,y,b.x,b.y)<(kind==='tree'?113:94))||forts.some(f=>dist(x,y,f.x,f.y)<FortSafeDistance+12))return false;
+  if(buildings.some(b=>state?.built?.[b.id]&&dist(x,y,b.x,b.y)<(kind==='tree'?113:94)))return false;
   // Canopies may be tall, but each trunk occupies exactly one diamond tile.
   if(kind==='tree')for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++)if((di||dj)&&treeCells.has(cellKey(i+di,j+dj)))return false;
   return true;
@@ -969,11 +966,7 @@ function costText(cost){return Object.entries(cost).map(([k,v])=>`${resourceIcon
 function addXp(n){state.xp+=n;let threshold=state.level*15+5;while(state.xp>=threshold){state.xp-=threshold;state.level++;state.inv.coin+=state.level*2;toast(`เลเวล ${state.level}! รับ ${state.level*2} เหรียญ`);burst(state.x,state.y-22,'#fff5a2',25);pSnd('win');threshold=state.level*15+5}}
 function checkQuest(){if(!state)return;let completed=0;while(state.quest<quests.length&&quests[state.quest].metric(state)>=quests[state.quest].target){const q=quests[state.quest];state.inv.coin+=q.reward;state.quest++;completed++;toast(` สำเร็จ: ${q.name} +${q.reward} เหรียญ`,3200);burst(state.x,state.y-28,'#ffe483',28);pSnd('win')}if(completed){save();hudUpdate(true)}}
 // Menu only selects a worksite: no building appears without hands-on ACTION presses.
-function buildingBuy(id){
- const b=buildings.find(x=>x.id===id);if(!b||state.built[id])return;
- selectedBuild=id;state.selectedBuild=id;moveTarget={x:b.x,y:b.y+35};
- closeModal();toast('เดินเข้าวง → AUTO วาง');save();hudUpdate(true)
-}
+function buildingBuy(id){return false} // Building mode removed
 function buildingPercent(b){
  if(state.built[b.id])return 100;
  const deposited=state.buildDelivery?.[b.id]||{};
@@ -1060,13 +1053,7 @@ function selectFort(id){
  moveTarget={x:f.x,y:f.y+16};closeModal();save();hudUpdate(true);
 }
 // Player controls harvesting; ONLY delivery becomes automatic in a construction footprint.
-function deliverySiteAt(){
- if(!state)return null;
- const eligible=[];
- for(const f of forts)if(!fortData(f).complete&&insideFort(f))eligible.push({type:'fort',object:f,dist:dist(state.x,state.y,f.x,f.y),id:'f:'+f.id});
- for(const b of buildings)if(!state.built[b.id]&&dist(state.x,state.y,b.x,b.y)<84)eligible.push({type:'build',object:b,dist:dist(state.x,state.y,b.x,b.y),id:'b:'+b.id});
- eligible.sort((a,b)=>a.dist-b.dist);return eligible[0]||null
-}
+function deliverySiteAt(){return null} // No automatic building materials
 function deliverResource(site){
  const f=site.object,isFort=site.type==='fort',cost=isFort?{wood:f.need}:f.cost;
  const data=isFort?(state.forts[f.id]||(state.forts[f.id]={wood:0,complete:false})):(state.buildDelivery[f.id]||(state.buildDelivery[f.id]={}));
@@ -1523,30 +1510,7 @@ function drawCanvasIcon(kind,x,y,size=36){
  }else{oval(0,0,13,13,'#8ab3c8');line(-9,5,9,-7,'#e2f6fa',4)}
  ctx.restore();
 }
-function drawBuilding(b){const x=b.x,y=b.y,done=!!state.built[b.id];pinBackground(x,y,done);if(!done){
- const pct=buildingPercent(b),p=pct/100,site=dist(state.x,state.y,x,y)<84;
- ctx.save();ctx.translate(x,y);
- // Rounded build pad and foundation planks grow as resources are placed.
- isoPad(0,10,76,34,site?'#fce4b18f':'#a8bac36c',site?'#ffcb73':'#b4c9d0',2);
- ctx.strokeStyle=site?'#ffcb73':'#b4c9d0';ctx.lineWidth=site?4:3;ctx.setLineDash([9,7]);
- ctx.beginPath();ctx.moveTo(-68,10);ctx.lineTo(0,-18);ctx.lineTo(68,10);ctx.lineTo(0,38);ctx.closePath();ctx.stroke();ctx.setLineDash([]);
- for(const px of [-39,39]){
-  const height=10+p*47;rect(px-5,11-height,10,height+5,3,p>.05?'#aa784e':'#9fbac8');
- }
- if(p>.06){const n=Math.min(7,Math.max(1,Math.floor(p*8)));
-  for(let i=0;i<n;i++){const yy=18-i*6;rect(-39,yy,77,7,3,i%2?'#c49562':'#a6764d');oval(-35,yy+3,4,3,'#efc58e')}
- }
- if(p>.55){line(-41,-23-p*28,42,-23-p*28,'#a17654',8)}
- if(p>.80){tri(-49,-32-p*29,0,-57-p*26,49,-32-p*29,'#4785a6');tri(-49,-32-p*29,0,-57-p*26,4,-32-p*29,'#9bcfdd')}
- drawCanvasIcon(b.icon,0,-28-(p*26),29);
- if(site||p>0||state.selectedBuild===b.id){
-  if(!site&&state.selectedBuild===b.id)text(pct+'%',0,-105,14,'#f8f8dd');
-  if(!site&&state.selectedBuild===b.id){rect(-43,-96,86,9,4,'#326073ab');if(p>0)rect(-42,-95,84*p,7,3,'#61cfaa')}
-  const record=buildingDelivered(b),missing=Object.entries(b.cost).filter(([k,n])=>(record[k]||0)<n);
-  if(missing.length){const [k,n]=missing[0];drawCanvasIcon(svgShapes[k]?k:'bag',-28,56,18);text(`${record[k]||0}/${n}`,12,57,11,'#fff7d4')}
- }
- ctx.restore();return
-}
+function drawBuilding(b){const x=b.x,y=b.y;if(!state.built[b.id])return; // Existing completed legacy buildings only
 if(b.id==='fire'){for(let i=0;i<8;i++){const a=i*TAU/8;oval(x+Math.cos(a)*36,y+Math.sin(a)*16+10,11,7,i%2?'#8294a1':'#b4bec5')}line(x-27,y+5,x+27,y+16,'#83593b',11);line(x+27,y+7,x-24,y+17,'#a36a3e',11);const f=Math.sin(clock*6)*4;tri(x,y-74+f,x-21,y-1,x+20,y-1,'#ff9237');tri(x+4,y-58+f,x-11,y-7,x+16,y-7,'#ffdd6a');tri(x,y-33+f,x-5,y-7,x+8,y-7,'#fff8ad');const glow=ctx.createRadialGradient(x,y-15,4,x,y-15,112);glow.addColorStop(0,'#ffae4266');glow.addColorStop(1,'#ff9a1900');ctx.fillStyle=glow;ctx.fillRect(x-112,y-127,224,224)}
 if(b.id==='mill'){rect(x-49,y-6,98,65,8,'#8d624c');rect(x-45,y-2,90,47,5,'#c18d60');for(let i=0;i<5;i++)line(x-38,y+4+i*9,x+40,y+4+i*9,'#916548',3);tri(x-64,y-12,x,y-81,x+64,y-12,'#387b9b');tri(x-64,y-12,x,y-81,x+3,y-12,'#66b7cc');line(x-60,y-14,x,y-75,'#f5ffff',8);rect(x+18,y+17,27,38,3,'#5c675f');oval(x+40,y+28,19,15,'#8d6545');oval(x+43,y+23,12,8,'#d09b6c');for(let i=0;i<3;i++)line(x-46+i*25,y+53,x-34+i*25,y+53,'#d0e4e9',3)}
 if(b.id==='cabin'){rect(x-62,y-33,124,103,9,'#9b6c51');rect(x-58,y-30,115,94,5,'#bc885e');for(let i=0;i<6;i++)line(x-53,y-19+i*15,x+53,y-19+i*15,'#80573d',3);tri(x-79,y-24,x,y-111,x+79,y-24,'#4c8baf');tri(x-79,y-24,x,y-111,x+6,y-24,'#78bed1');line(x-76,y-26,x,y-108,'#e9fbff',9);line(x,y-108,x+76,y-26,'#fff',8);rect(x-14,y+12,28,56,4,'#6e523d');rect(x-53,y-10,24,24,4,'#cbeeff');rect(x+29,y-10,24,24,4,'#cbeeff');line(x-41,y-7,x-41,y+11,'#5a8ea5',3);line(x+41,y-7,x+41,y+11,'#5a8ea5',3);rect(x+30,y-90,20,31,3,'#895b4b')}
@@ -1970,7 +1934,7 @@ function renderIsoWorld(){
  for(const r of [...rocks,...wildRocks])put(r.x,r.y,()=>rock(r));
  for(const b of [...bushes,...wildBushes])put(b.x,b.y,()=>bush(b));
  for(const f of forts)put(f.x,f.y,()=>drawFort(f),undefined,-150);
- for(const b of buildings){if(!state.built[b.id])put(b.x,b.y,()=>drawBuilding(b),undefined,-180);else put(b.x,b.y,()=>drawBuilding(b),undefined,10)}
+ for(const b of buildings)if(state.built[b.id])put(b.x,b.y,()=>drawBuilding(b),undefined,10)
  for(const p of state.groundPiles)put(p.x,p.y,()=>drawGroundPile(p));
  for(const d of drops)put(d.x,d.y,()=>drawDrop(d));
  for(const a of wildlife)put(a.x,a.y,()=>drawAnimal(a));
@@ -2007,7 +1971,7 @@ for(const r of rocks)if(r.x>minX&&r.x<maxX&&r.y>minY&&r.y<maxY)items.push({y:r.y
 for(const b of bushes)if(b.x>minX&&b.x<maxX&&b.y>minY&&b.y<maxY)items.push({y:b.y,draw:()=>bush(b)});
 // Draw all construction footprints before characters, never on top of a player.
 for(const f of forts)if(f.x>minX&&f.x<maxX&&f.y>minY&&f.y<maxY)drawFort(f);
-for(const b of buildings)if(!state.built[b.id]&&b.x>minX&&b.x<maxX&&b.y>minY&&b.y<maxY)drawBuilding(b);
+// No empty construction pads in flat world.
 for(const p of state.groundPiles)if(p.x>minX&&p.x<maxX&&p.y>minY&&p.y<maxY)items.push({y:p.y,draw:()=>drawGroundPile(p)});
 for(const d of drops)if(d.x>minX&&d.x<maxX&&d.y>minY&&d.y<maxY)items.push({y:d.y,draw:()=>drawDrop(d)});
  for(const b of buildings)if(state.built[b.id]&&b.x>minX&&b.x<maxX&&b.y>minY&&b.y<maxY)items.push({y:b.y+15,draw:()=>drawBuilding(b)});
@@ -2047,36 +2011,33 @@ $('comboIndicator').hidden=combo.count<4||combo.time<=0;if(!$('comboIndicator').
 /* === Expansion: inventory, warehouse, map navigation, crafting === */
 function nearSite(id,distance=210){const b=buildings.find(x=>x.id===id);return !!b&&dist(state.x,state.y,b.x,b.y)<=distance}
 function goSite(id){const b=buildings.find(x=>x.id===id);if(!b)return;moveTarget={x:b.x,y:b.y+65};closeModal();toast(`ปักหมุด ${b.name} แล้ว`)}
-function storeTransfer(mode,k,quantity){if(!state.built.warehouse){toast('ต้องสร้างโกดังก่อน');return}
-if(!nearSite('warehouse')){toast('ต้องเดินเข้าใกล้โกดังเพื่อย้ายของ');return}
+function storeTransfer(mode,k,quantity){
 const source=mode==='in'?state.inv:state.storage,dest=mode==='in'?state.storage:state.inv;
 const left=mode==='in'?storageCap()-storageUsed():(CARRY_TYPES.includes(k)?Infinity:cap()-bagUsed());const amount=Math.max(0,Math.min(quantity==='all'?source[k]||0:quantity,source[k]||0,left));
 if(!amount){toast('ไม่มีไอเทม หรือพื้นที่เก็บเต็ม');return}
 if(mode==='out'&&CARRY_TYPES.includes(k))prepareCarry(k);
 source[k]-=amount;dest[k]+=amount;syncCarry();if(mode==='in')state.stats.deposited+=amount;
 floatText(state.x,state.y-80,(mode==='in'?'ฝาก ':'ถอน ')+amount+' '+resourceNames[k],'#e6ffff');pSnd('pickup');checkQuest();save();openModal('storage')}
-function warehouseUpgrade(){if(!state.built.warehouse)return;const lv=state.warehouseLevel;if(lv>=8)return;
+function warehouseUpgrade(){const lv=state.warehouseLevel;if(lv>=8)return;
 const cost={wood:lv*12,stone:lv*8,coin:lv*5};if(!canAfford(cost)){toast('ทรัพยากรไม่พออัปเกรดโกดัง');return}
 spend(cost);state.warehouseLevel++;pSnd('build');save();openModal('storage');toast('ขยายโกดังสำเร็จ!')}
 function makeItem(id){const recipe=craftRecipes.find(x=>x.id===id);if(!recipe||state.crafted[id])return;
-if(!state.built.workshop){toast('ต้องสร้างโรงคราฟต์ก่อน');return}if(!nearSite('workshop',230)){toast('เดินไปที่โรงคราฟต์ก่อน');return}
+// Crafting available everywhere.
 if(!canAfford(recipe.cost)){toast('วัตถุดิบสำหรับคราฟต์ยังไม่ครบ');return}spend(recipe.cost);
 state.crafted[id]=true;state.stats.crafted++;addXp(15);if(id==='lantern')reveal();pSnd('win');burst(state.x,state.y-45,'#f8d985',35);checkQuest();save();openModal('craft');toast('คราฟต์ '+recipe.name+' สำเร็จ!')}
 function lineItem(k,qty){return `<div class="itemCard">${svgIcon(k,27)}<div>${resourceNames[k]}<small>${fmt(qty)} ชิ้น</small></div></div>`}
 function fillInventory(body){body.innerHTML=`<div class="invSummary">${state.carryType?`${resourceNames[state.carryType]} ×${fmt(carryCount())}`:"ว่าง"} · 🎒 ${fmt(bagUsed())}/${fmt(cap())}<div class="invMeter"><div style="width:${Math.min(100,bagUsed()/cap()*100)}%"></div></div>🪙 ${fmt(state.inv.coin)}</div><div class="inventoryGrid">${STORE_ITEMS.map(k=>lineItem(k,state.inv[k])).join('')}</div><div class="inventoryGrid" style="margin-top:10px">${craftRecipes.map(r=>`<div class="itemCard">${svgIcon(r.icon,23)}<div>${r.name}<small>${state.crafted[r.id]?'✓':'ล็อก'}</small></div></div>`).join('')}</div>`;
 const goto=document.createElement('button');goto.className='primary';goto.style.marginTop='12px';goto.textContent='โกดัง';goto.onclick=()=>openModal('storage');body.appendChild(goto);const huntBtn=document.createElement('button');huntBtn.className='primary';huntBtn.style.marginTop='10px';huntBtn.textContent='ล่าสัตว์';huntBtn.onclick=()=>openWildMenu('hunt');body.appendChild(huntBtn)}
-function fillStorage(body){if(!state.built.warehouse){body.innerHTML='<div class="invSummary">ยังไม่มีโกดัง</div>';const btn=document.createElement('button');btn.className='primary';btn.textContent='ไปสร้าง';btn.onclick=()=>openModal('build');body.appendChild(btn);return}
-const closeEnough=nearSite('warehouse'),lv=state.warehouseLevel,upgradeCost={wood:lv*12,stone:lv*8,coin:lv*5};
+function fillStorage(body){ // Portable storage, independent of buildings
+const closeEnough=true,lv=state.warehouseLevel,upgradeCost={wood:lv*12,stone:lv*8,coin:lv*5};
 body.innerHTML=`<div class="invSummary">โกดัง Lv.${lv} · ${fmt(storageUsed())}/${fmt(storageCap())}<div class="invMeter"><div style="width:${Math.min(100,storageUsed()/storageCap()*100)}%"></div></div>${closeEnough?'พร้อมใช้งาน':'อยู่ไกล'}</div>`;
 if(!closeEnough){const go=document.createElement('button');go.className='primary';go.textContent='ปักหมุดนำทางไปโกดัง';go.onclick=()=>goSite('warehouse');body.appendChild(go)}
 for(const k of STORE_ITEMS){const box=document.createElement('div');box.className='entry';box.style.display='block';box.innerHTML=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">${svgIcon(k,25)}<div class="entryDetail"><div class="entryName">${resourceNames[k]}</div><div class="entrySub">กระเป๋า ${fmt(state.inv[k])} / โกดัง ${fmt(state.storage[k])}</div></div></div>`;
 const controls=document.createElement('div');controls.className='transferActions';for(const [op,label,n] of [['in','ฝาก 1',1],['in','ฝาก 10',10],['in','ฝากทั้งหมด','all'],['out','ถอน 10',10],['out','ถอนทั้งหมด','all']]){const btn=document.createElement('button');btn.textContent=label;btn.disabled=!closeEnough||(op==='in'?state.inv[k]:state.storage[k])<1||(op==='in'?storageUsed()>=storageCap():(CARRY_TYPES.includes(k)?false:bagUsed()>=cap()));btn.onclick=()=>storeTransfer(op,k,n);controls.appendChild(btn)}box.appendChild(controls);body.appendChild(box)}
 const btn=document.createElement('button');btn.className='primary';btn.style.marginTop='10px';btn.textContent=lv>=8?'โกดังระดับสูงสุด':`ขยายโกดัง +150 ช่อง · ${costText(upgradeCost)}`;btn.disabled=lv>=8||!canAfford(upgradeCost)||!closeEnough;btn.onclick=warehouseUpgrade;body.appendChild(btn);
 const prod=document.createElement('p');prod.className='mutedText';prod.style.marginTop='12px';prod.textContent='คนงานโรงเลื่อยและเหมืองหินส่งทรัพยากรเข้าโกดังโดยอัตโนมัติเมื่อยังมีพื้นที่ว่าง';body.appendChild(prod)}
-function fillCraft(body){const closeEnough=nearSite('workshop',230);
-body.innerHTML=`<div class="invSummary">คราฟต์ ${!state.built.workshop?'· ยังไม่มีโรงคราฟต์':!closeEnough?'· อยู่ไกล':'· พร้อม'}</div>`;
-if(!state.built.workshop||!closeEnough){const go=document.createElement('button');go.className='primary';go.textContent=!state.built.workshop?'ไปสร้าง':'ไปโรงคราฟต์';go.onclick=()=>!state.built.workshop?openModal('build'):goSite('workshop');body.appendChild(go)}
-for(const r of craftRecipes){const done=!!state.crafted[r.id],afford=canAfford(r.cost);const el=document.createElement('div');el.className='entry';el.innerHTML=`<div class="entryIcon">${svgIcon(r.icon,33)}</div><div class="entryDetail"><div class="entryName">${r.name}</div><div class="entrySub">${r.desc}</div><div class="cost">${done?'✓ มีแล้ว':costText(r.cost)}</div></div>`;const btn=document.createElement('button');btn.textContent=done?'✓':afford?'คราฟต์':'ขาด';btn.disabled=done||!afford||!state.built.workshop||!closeEnough;btn.onclick=()=>makeItem(r.id);el.appendChild(btn);body.appendChild(el)}}
+function fillCraft(body){const closeEnough=true;body.innerHTML='<div class="invSummary">คราฟต์แบบพกพา · พร้อมใช้งาน</div>';
+for(const r of craftRecipes){const done=!!state.crafted[r.id],afford=canAfford(r.cost);const el=document.createElement('div');el.className='entry';el.innerHTML=`<div class="entryIcon">${svgIcon(r.icon,33)}</div><div class="entryDetail"><div class="entryName">${r.name}</div><div class="entrySub">${r.desc}</div><div class="cost">${done?'✓ มีแล้ว':costText(r.cost)}</div></div>`;const btn=document.createElement('button');btn.textContent=done?'✓':afford?'คราฟต์':'ขาด';btn.disabled=done||!afford;btn.onclick=()=>makeItem(r.id);el.appendChild(btn);body.appendChild(el)}}
 const fullMap=$('fullMap'),fm=fullMap.getContext('2d');
 let mapView={cx:BASE_X,cy:BASE_Y,mult:1.4,base:1,pointers:new Map(),down:null,wasPinch:false};
 function setMapSize(){const r=fullMap.getBoundingClientRect();const dw=Math.max(100,Math.round(r.width)),dh=Math.max(100,Math.round(r.height));const pd=Math.min(devicePixelRatio||1,2);fullMap.width=Math.floor(dw*pd);fullMap.height=Math.floor(dh*pd);fm.setTransform(pd,0,0,pd,0,0);mapView.base=Math.min(dw/2200,dh/1750)*.93;return {w:dw,h:dh,pd}}
@@ -2095,7 +2056,7 @@ function renderFullMap(){if(!mapOpen)return;const r=fullMap.getBoundingClientRec
  for(let i=i0;i<=i1;i+=step)for(let j=j0;j<=j1;j+=step){const z=voxelSurface(i,j);fm.fillStyle=worldTileColor(i,j,z);fm.fillRect(VOXEL.x0+i*VOXEL.cell,VOXEL.y0+j*VOXEL.cell,VOXEL.cell*step+1,VOXEL.cell*step+1)}
  for(const o of [...trees,...wildTrees,...rocks,...wildRocks,...bushes,...wildBushes]){if(o.x<left||o.x>right||o.y<top||o.y>bottom||o.down>0)continue;fm.fillStyle=o.id?.includes('wild_')?'#5c91a1':'#477c91';fm.fillRect(o.x-12,o.y-12,24,24)}
  for(const f of forts){fm.fillStyle=fortPercent(f)===100?'#4ba98d':'#e4aa65';fm.fillRect(f.x-26,f.y-26,52,52)}
- for(const b of buildings){fm.fillStyle=state.built[b.id]?'#e6a75f':'#7e9cb4';fm.fillRect(b.x-20,b.y-20,40,40)}
+ for(const b of buildings)if(state.built[b.id]){fm.fillStyle='#e6a75f';fm.fillRect(b.x-20,b.y-20,40,40)}
  if(moveTarget){fm.strokeStyle='#319fc0';fm.lineWidth=7/sc;fm.beginPath();fm.moveTo(state.x,state.y);fm.lineTo(moveTarget.x,moveTarget.y);fm.stroke();fm.fillStyle='#e2a85f';fm.fillRect(moveTarget.x-12/sc,moveTarget.y-12/sc,24/sc,24/sc)}
  fm.fillStyle='#ffffff';fm.fillRect(state.x-12/sc,state.y-12/sc,24/sc,24/sc);fm.fillStyle='#227f9d';fm.fillRect(state.x-8/sc,state.y-8/sc,16/sc,16/sc);
  fm.restore();const visited=Object.keys(state.visitedChunks||{}).length;$('mapStats').textContent=`CHUNKS ${visited} · X ${Math.round(state.x/VOXEL.cell)} · Y ${Math.round(state.y/VOXEL.cell)}`;$('mapScale').textContent=Math.round(mapView.mult*100)+'%';if(moveTarget)$('mapTarget').textContent=`${Math.round(dist(moveTarget.x,moveTarget.y,state.x,state.y)/VOXEL.cell)} blocks`;
@@ -2114,20 +2075,8 @@ $('mapOverlay').addEventListener('keydown',e=>{if(e.key==='Escape'){closeFullMap
 }
 setupFullMap();
 
-function openModal(type){stopAutoWork();paused=false;modalOpen=true;$('modalBg').classList.add('show');const modal=$('modalBg').querySelector('.modal');modal.classList.toggle('pauseTheme',type==='pause');const body=$('modalBody');body.innerHTML='';$('modalTitle').textContent=({build:'สร้าง',upgrade:'อัป',inventory:'ของ',storage:'โกดัง',craft:'คราฟต์',pause:'GAME MENU',help:'ช่วย'})[type]||'เมนู';
-if(type==='build'){
-body.innerHTML='<div class="invSummary">🪵 🪨 🥩 → 🏠 · AUTO</div>';
- const fortHeader=document.createElement('div');fortHeader.className='fortSectionTitle';fortHeader.textContent='ป้อม · AUTO 0–100%';body.appendChild(fortHeader);
- const fortGrid=document.createElement('div');fortGrid.className='fortGrid';body.appendChild(fortGrid);
- for(const f of forts){
-  const d=fortData(f),pct=fortPercent(f),card=document.createElement('button');card.type='button';
-  card.className='fortCard'+(d.complete?' complete':'')+(state.selectedFort===f.id?' picked':'');
-  card.innerHTML=`<span class="fortCardIcon">${svgIcon(f.icon,32)}</span><strong>${f.name}</strong><span class="fortCardBar"><i style="width:${pct}%"></i></span><span class="fortCardCount">🪵 ${d.wood}/${f.need} · ${pct}%</span>`;
-  card.onclick=()=>selectFort(f.id);fortGrid.appendChild(card);
- }
- const oldHeader=document.createElement('div');oldHeader.className='fortSectionTitle';oldHeader.textContent='อาคารอื่น · AUTO';body.appendChild(oldHeader);
-for(const b of buildings){const done=!!state.built[b.id],afford=canAfford(b.cost),el=document.createElement('div');el.className='entry';el.innerHTML=`<div class="entryIcon">${iconForEmoji(b.icon)}</div><div class="entryDetail"><div class="entryName">${b.name}</div><div class="entrySub">${b.desc}</div><div class="cost" style="color:${done?'#328e6e':afford?'#2b8c7e':'#c27465'}">${done?'✓':costText(b.cost)} · ${buildingPercent(b)}%</div></div>`;const btn=document.createElement('button');btn.textContent=done?'✓':state.selectedBuild===b.id?'เลือกอยู่':'เลือก';btn.disabled=done;if(done)btn.className='done';btn.onclick=()=>buildingBuy(b.id);el.appendChild(btn);body.appendChild(el)}
-}else if(type==='upgrade'){
+function openModal(type){if(type==='build')return;stopAutoWork();paused=false;modalOpen=true;$('modalBg').classList.add('show');const modal=$('modalBg').querySelector('.modal');modal.classList.toggle('pauseTheme',type==='pause');const body=$('modalBody');body.innerHTML='';$('modalTitle').textContent=({build:'สร้าง',upgrade:'อัป',inventory:'ของ',storage:'โกดัง',craft:'คราฟต์',pause:'GAME MENU',help:'ช่วย'})[type]||'เมนู';
+if(type==='upgrade'){
 const p=document.createElement('p');p.className='mutedText';p.textContent=`Lv.${state.level} · XP ${state.xp}/${state.level*15+5} · Bag ${cap()}`;body.appendChild(p);
 for(const u of upgrades){const lv=state.up[u.id],max=lv>=u.max,cost=u.cost(lv),afford=canAfford(cost),el=document.createElement('div');el.className='entry';el.innerHTML=`<div class="entryIcon">${iconForEmoji(u.icon)}</div><div class="entryDetail"><div class="entryName">${u.name} <span style="color:#258db2">Lv.${lv}/${u.max}</span></div><div class="entrySub">${u.desc}</div><div class="cost">${max?'✓ อัปเกรดเต็มแล้ว':costText(cost)}</div></div>`;const btn=document.createElement('button');btn.textContent=max?'MAX':afford?'+':'ขาด';btn.disabled=max||!afford;if(max)btn.className='done';btn.onclick=()=>upgradeBuy(u.id);el.appendChild(btn);body.appendChild(el)}
 }else if(type==='inventory'){fillInventory(body)
@@ -2140,7 +2089,7 @@ const grid=document.createElement('div');grid.className='pauseMenuGrid';body.app
 const addPauseBtn=(label,icon,fn,kind='')=>{const b=document.createElement('button');b.className='pauseMenuBtn '+kind;b.innerHTML=`<span class="pmIcon">${icon}</span><span>${label}</span>`;b.onclick=fn;grid.appendChild(b);return b};
 addPauseBtn('Resume','▶',()=>closeModal(),'primary');
 addPauseBtn('Inventory','🎒',()=>openModal('inventory'));
-addPauseBtn('Build','🏠',()=>openModal('build'));
+addPauseBtn('Upgrades','⬆',()=>openModal('upgrade'));
 addPauseBtn('Map','🧭',()=>{closeModal();openFullMap()});
 const qualityLabel=({auto:'AUTO',low:'LOW',high:'HIGH'})[performanceMode];
 addPauseBtn('Quality · '+qualityLabel,'✦',()=>{performanceMode=performanceMode==='auto'?'low':performanceMode==='low'?'high':'auto';state.quality=performanceMode;resize();save();openModal('pause')});
@@ -2151,11 +2100,11 @@ addPauseBtn('Help','❔',()=>openModal('help'),'minor');
 addPauseBtn('New World','↻',()=>{if(confirm('เริ่มเกมใหม่และลบความคืบหน้าทั้งหมดใช่ไหม?')){reset();closeModal();toast('เริ่มการเดินทางครั้งใหม่!')}} ,'danger');
 attachSaveTools(body);
 }else if(type==='help'){
-body.innerHTML=`<div class="invSummary">🎒 1 ชนิด · 🌲 AUTO เก็บ · 🏠 AUTO วาง</div><div class="entry"><div class="entryIcon">${svgIcon('dpad',34)}</div><div class="entryDetail"><div class="entryName">เดิน</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('axe',34)}</div><div class="entryDetail"><div class="entryName">เดินใกล้ = AUTO</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('spear',34)}</div><div class="entryDetail"><div class="entryName">โจมตี</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('wind',34)}</div><div class="entryDetail"><div class="entryName">หลบ</div></div></div>`
+body.innerHTML=`<div class="invSummary">🎒 1 ชนิด · 🌲 AUTO เก็บ · สำรวจและล่าสัตว์</div><div class="entry"><div class="entryIcon">${svgIcon('dpad',34)}</div><div class="entryDetail"><div class="entryName">เดิน</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('axe',34)}</div><div class="entryDetail"><div class="entryName">เดินใกล้ = AUTO</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('spear',34)}</div><div class="entryDetail"><div class="entryName">โจมตี</div></div></div><div class="entry"><div class="entryIcon">${svgIcon('wind',34)}</div><div class="entryDetail"><div class="entryName">หลบ</div></div></div>`
 }
 }
 function closeModal(){modalOpen=false;$('modalBg').classList.remove('show');save();hudUpdate(true)}
-$('inventoryBtn').onclick=()=>openModal('inventory');$('storageBtn').onclick=()=>openModal('storage');$('craftBtn').onclick=()=>openModal('craft');$('modalClose').onclick=closeModal;$('modalBg').addEventListener('pointerdown',e=>{if(e.target===$('modalBg'))closeModal()});$('buildBtn').onclick=()=>openModal('build');$('upgradeBtn').onclick=()=>openModal('upgrade');$('pauseBtn').onclick=()=>showReferencePause();$('eatBtn').onclick=e=>{e.preventDefault();eatBerry()};$('soundBtn').onclick=()=>{control.sound=!control.sound;state.sound=control.sound;pSnd('win');toast(control.sound?'เปิดเสียงแล้ว':'ปิดเสียงแล้ว');save();hudUpdate(true)};
+$('inventoryBtn').onclick=()=>openModal('inventory');$('storageBtn').onclick=()=>openModal('storage');$('craftBtn').onclick=()=>openModal('craft');$('modalClose').onclick=closeModal;$('modalBg').addEventListener('pointerdown',e=>{if(e.target===$('modalBg'))closeModal()});$('upgradeBtn').onclick=()=>openModal('upgrade');$('pauseBtn').onclick=()=>showReferencePause();$('eatBtn').onclick=e=>{e.preventDefault();eatBerry()};$('soundBtn').onclick=()=>{control.sound=!control.sound;state.sound=control.sound;pSnd('win');toast(control.sound?'เปิดเสียงแล้ว':'ปิดเสียงแล้ว');save();hudUpdate(true)};
  const pad=$('joystick'),knob=$('knob');
  function setJoy(nx,ny){const len=Math.hypot(nx,ny);if(len>1){nx/=len;ny/=len}control.joyX=Math.abs(nx)<.08?0:nx;control.joyY=Math.abs(ny)<.08?0:ny;const travel=Math.min(pad.clientWidth,pad.clientHeight)*.22;knob.style.setProperty('transform',`translate(${control.joyX*travel}px,${control.joyY*travel}px)`,'important');pad.classList.toggle('active',Math.abs(control.joyX)>.01||Math.abs(control.joyY)>.01)}
  function updateJoyFromEvent(e){const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=(e.clientX-cx)/(r.width*.5),dy=(e.clientY-cy)/(r.height*.5);const cap=.74,mag=Math.hypot(dx,dy);if(mag>cap){dx=dx/mag*cap;dy=dy/mag*cap}setJoy(dx/cap,dy/cap)}
@@ -2167,18 +2116,40 @@ $('inventoryBtn').onclick=()=>openModal('inventory');$('storageBtn').onclick=()=
  setJoy(0,0);
 const action=$('actionBtn');action.addEventListener('pointerdown',e=>{if(paused||modalOpen)return;control.held=true;actionHoldClock=0;control.pid=e.pointerId;action.classList.add('active');action.setPointerCapture(e.pointerId);performAction();e.preventDefault()});function actionStop(e){if(e.pointerId===control.pid){control.held=false;control.pid=null;action.classList.remove('active')}}action.addEventListener('pointerup',actionStop);action.addEventListener('pointercancel',actionStop);action.addEventListener('lostpointercapture',actionStop);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+// Full-screen invisible mobile controls: drag to move, tap action, double-tap attack, long press pause.
+let cleanTouch=null,lastCleanTap=0;
 canvas.addEventListener('pointerdown',e=>{
  if(paused||modalOpen||e.button===2)return;
- stopAutoWork();
- const wp=gamePointFromScreen(e.clientX,e.clientY),x=wp.x,y=wp.y;
- const tappedFort=forts.find(f=>Math.abs(x-f.x)<95&&Math.abs(y-f.y)<75);
- if(tappedFort){state.selectedFort=tappedFort.id;selectedBuild=null;state.selectedBuild=null;manualFocus=null;moveTarget={x:tappedFort.x,y:tappedFort.y+10};save();hudUpdate(true);return}
- const b=buildings.find(b=>dist(x,y,b.x,b.y)<74);
- if(b){manualFocus=b.id;if(!state.built[b.id]){selectedBuild=b.id;state.selectedBuild=b.id}moveTarget={x:b.x,y:b.y+35};save();hudUpdate(true);return}
- moveTarget={x:safeWorld(x),y:safeWorld(y)};
+ if(e.pointerType==='touch'||e.pointerType==='pen'){
+  if(cleanTouch)return;
+  cleanTouch={id:e.pointerId,x:e.clientX,y:e.clientY,started:performance.now(),drag:false};
+  canvas.setPointerCapture(e.pointerId);e.preventDefault();return;
+ }
+ const wp=gamePointFromScreen(e.clientX,e.clientY);
+ moveTarget={x:safeWorld(wp.x),y:safeWorld(wp.y)};
  burst(moveTarget.x,moveTarget.y,'#faffff',5,3);
 });
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d','b','u','h','escape','e','m','i','c','f','q','j','k','t'].includes(k))e.preventDefault();if(k==='escape'){if($('createWorldScreen').classList.contains('show'))closeCreateWorld();else if($('settingsScreen').classList.contains('show'))closeReferenceSettings();else if($('worldScreen').classList.contains('show'))closeWorlds();else if($('referencePause').classList.contains('show'))resumeFromPause();else if(mapOpen)closeFullMap();else if(modalOpen)closeModal();else if(!paused)showReferencePause();return}if(modalOpen)return;control.keys.add(k);if(!e.repeat){if(k===' '){actionHoldClock=0;performAction();}if(k==='b')openModal('build');if(k==='u')openModal('upgrade');if(k==='h')openModal('help');if(k==='e')eatBerry();if(k==='m')openFullMap();if(k==='i')openModal('inventory');if(k==='c')openModal('craft');if(k==='f')attackAnimal();if(k==='q')dodge();if(k==='j')openWildMenu('hunt');if(k==='k')openWildMenu('cook');if(k==='t')openWildMenu('trade')}});addEventListener('keyup',e=>control.keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{voxelMineHold=null;voxelPointerId=null;stopAutoWork();control.keys.clear();control.held=false;control.joyPid=null;setJoy(0,0);if(state)save()});addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+canvas.addEventListener('pointermove',e=>{
+ if(!cleanTouch||e.pointerId!==cleanTouch.id)return;
+ const dx=e.clientX-cleanTouch.x,dy=e.clientY-cleanTouch.y;
+ if(Math.hypot(dx,dy)>12)cleanTouch.drag=true;
+ if(cleanTouch.drag){control.joyX=clamp(dx/64,-1,1);control.joyY=clamp(dy/64,-1,1)}
+ e.preventDefault();
+});
+function endCleanTouch(e,cancel=false){
+ if(!cleanTouch||e.pointerId!==cleanTouch.id)return;
+ const g=cleanTouch;cleanTouch=null;control.joyX=0;control.joyY=0;
+ if(!cancel&&!g.drag&&!paused&&!modalOpen){
+  const time=performance.now();
+  if(time-g.started>750)showReferencePause();
+  else if(time-lastCleanTap<310){lastCleanTap=0;attackAnimal()}
+  else{lastCleanTap=time;performAction()}
+ }
+ e.preventDefault();
+}
+canvas.addEventListener('pointerup',e=>endCleanTouch(e));
+canvas.addEventListener('pointercancel',e=>endCleanTouch(e,true));
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d','b','u','h','escape','e','m','i','c','f','q','j','k','t'].includes(k))e.preventDefault();if(k==='escape'){if($('createWorldScreen').classList.contains('show'))closeCreateWorld();else if($('settingsScreen').classList.contains('show'))closeReferenceSettings();else if($('worldScreen').classList.contains('show'))closeWorlds();else if($('referencePause').classList.contains('show'))resumeFromPause();else if(mapOpen)closeFullMap();else if(modalOpen)closeModal();else if(!paused)showReferencePause();return}if(modalOpen)return;control.keys.add(k);if(!e.repeat){if(k===' '){actionHoldClock=0;performAction();}if(k==='u')openModal('upgrade');if(k==='h')openModal('help');if(k==='e')eatBerry();if(k==='m')openFullMap();if(k==='i')openModal('inventory');if(k==='c')openModal('craft');if(k==='f')attackAnimal();if(k==='q')dodge();if(k==='j')openWildMenu('hunt');if(k==='k')openWildMenu('cook');if(k==='t')openWildMenu('trade')}});addEventListener('keyup',e=>control.keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{voxelMineHold=null;voxelPointerId=null;stopAutoWork();control.keys.clear();control.held=false;control.joyPid=null;setJoy(0,0);if(state)save()});addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 /* SNOWWOOD WILDLANDS v3: self-contained expansion; retains legacy SAVEKEY */
 const beastSpecs={
  hare:{label:'กระต่ายหิมะ',maxhp:22,speed:76,aggro:0,damage:0,range:0,loot:{meat:2,hide:1},respawn:42},
@@ -2348,15 +2319,15 @@ function updateSurvivalHUD(){if(!state)return;for(const [key,n] of [['HP','hp'],
 function ensureDayQuest(){const day=state.day||1;if(state.dailyDay!==day){state.dailyDay=day;const kinds=['hare','fox','deer','wolf'];state.dailySpecies=kinds[(day-1)%4];state.dailyBase=state.hunting[state.dailySpecies]||0;state.dailyClaim=0}}
 function buyTrap(){if(state.traps.length>=3){toast('วางกับดักได้สูงสุด 3 อัน');return}const x=state.x+70*state.face,y=state.y+50;if(!spend({wood:7,bone:2})){toast('ต้องใช้ไม้ 7 และกระดูก 2');return}state.traps.push({x,y,setAt:state.gameTime,ready:false});toast('วางกับดักแล้ว กลับมาเก็บหลัง 22 วินาที');save();openWildMenu('hunt')}
 function claimDaily(){ensureDayQuest();const count=(state.hunting[state.dailySpecies]||0)-state.dailyBase;if(state.dailyClaim===state.day||count<2){toast('ต้องล่าสัตว์เป้าหมาย 2 ตัวก่อน');return}state.dailyClaim=state.day;state.inv.coin+=22;addXp(15);toast('รับรางวัลรายวัน +22 เหรียญ +15 XP');save();openWildMenu('hunt')}
-function unlockPet(){if(!state.built.kennel){toast('สร้างคอกสุนัขก่อน');return}if(state.pet)return;if(!spend({meat:3,fang:2,coin:15})){toast('วัตถุดิบไม่พอสำหรับคู่หู');return}state.pet=true;petPos={x:state.x-50,y:state.y+40};toast('ปลดล็อกสุนัขคู่หู! ช่วยโจมตีศัตรู');save();openWildMenu('hunt')}
+function unlockPet(){if(state.pet)return;if(!spend({meat:3,fang:2,coin:15})){toast('วัตถุดิบไม่พอสำหรับคู่หู');return}state.pet=true;petPos={x:state.x-50,y:state.y+40};toast('ปลดล็อกสุนัขคู่หู! ช่วยโจมตีศัตรู');save();openWildMenu('hunt')}
 function useFood(){if(state.inv.cooked>0){state.inv.cooked--;state.hunger=clamp(state.hunger+38,0,100);state.hp=clamp(state.hp+18,0,state.crafted.warmcoat?120:100);state.warmth=clamp(state.warmth+12,0,100);toast('กินอาหารปรุงสุก: อิ่ม +38 HP +18')}else if(state.inv.berry>0){state.inv.berry--;state.hunger=clamp(state.hunger+14,0,100);state.warmth=clamp(state.warmth+21,0,100);toast('กินเบอร์รี: อิ่ม +14 อุ่น +21')}else toast('ไม่มีอาหาร — ล่าสัตว์และทำอาหารก่อน');syncCarry();save();hudUpdate(true)}
-function craftWild(id){const item=wildProducts.find(x=>x.id===id);if(!item)return;if(item.requires&&!state.built[item.requires]){toast('สร้าง'+buildings.find(b=>b.id===item.requires).name+'ก่อน');return}if(!canAfford(item.cost)){toast('ทรัพยากรไม่ครบ');return}if(id==='trap'){buyTrap();return}
+function craftWild(id){const item=wildProducts.find(x=>x.id===id);if(!item)return;if(!canAfford(item.cost)){toast('ทรัพยากรไม่ครบ');return}if(id==='trap'){buyTrap();return}
  if(!spend(item.cost))return;
  if(id==='bandage'){state.hp=clamp(state.hp+28,0,state.crafted.warmcoat?120:100);toast('ใช้ผ้าพันแผล HP +28')}
  else{const k=id==='roast'||id==='stew'?'cooked':id==='arrows'?'arrow':'leather';const count=Math.min(item.qty,capacityLeft(k));if(!count){for(const [kk,v] of Object.entries(item.cost))state.inv[kk]+=v;toast('กระเป๋าเต็ม');return}gain(k,count,state.x,state.y,true);toast('ผลิต '+item.label+' สำเร็จ +'+count)}
  if(id==='roast'||id==='stew')state.stats.foodCooked+=(item.qty||1);pSnd('build');save();hudUpdate(true);openWildMenu('cook')
 }
-function trade(k,mode){if(!state.built.trader){toast('สร้างตลาดนักสำรวจก่อน');return}const prices={meat:3,hide:6,bone:4,antler:14,fang:17,fur:26,leather:10,berry:2,ore:5,arrow:3,cooked:10};const price=prices[k]||2;
+function trade(k,mode){const prices={meat:3,hide:6,bone:4,antler:14,fang:17,fur:26,leather:10,berry:2,ore:5,arrow:3,cooked:10};const price=prices[k]||2;
  if(mode==='sell'){const n=Math.min(state.inv[k]||0,5);if(n<1)return;state.inv[k]-=n;state.inv.coin+=n*price;toast('ขาย'+resourceNames[k]+' '+n+' ชิ้น +'+n*price+' เหรียญ')}
  else{const quantity=k==='arrow'?5:1,paid=(k==='arrow'?4:price+3);if(state.inv.coin<paid||capacityLeft(k)<quantity){toast('เหรียญไม่พอหรือกระเป๋าเต็ม');return}state.inv.coin-=paid;gain(k,quantity,state.x,state.y,true);toast('ซื้อ'+resourceNames[k]+' +'+quantity)}
  save();hudUpdate(true);openWildMenu('trade')
@@ -2370,23 +2341,23 @@ function openWildMenu(tab='hunt'){if(!['hunt','cook','trade'].includes(tab))tab=
   const weapons=[['axe','ขวาน',true],['spear','หอก',!!state.crafted.spear],['bow','ธนู',!!state.crafted.bow]];
   for(const [id,name,unlocked] of weapons)body.appendChild(v3Entry(id==='bow'?'arrow':id==='spear'?'spear':'axe',name,id==='bow'?'ระยะ 330 · ใช้ลูกธนู':id==='spear'?'ระยะ 126 · ดาเมจ 27':'ระยะ 88 · อัปเกรดขวานเพิ่มดาเมจ',id==='bow'?'ลูกธนู '+state.inv.arrow:unlocked?'ปลดล็อกแล้ว':'คราฟต์ที่โรงคราฟต์',state.weapon===id?'ใช้อยู่':unlocked?'ติดตั้ง':'ล็อก',state.weapon===id||!unlocked,()=>selectWeapon(id)));
   const t=state.traps.length;body.appendChild(v3Entry('trap','กับดักสัตว์',`วางไว้ 22 วินาทีแล้วกลับมาเก็บ • กำลังใช้ ${t}/3`,'ไม้ 7 • กระดูก 2','วางกับดัก',t>=3||!canAfford({wood:7,bone:2}),buyTrap));
-  body.appendChild(v3Entry('pet','สุนัขคู่หู','ติดตาม ช่วยต่อสู้ และสร้างความปลอดภัยเมื่อเข้าป่า','เนื้อ 3 • เขี้ยว 2 • เหรียญ 15','รับคู่หู',state.pet||!state.built.kennel||!canAfford({meat:3,fang:2,coin:15}),unlockPet));
+  body.appendChild(v3Entry('pet','สุนัขคู่หู','ติดตาม ช่วยต่อสู้ และสร้างความปลอดภัยเมื่อเข้าป่า','เนื้อ 3 • เขี้ยว 2 • เหรียญ 15','รับคู่หู',state.pet||!canAfford({meat:3,fang:2,coin:15}),unlockPet));
   ensureDayQuest();const count=Math.max(0,(state.hunting[state.dailySpecies]||0)-state.dailyBase);body.appendChild(v3Entry('star','ภารกิจล่ารายวัน',`ล่า ${beastSpecs[state.dailySpecies].label} ${Math.min(2,count)}/2`,'รางวัล 22 เหรียญ + 15 XP',state.dailyClaim===state.day?'รับแล้ว':'รับรางวัล',count<2||state.dailyClaim===state.day,claimDaily));
   body.appendChild(v3Entry('heart','กินอาหาร',`อาหารปรุงสุก ${state.inv.cooked} • เบอร์รี ${state.inv.berry}`,'คืนความหิวและ HP','กิน',state.inv.cooked+state.inv.berry<=0,()=>{useFood();openWildMenu('hunt')}));
   const go=document.createElement('button');go.className='primary';go.textContent='ไปคราฟต์';go.onclick=()=>openModal('craft');body.appendChild(go);
  }
  else if(tab==='cook'){
-  const notice=document.createElement('p');notice.className='mutedText';notice.textContent='ปรุงเนื้อให้เป็นอาหาร ฟอกหนังสัตว์เพื่อสร้างอุปกรณ์ และทำลูกธนู ต้องมีอาคารที่ระบุจึงผลิตได้';body.appendChild(notice);
-  for(const item of wildProducts){const type=item.id==='arrows'?'arrow':item.id==='leather'?'hide':item.id==='trap'?'trap':item.id==='bandage'?'heart':'pot';const req=item.requires?buildings.find(x=>x.id===item.requires):null;body.appendChild(v3Entry(type,item.label,item.effect+(req?' • ต้องมี '+req.name:''),costText(item.cost),item.id==='trap'?'วาง':'ผลิต',!!(req&&!state.built[req.id])||!canAfford(item.cost),()=>craftWild(item.id)))}
+  const notice=document.createElement('p');notice.className='mutedText';notice.textContent='ปรุงเนื้อให้เป็นอาหาร ฟอกหนังสัตว์เพื่อสร้างอุปกรณ์ และทำลูกธนู ผลิตได้โดยไม่ต้องสร้างอาคาร';body.appendChild(notice);
+  for(const item of wildProducts){const type=item.id==='arrows'?'arrow':item.id==='leather'?'hide':item.id==='trap'?'trap':item.id==='bandage'?'heart':'pot';const req=item.requires?buildings.find(x=>x.id===item.requires):null;body.appendChild(v3Entry(type,item.label,item.effect+(req?' • ต้องมี '+req.name:''),costText(item.cost),item.id==='trap'?'วาง':'ผลิต',!canAfford(item.cost),()=>craftWild(item.id)))}
   body.appendChild(v3Entry('heart','กินอาหารปรุงสุก',`มี ${state.inv.cooked} ชุด · ฟื้นความหิว 38 และ HP 18`,'ใช้ 1 ชุด','กิน',state.inv.cooked<=0,()=>{useFood();openWildMenu('cook')}));
  }
  else if(tab==='trade'){
-  const notice=document.createElement('p');notice.className='mutedText';notice.textContent='ตลาดต้องสร้างก่อนจึงจะซื้อขายได้ • ขายครั้งละสูงสุด 5 ชิ้น • รายได้เข้ากระเป๋าเหรียญ';body.appendChild(notice);
-  body.appendChild(v3Entry('trade','ตลาดนักสำรวจ',state.built.trader?'เปิดร้านแล้ว':'ยังไม่ได้สร้างตลาด','ไม้ 18 • หิน 8 • เหรียญ 8',state.built.trader?'พร้อมขาย':'ไปสร้าง',!!state.built.trader,()=>openModal('build')));
+  const notice=document.createElement('p');notice.className='mutedText';notice.textContent='ซื้อขายได้โดยไม่ต้องสร้างตลาด • ขายครั้งละสูงสุด 5 ชิ้น • รายได้เข้ากระเป๋าเหรียญ';body.appendChild(notice);
+  body.appendChild(v3Entry('trade','ตลาดนักสำรวจ','ตลาดพกพา พร้อมซื้อขาย','','พร้อมใช้งาน',true,()=>{}));
   for(const [id,price] of [['meat',3],['hide',6],['bone',4],['antler',14],['fang',17],['fur',26],['leather',10],['ore',5],['cooked',10]]){
-   body.appendChild(v3Entry(svgShapes[id]?id:'trade',resourceNames[id],`มี ${state.inv[id]||0} ชิ้น`,'ราคาขาย '+price+' เหรียญ/ชิ้น','ขาย ×5',!state.built.trader||(state.inv[id]||0)<1,()=>trade(id,'sell')))
+   body.appendChild(v3Entry(svgShapes[id]?id:'trade',resourceNames[id],`มี ${state.inv[id]||0} ชิ้น`,'ราคาขาย '+price+' เหรียญ/ชิ้น','ขาย ×5',(state.inv[id]||0)<1,()=>trade(id,'sell')))
   }
-  body.appendChild(v3Entry('arrow','ซื้อชุดลูกธนู',`มี ${state.inv.arrow} ดอก`,'5 ดอก = 4 เหรียญ','ซื้อ',!state.built.trader||state.inv.coin<4||capacityLeft('arrow')<5,()=>trade('arrow','buy')));
+  body.appendChild(v3Entry('arrow','ซื้อชุดลูกธนู',`มี ${state.inv.arrow} ดอก`,'5 ดอก = 4 เหรียญ','ซื้อ',state.inv.coin<4||capacityLeft('arrow')<5,()=>trade('arrow','buy')));
  }
 }
 $('huntBtn').onclick=()=>openWildMenu('hunt');$('foodBtn').onclick=()=>openWildMenu('cook');$('tradeBtn').onclick=()=>openWildMenu('trade');
@@ -2603,7 +2574,7 @@ document.querySelectorAll('[data-ico]').forEach(el=>{const name=el.getAttribute(
     {id:'gather',label:'เก็บทรัพยากร',icon:'axe',run:()=>performAction()},
     {id:'attack',label:'โจมตีเอง',icon:'spear',run:()=>attackAnimal()},
     {id:'bag',label:'กระเป๋า',icon:'bag',run:()=>openModal('inventory')},
-    {id:'build',label:'สร้างอาคาร',icon:'home',run:()=>openModal('build')},
+    {id:'dodge',label:'หลบ',icon:'wind',run:()=>dodge()},
     {id:'craft',label:'คราฟต์',icon:'craft',run:()=>openModal('craft')},
     {id:'berry',label:'กินเบอร์รี',icon:'berry',run:()=>eatBerry()},
     {id:'map',label:'แผนที่',icon:'compass',run:()=>openFullMap()},
@@ -2728,7 +2699,7 @@ document.querySelectorAll('[data-ico]').forEach(el=>{const name=el.getAttribute(
   buildTopVitals(); buildTopRight(); patchAction();
 })();
 
-initializeWorldRegistry();state=loadState();ensureWildState();syncCarry();proximitySeen.clear();proximityClock=0;state.voxelZ=voxelTerrainHeight(state.x,state.y);reveal();performanceMode=state.quality||'auto';control.auto=false;state.auto=false;selectedBuild=state.selectedBuild||null;control.sound=!!state.sound;worldInit();petPos={x:state.x-45,y:state.y+40};resize();setupVoxelControls();hudUpdate(true);save();requestAnimationFrame(frame);
+initializeWorldRegistry();state=loadState();ensureWildState();syncCarry();proximitySeen.clear();proximityClock=0;state.voxelZ=voxelTerrainHeight(state.x,state.y);reveal();performanceMode=state.quality||'auto';control.auto=false;state.auto=false;selectedBuild=null;state.selectedBuild=null;state.selectedFort=null;control.sound=!!state.sound;worldInit();petPos={x:state.x-45,y:state.y+40};resize();setupVoxelControls();hudUpdate(true);save();requestAnimationFrame(frame);
 initReferenceMenus();
 
 })();
