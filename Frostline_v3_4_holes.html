@@ -1895,9 +1895,9 @@ function drawGround(){const st=game?.stage||0,jungle=st===4,storm=st===5,crystal
  // Vast snow fields with gentle contour bands.
  let minX=cx-vw/2-120,maxX=cx+vw/2+120,minY=cy-vh/2-120,maxY=cy+vh/2+120;
  const groundStep=180*Math.max(1,Math.ceil(.6/scale));let gx=Math.floor(minX/groundStep)*groundStep,gy=Math.floor(minY/groundStep)*groundStep;
- for(let x=gx;x<maxX;x+=groundStep)for(let y=gy;y<maxY;y+=groundStep){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,jungle?(k>.06?'#c6e8a680':'#6bac6d55'):storm?(k>.06?'#ecf8ff8e':'#5689b576'):crystal?(k>.06?'#e1d9ffa0':'#7365b880'):hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
+ for(let x=gx;!lowGraphics()&&x<maxX;x+=groundStep)for(let y=gy;y<maxY;y+=groundStep){let k=Math.sin(x*.018+y*.012)*Math.cos(y*.015-x*.019);ellipse(x+32,y+52,72+Math.abs(k)*22,27,jungle?(k>.06?'#c6e8a680':'#6bac6d55'):storm?(k>.06?'#ecf8ff8e':'#5689b576'):crystal?(k>.06?'#e1d9ffa0':'#7365b880'):hot?(k>.06?'#ff9a4a80':'#c8442060'):(k>.06?'#f2fdff85':'#a8dbe73d'));if((x+y)%360===0){ellipse(x-30,y-24,20,5,'#a3ccdf20')}}
  if(hot&&!lowGraphics()){for(let x=gx;x<maxX;x+=groundStep*2)for(let y=gy;y<maxY;y+=groundStep*2){const j=Math.sin(x*.011+y*.017);ctx.strokeStyle=`rgba(255,150,70,${(.3+.25*Math.sin(now*2+x*.01+y*.01)).toFixed(3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+j*40);ctx.lineTo(x+120,y+60+j*30);ctx.lineTo(x+200,y+20-j*30);ctx.stroke()}}
- if(hot){
+ if(hot&&!lowGraphics()){
   // lava streams slowly crossing the ground
   for(let i=0;i<6;i++){const bx=cx-vw*.5+((i*211+now*18)%(vw*1.1)),by=cy-vh*.5+((i*137)%vh);
    ctx.save();ctx.lineCap='round';ctx.globalAlpha=.55*mix;ctx.strokeStyle='#ff7a22';ctx.lineWidth=12;ctx.beginPath();
@@ -1908,8 +1908,7 @@ function drawGround(){const st=game?.stage||0,jungle=st===4,storm=st===5,crystal
  }
  // Organic small dotted snow texture: deterministic cells.
  const detailStep=77*Math.max(1,Math.ceil(.6/scale));for(let x=Math.floor(minX/detailStep)*detailStep;!lowGraphics()&&x<maxX;x+=detailStep)for(let y=Math.floor(minY/detailStep)*detailStep;y<maxY;y+=detailStep){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
- drawStageTerrainFx(minX,maxX,minY,maxY);
- drawWaterHabitats(minX,maxX,minY,maxY);
+ if(!lowGraphics()){drawStageTerrainFx(minX,maxX,minY,maxY);drawWaterHabitats(minX,maxX,minY,maxY)}
  // Ring around center clears: environmental guide, no border.
  for(let cxCell=Math.floor((minX-85)/DECOR_CELL);cxCell<=Math.floor((maxX+85)/DECOR_CELL);cxCell++)for(let cyCell=Math.floor((minY-90)/DECOR_CELL);cyCell<=Math.floor((maxY+90)/DECOR_CELL);cyCell++){const bucket=decorGrid.get(cxCell+','+cyCell);if(!bucket)continue;for(const d of bucket){if(d.x<minX-85||d.x>maxX+85||d.y<minY-90||d.y>maxY+90)continue;drawDecor(d)}}
  drawWorldBoundary(minX,maxX,minY,maxY);
@@ -2305,7 +2304,7 @@ function drawDrop(d){let bob=Math.sin(d.t*4.7+d.glow)*3,r=d.type;ctx.save();ctx.
 function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSunlight();if(!game)return;ctx.save();applyCameraPitch();worldTiltActive=true;ctx.translate(w/2+(Math.random()-.5)*(shakeOn?game.shake:0),h/2+(Math.random()-.5)*(shakeOn?game.shake:0));ctx.scale(screenScale,screenScale);ctx.translate(-cam.x,-cam.y);
  drawVisibleCuteObstacles();
  drawHoles();drawMeteorGround();
- drawWildlifeScene();drawFriendlyScene();
+ if(!lowGraphics()){drawWildlifeScene();drawFriendlyScene()}
  // Drops under combatants.
  let vw=w/screenScale,vh=h/(screenScale*cameraPitchScale());for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
@@ -2323,7 +2322,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;worldTiltActive=false;ctx.restore();
  drawDayNight();
- drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial();
+ if(!lowGraphics()){drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial()}
  if(game&&game.themeFlash>0){ctx.save();ctx.fillStyle=`rgba(255,110,40,${(game.themeFlash*.6).toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
  drawEnemyArrows();
  // snowfall foreground (screen-space particles).
