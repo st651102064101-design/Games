@@ -248,7 +248,7 @@ function kill(m){playSound('hit',m.x,m.y);const g=game;g.kills++;g.stageKills=(g
  if(Math.random()<(m.elite?.62:.30))spawnDrop(m.x,m.y,'bone',roll());
  if(m.elite||Math.random()<.028)spawnDrop(m.x,m.y,'claw',roll(Math.ceil(cap/4)));
  if(Math.random()<(m.elite?.25:.09))spawnDrop(m.x,m.y,'frost',roll(Math.ceil(cap/4)));
- if(m.boss){g.bossDefeated=true;const gun=choose(ARSENAL.filter(t=>t.gun));spawnDrop(m.x,m.y,'weapon',1,{...randWeapon(true,gun.id),fromBoss:true});for(let i=0;i<3;i++)spawnDrop(m.x+rand(-36,36),m.y+rand(-32,32),choose(['xp','coin','hide','bone']),i===0?24:2)}
+ if(m.boss){g.bossDefeated=true;const gun=choose(ARSENAL.filter(t=>t.gun));spawnDrop(m.x,m.y,'weapon',1,{...randWeapon(true,gun.id),fromBoss:true});for(let i=0;i<3;i++)spawnDrop(m.x+rand(-36,36),m.y+rand(-32,32),choose(['xp','plus','hide','bone']),i===0?24:2)}
  if(g.perks.vamp)g.p.hp=Math.min(g.p.maxHp,g.p.hp+g.perks.vamp*5);
 }
 const PERKS=[
