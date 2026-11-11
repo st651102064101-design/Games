@@ -139,7 +139,7 @@ function playFootstep(speed){if(!audioCtx||audioCtx.state!=='running')return;if(
 function audioTick(dt){if(!audioCtx)return;if(!game||mode!=='playing'){stopFootstep();return}footstepTimer-=dt;heartbeatTimer-=dt;const moving=Math.hypot(game.p.mx,game.p.my);if(moving>10){if(footstepTimer<=0){playFootstep(moving);footstepTimer=moving>245?.27:moving>100?.35:.48}}else{stopFootstep();footstepTimer=0}musicTimer-=dt;if(musicTimer<=0){playSound('music');musicTimer=2.8}if(game.p.hp/game.p.maxHp<.25&&heartbeatTimer<=0){playSound('heartbeat');heartbeatTimer=.8}}
 
 let game=null,mode='menu',input={up:false,down:false,left:false,right:false,pointerId:null,ox:0,oy:0,x:0,y:0,dx:0,dy:0};
-const world=7200,half=world/2,decor=[],particle=[],petals=[];
+const world=7200*5,half=world/2,decor=[],particle=[],petals=[];
 const BEST_KEY='frostline_snow_survival_best_v1',LEGACY_SAVE_KEY='frostline_survival_v3_2_save',SAVE_KEY='frostline_survival_v3_3_save'; // migrate old saves without overwriting v3.2
 const ITEM_META={meat:{icon:'🥩',name:'เนื้อหมี',sub:'ใช้ฟื้นเลือดหรือปรุงอาหาร'},hide:{icon:'🟫',name:'หนังหมี',sub:'คราฟต์เกราะและกระเป๋า'},bone:{icon:'🦴',name:'กระดูกหมี',sub:'ตีดาบและอัปเกรด'},claw:{icon:'🐾',name:'กรงเล็บ',sub:'สร้างดาบโลหิต'},frost:{icon:'💎',name:'ผลึกน้ำแข็ง',sub:'สร้างดาบแช่แข็ง'}};
 const MAT_KEYS=Object.keys(ITEM_META);
@@ -181,7 +181,7 @@ function saveBest(){if(!game)return;let b=readBest();if(game.elapsed>(b.time||0)
 function resize(){w=window.innerWidth;h=window.innerHeight;dpr=Math.min(window.devicePixelRatio||1,lowGraphics()?1:graphicsMode==='normal'?1.5:graphicsMode==='ultra'?2.5:2);canvas.width=Math.max(1,Math.round(w*dpr));canvas.height=Math.max(1,Math.round(h*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);screenScale=clamp(Math.min(w/940,h/620),.78,1.23);initParticles()}
 window.addEventListener('resize',resize,{passive:true});
 let rngSeed=219907;function seeded(){rngSeed=(Math.imul(rngSeed,1664525)+1013904223)|0;return (rngSeed>>>0)/4294967296}
-function initDecor(){rngSeed=2112;for(let i=0;i<1600;i++){let x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded(),kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch',scale=.65+seeded()*.85;if(d2(x,y)<270*270&&kind!=='patch')continue;decor.push({x,y,kind,scale,v:seeded(),id:i})}decor.sort((a,b)=>a.y-b.y)}
+function initDecor(){rngSeed=2112;for(let i=0;i<1600*25;i++){let x=(seeded()-.5)*world,y=(seeded()-.5)*world,r=seeded(),kind=r<.18?'tree':r<.28?'rock':r<.47?'bush':r<.58?'ice':'patch',scale=.65+seeded()*.85;if(d2(x,y)<270*270&&kind!=='patch')continue;decor.push({x,y,kind,scale,v:seeded(),id:i})}decor.sort((a,b)=>a.y-b.y)}
 function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?22:graphicsMode==='ultra'?160:graphicsMode==='high'?110:85,Math.floor(w*h/(graphicsMode==='ultra'?5500:9500)));i++)particle.push({x:rand(0,w),y:rand(0,h),r:rand(.6,2.4),vx:rand(-18,-4),vy:rand(14,36),p:rand(0,TAU)})}
 function newGame(){
  audioInitialize();setWind(true);playSound('ui');
@@ -265,7 +265,7 @@ function hitWithExtraWeapon(m, w, n, total){
 }
 
 // ===== Random pop-up holes =====
-const HOLE_COUNT=7;
+const HOLE_COUNT=20;
 function spawnHole(initial=false){const g=game,p=g.p;let x,y;for(let t=0;t<20;t++){const a=rand(0,TAU),d=rand(initial?260:500,initial?1500:2400);x=clamp(p.x+Math.cos(a)*d,-half+120,half-120);y=clamp(p.y+Math.sin(a)*d,-half+120,half-120);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<350))break}g.holes.push({x,y,r:rand(46,66),age:0,life:rand(22,40)})}
 function teleportTo(e,pad=120){const g=game;let x,y;for(let t=0;t<20;t++){x=rand(-half+pad,half-pad);y=rand(-half+pad,half-pad);if(!g.holes.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+120))break}sparks(e.x,e.y,'#bdeaff',14);e.x=x;e.y=y;sparks(x,y,'#e5ffff',18)}
 function updateHoles(dt){const g=game,p=g.p;g.holeCd=Math.max(0,g.holeCd-dt);
