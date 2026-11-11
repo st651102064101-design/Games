@@ -84,6 +84,29 @@ body.low-graphics #xpDock{filter:none}
 #bottomHud{justify-content:center}
 .arsenalCatalog{margin:12px 0;color:#315e73;font-size:13px}.arsenalCatalog summary{cursor:pointer;padding:8px}.arsenalCatalog ol{max-height:200px;overflow:auto;padding-left:30px}.arsenalCatalog li{padding:5px}.arsenalCatalog small{color:#648798}
 .audioSettings{margin:10px 0;color:#315e73;font-size:13px}.audioSettings summary{cursor:pointer;padding:8px}.audioSettings label{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 8px}.audioSettings input{width:65%;accent-color:#205c75;min-height:28px}
+
+/* Frostline Character Boutique: responsive, self-contained in existing menu store */
+.shopCategoryTabs{display:flex;gap:7px;margin:5px 0 9px}
+.shopCategoryTabs button{flex:1;min-width:0;border:1px solid #a9d1df;border-radius:11px;background:#e7f5fa;color:#315469;padding:9px 6px;font:800 13px system-ui;cursor:pointer}
+.shopCategoryTabs button[aria-selected=true]{background:#216c8b;color:white;border-color:#216c8b}
+.skinPreview{display:flex;align-items:center;gap:13px;background:linear-gradient(115deg,#d7f4f6,#f4fbff);border:1px solid #b5dce6;padding:10px;border-radius:14px;margin-bottom:7px;min-height:128px}
+.skinPreview[hidden]{display:none!important}
+.skinPreview canvas{width:103px;height:104px;max-width:32%;object-fit:contain;border-radius:12px;background:radial-gradient(circle at 50% 80%,#f8ffff,#d3eaf6)}
+.skinPreviewInfo{flex:1;min-width:0}
+.skinPreviewInfo b{display:block;font-size:15px;color:#14374a}
+.skinPreviewInfo small{display:block;font-size:11px;line-height:1.4;color:#50748a;margin-top:6px}
+.skinCard{display:flex;align-items:center;gap:9px;padding:9px 6px;border-radius:11px;border-bottom:1px solid #d5e8ef;cursor:pointer}
+.skinCard.is-preview{background:#e6f5fb;box-shadow:inset 0 0 0 1px #b0d8e8}
+.skinCard img{width:51px;height:55px;object-fit:contain;flex:none;border-radius:8px;background:#dceff4}
+.skinCardText{flex:1;min-width:0}
+.skinCardText b{display:block;font-size:12px;color:#163f56}
+.skinCardText small{display:block;font-size:11px;color:#607f91}
+.skinCard button{border:0;background:#1b6f92;color:white;font:800 11px system-ui;border-radius:9px;padding:9px 8px;white-space:nowrap;cursor:pointer}
+.skinCard button[disabled]{background:#a4bcc7;color:#425969;cursor:default}
+.skinCard button.is-equipped{background:#297961}
+.shopCta.skinShopCta{background:linear-gradient(125deg,#e7b9fc,#89cffa);box-shadow:0 7px 18px #7899d440;margin-top:7px}
+@media(max-width:440px){.skinPreview{padding:7px;gap:8px}.skinPreview canvas{width:82px;height:92px}.skinCard{gap:6px}.skinCard img{width:40px;height:48px}.skinCard button{font-size:10px;padding:8px 6px}}
+
 </style>
 </head>
 <body>
@@ -110,11 +133,13 @@ body.low-graphics #xpDock{filter:none}
  <p class="keyline" style="text-align:center" data-i18n="sub">เดิน • เก็บอาวุธ • เอาชีวิตรอด</p>
  <div class="graphicsTitle" data-i18n="graphics">🎨 กราฟิก</div><div class="graphicsButtons" role="group" aria-label="คุณภาพกราฟิก"><button type="button" id="quality-auto" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>อัตโนมัติ</button><button type="button" id="quality-low" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l8-8"/></svg>ประหยัด</button><button type="button" id="quality-normal" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>ปกติ</button><button type="button" id="quality-high" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18"/></svg>High</button><button type="button" id="quality-ultra" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></svg>Ultra</button></div>
  <p class="keyline" style="text-align:center" data-i18n="keys">🖥️ WASD / ลูกศร &nbsp; 📱 ลากนิ้วเดิน</p>
- <div class="settingsBox" id="settingsBox"><div class="setTitle" data-i18n="settings">⚙️ ตั้งค่า</div><label class="setRow"><span data-i18n="music">เพลง</span><input type="range" id="set-music" min="0" max="100" aria-label="เพลง"></label><label class="setRow"><span data-i18n="master">หลัก</span><input type="range" id="set-master" min="0" max="100" aria-label="หลัก"></label><label class="setRow"><span data-i18n="shake">สั่นจอ</span><input type="checkbox" id="set-shake" checked></label><div class="setRow"><span data-i18n="language">ภาษา</span><div class="seg" role="group"><button type="button" id="lang-th" aria-pressed="true">TH</button><button type="button" id="lang-en" aria-pressed="false">ENG</button></div></div><small id="audio-status" aria-live="polite" style="display:none"></small></div><button type="button" data-shop="1" class="shopCta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า <span class="shopCoin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="walletCoins">0</span></span></button><p class="shopHint">ฆ่าผู้เล่นอื่นรับ <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> 5 · ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า</p><div class="nameBox"><label for="nameInput" data-i18n="name">ชื่อของคุณ</label><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"></div><button class="primary" id="playBtn">PLAY NOW →</button>
+ <div class="settingsBox" id="settingsBox"><div class="setTitle" data-i18n="settings">⚙️ ตั้งค่า</div><label class="setRow"><span data-i18n="music">เพลง</span><input type="range" id="set-music" min="0" max="100" aria-label="เพลง"></label><label class="setRow"><span data-i18n="master">หลัก</span><input type="range" id="set-master" min="0" max="100" aria-label="หลัก"></label><label class="setRow"><span data-i18n="shake">สั่นจอ</span><input type="checkbox" id="set-shake" checked></label><div class="setRow"><span data-i18n="language">ภาษา</span><div class="seg" role="group"><button type="button" id="lang-th" aria-pressed="true">TH</button><button type="button" id="lang-en" aria-pressed="false">ENG</button></div></div><small id="audio-status" aria-live="polite" style="display:none"></small></div><button type="button" data-shop="1" class="shopCta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า <span class="shopCoin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="walletCoins">0</span></span></button><button type="button" class="shopCta skinShopCta" data-skins-shop="1">👕 ร้านสกินตัวละคร <span class="shopCoin">12 ตัวละคร</span></button><p class="shopHint">ฆ่าผู้เล่นอื่นรับ <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> 5 · ซื้ออาวุธไว้ใช้ตอนเริ่มเกมครั้งหน้า</p><div class="nameBox"><label for="nameInput" data-i18n="name">ชื่อของคุณ</label><input id="nameInput" maxlength="14" autocomplete="off" spellcheck="false"></div><button class="primary" id="playBtn">PLAY NOW →</button>
  <p id="bestText" style="color:#789aaa;font-size:11px;text-align:center;margin:15px 0 0"></p>
 </div></div>
 <button id="pauseBtn" aria-label="หยุดชั่วคราว" title="หยุดชั่วคราว (P)" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button><div id="pauseMenu" hidden><div class="pausePanel"><h2>หยุดชั่วคราว</h2><button class="primary" id="resumeBtn">เล่นต่อ ▶</button><button type="button" class="secondary" id="homeBtn" style="width:100%;margin-top:10px;padding:12px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.8V19h11V9.8"/><path d="M10.5 19v-5h3v5"/></svg> หน้าหลัก</button><small>กด P หรือ Esc เพื่อเล่นต่อ</small></div></div>
-<div id="sprintHud" hidden><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="sprintRing" cx="22" cy="22" r="18"/></svg><b id="sprintNum"></b></div><div id="shopPanel" hidden><div class="shopBox"><button type="button" class="shopX" id="shopClose" aria-label="ปิด"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า</h2><div class="walletLine"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="shopWallet">0</span></div><p class="shopNote" id="shopNote"></p><div id="shopList"></div></div></div><div id="fatal"></div>
+<div id="sprintHud" hidden><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="sprintRing" cx="22" cy="22" r="18"/></svg><b id="sprintNum"></b></div><div id="shopPanel" hidden><div class="shopBox"><button type="button" class="shopX" id="shopClose" aria-label="ปิด"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20 8H6.4"/><circle cx="10" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg> ร้านค้า</h2><div class="walletLine"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> <span id="shopWallet">0</span></div><div class="shopCategoryTabs" role="tablist" aria-label="หมวดร้านค้า"><button type="button" data-shop-tab="weapons" role="tab" aria-selected="true">⚔️ อาวุธ</button><button type="button" data-shop-tab="skins" role="tab" aria-selected="false">👕 ตัวละคร (12)</button></div>
+ <div id="skinPreview" class="skinPreview" hidden><canvas id="skinPreviewCanvas" width="144" height="144" aria-label="ตัวอย่างสกินตัวละคร"></canvas><div class="skinPreviewInfo"><b id="skinPreviewName"></b><small id="skinPreviewDetails"></small></div></div>
+ <p class="shopNote" id="shopNote"></p><div id="shopList"></div></div></div><div id="fatal"></div>
 <script>
 (()=>{'use strict';
 let ctx;const $=id=>document.getElementById(id),canvas=$('game');ctx=canvas.getContext('2d',{alpha:false});
@@ -216,7 +241,171 @@ let stateSequence=0;
 
 const emptyInv=()=>({meat:0,hide:0,bone:0,claw:0,frost:0});
 const emptyCraft=()=>({boneBlade:false,furArmor:false,leatherPack:false,iceBlade:false,bloodBlade:false,ration:0});
-function loadSave(){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||'{}');return {coins:clamp(Number(o.coins)||0,0,999999),inv:Object.fromEntries(MAT_KEYS.map(k=>[k,clamp(Number(o.inv?.[k])||0,0,99999)])),upd:{sword:clamp(Number(o.upd?.sword)||1,1,8),boots:clamp(Number(o.upd?.boots)||1,1,8),bag:clamp(Number(o.upd?.bag)||1,1,8),armor:clamp(Number(o.upd?.armor)||1,1,8)},craft:{...emptyCraft(),...o.craft},weapon:['steel','bone','ice','blood'].includes(o.weapon)?o.weapon:'steel',weapons:safeWeapons(o.weapons).filter(w=>!WEAPON_TYPES.find(t=>t.id===w.type)?.gun),shopBought:Array.isArray(o.shopBought)?o.shopBought.filter(x=>ARSENAL.some(a=>a.id===x)):[],shopTotal:clamp(Number(o.shopTotal)||0,0,999999),shopOwned:(o.shopOwned&&typeof o.shopOwned==='object')?o.shopOwned:{}}}catch{return {coins:0,inv:emptyInv(),upd:{sword:1,boots:1,bag:1,armor:1},craft:emptyCraft(),weapon:'steel',weapons:[]}}}
+
+// Frostline Character Boutique: 12 original cosmetic skins, 1 free + 11 unlockable.
+// All skins are visual only; player radius, speed, HP, weapons and PvP hitboxes are unchanged.
+const CHARACTER_SKINS=[
+ {id:'scout',name:'Snow Scout',th:'นักสำรวจหิมะ',rarity:'Common',price:0,coat:'#3a6479',trim:'#f3dfc2',face:'#ead3b9',accent:'#d65f63'},
+ {id:'fox',name:'Arctic Fox',th:'จิ้งจอกหิมะ',rarity:'Common',price:50,coat:'#f7f2e7',trim:'#b9d6e8',face:'#f5d8b3',accent:'#f3aa79'},
+ {id:'penguin',name:'Penguin Soldier',th:'ทหารเพนกวิน',rarity:'Common',price:75,coat:'#2b5367',trim:'#fff5db',face:'#f5dfb6',accent:'#ffb35a'},
+ {id:'crimson',name:'Crimson Hunter',th:'นักล่าผ้าคลุมแดง',rarity:'Rare',price:100,coat:'#a93646',trim:'#f4beb5',face:'#eed4bc',accent:'#f5d39f'},
+ {id:'knight',name:'Ice Knight',th:'อัศวินน้ำแข็ง',rarity:'Rare',price:150,coat:'#4caecf',trim:'#d7fcff',face:'#d8e7ed',accent:'#71f6fb'},
+ {id:'engineer',name:'Ember Engineer',th:'วิศวกรเพลิง',rarity:'Rare',price:180,coat:'#e78134',trim:'#ffd797',face:'#e8bd96',accent:'#f8ac4f'},
+ {id:'ninja',name:'Shadow Ninja',th:'นินจาเงา',rarity:'Epic',price:250,coat:'#26384f',trim:'#57c6df',face:'#45586c',accent:'#6cf6ee'},
+ {id:'aurora',name:'Aurora Guardian',th:'ผู้พิทักษ์แสงเหนือ',rarity:'Epic',price:300,coat:'#8665b8',trim:'#b9e9fa',face:'#e7d9e8',accent:'#79f8d6'},
+ {id:'king',name:'Polar King',th:'ราชาหมีขั้วโลก',rarity:'Legendary',price:400,coat:'#f1e6d0',trim:'#fefcf1',face:'#f6eddc',accent:'#e8c15c'},
+ {id:'dragon',name:'Frost Dragon',th:'อัศวินมังกรน้ำแข็ง',rarity:'Legendary',price:500,coat:'#37568e',trim:'#91dffc',face:'#d2dff1',accent:'#50f6eb'},
+ {id:'wraith',name:'Frost Wraith',th:'ภูตน้ำแข็ง',rarity:'Mythic',price:650,coat:'#78cce6',trim:'#c4f9ff',face:'#c3f1f3',accent:'#e1ffff'},
+ {id:'emperor',name:'Blizzard Emperor',th:'จักรพรรดิพายุหิมะ',rarity:'Mythic',price:1000,coat:'#30395c',trim:'#c5ddeb',face:'#f1dfd9',accent:'#9ceeff'}
+];
+const characterById=id=>CHARACTER_SKINS.find(c=>c.id===id)||CHARACTER_SKINS[0];
+const safeSkinId=id=>characterById(id).id;
+let shopSection='weapons',skinPreviewId='scout';
+const characterThumbnails=Object.create(null);
+const characterPreviewGear=id=>({boots:1,armor:1,bag:1,furArmor:false,leatherPack:false,level:1,skin:id});
+function skinImage(id){
+ id=safeSkinId(id);if(characterThumbnails[id])return characterThumbnails[id];
+ const c=document.createElement('canvas');c.width=112;c.height=116;const old=ctx;
+ try{
+   ctx=c.getContext('2d');
+   ctx.translate(56,83);ctx.scale(1.23,1.23);
+   drawPlayer({x:0,y:0,dir:1,mx:0,my:0,walk:0,hp:125,maxHp:125,inv:0},characterPreviewGear(id));
+   characterThumbnails[id]=c.toDataURL('image/png');
+ }catch(e){characterThumbnails[id]=''}finally{ctx=old}
+ return characterThumbnails[id];
+}
+function skinPreviewRender(id){
+ const el=$('skinPreviewCanvas');if(!el)return;
+ const old=ctx;
+ try{
+  ctx=el.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,el.width,el.height);
+  ctx.translate(72,107);ctx.scale(1.6,1.6);
+  drawPlayer({x:0,y:0,dir:1,mx:0,my:0,walk:1.2,hp:125,maxHp:125,inv:0},characterPreviewGear(id));
+ }catch(e){}finally{ctx=old}
+}
+function characterOwned(save,id){return id==='scout'||Array.isArray(save.skinOwned)&&save.skinOwned.includes(id)}
+function selectShopTab(tab){
+ shopSection=tab==='skins'?'skins':'weapons';
+ for(const b of document.querySelectorAll('[data-shop-tab]'))b.setAttribute('aria-selected',String(b.dataset.shopTab===shopSection));
+ $('skinPreview').hidden=shopSection!=='skins';
+}
+function renderSkinStore(){
+ selectShopTab('skins');
+ const m=loadSave(),god=isGod(),owned=Array.isArray(m.skinOwned)?m.skinOwned:[],equipped=safeSkinId(m.skinEquipped);
+ skinPreviewId=safeSkinId(skinPreviewId);
+ $('shopWallet').textContent=god?'∞':m.coins;
+ $('walletCoins').textContent=god?'∞':m.coins;
+ $('skinPreviewName').textContent=characterById(skinPreviewId).name+' · '+characterById(skinPreviewId).rarity;
+ $('skinPreviewDetails').textContent=characterById(skinPreviewId).th+' · '+(characterById(skinPreviewId).price?characterById(skinPreviewId).price+' เหรียญ':'ฟรี')+' · ของตกแต่ง ไม่มีโบนัสพลังโจมตี';
+ $('shopNote').textContent='เลือกเพื่อดูตัวอย่าง · ซื้อครั้งเดียวใช้ได้ถาวร · สวมใส่แล้วมีผลในเกมรอบถัดไป';
+ $('shopList').innerHTML=CHARACTER_SKINS.map(c=>{
+  const isOwned=characterOwned(m,c.id),active=equipped===c.id,cost=c.price;
+  const text=active?'✓ ใช้อยู่':isOwned?'สวมใส่':god?'รับฟรี':m.coins<cost?'ขาด '+(cost-m.coins):'🪙 '+cost;
+  return '<div class="skinCard '+(skinPreviewId===c.id?'is-preview':'')+'" data-skin-preview="'+c.id+'">'+
+   '<img src="'+skinImage(c.id)+'" alt="'+c.name+'">'+
+   '<div class="skinCardText"><b>'+c.name+'</b><small>'+c.th+' · '+c.rarity+'</small></div>'+
+   '<button type="button" data-skin-action="'+c.id+'" '+(active||(!isOwned&&!god&&m.coins<cost)?'disabled':'')+' class="'+(active?'is-equipped':'')+'">'+text+'</button></div>';
+ }).join('');
+ skinPreviewRender(skinPreviewId);
+}
+function buyOrEquipSkin(id){
+ const skin=CHARACTER_SKINS.find(c=>c.id===id);if(!skin)return;
+ const m=loadSave(),god=isGod(),owned=characterOwned(m,id);
+ if(!owned&&!god&&m.coins<skin.price)return;
+ const skinOwned=Array.from(new Set([...(Array.isArray(m.skinOwned)?m.skinOwned:[]),id])).filter(x=>CHARACTER_SKINS.some(c=>c.id===x&&c.id!=='scout'));
+ const coins=owned||god?m.coins:m.coins-skin.price;
+ writeMeta({coins,skinOwned,skinEquipped:id});
+ if(game){game.p.skin=id;game.coins=coins}
+ skinPreviewId=id;renderShop();
+ $('shopNote').textContent=owned?'สวมใส่ '+skin.name+' แล้ว!':'ซื้อ '+skin.name+' สำเร็จ! · เป็นเจ้าของถาวร';
+}
+function drawCosmeticPlayer(p,look,id){
+ const skin=characterById(id),moving=Math.hypot(p.mx||0,p.my||0)>6;
+ const phase=p.walk||0,swing=moving?Math.sin(phase)*4:0;
+ const face=(p.dir||1)<0?-1:1,bounce=moving?Math.abs(Math.sin(phase))*1.7:0;
+ const ghost=id==='wraith',royal=['king','emperor'].includes(id);
+ ctx.save();ctx.translate(p.x,p.y);ctx.translate(0,-bounce);
+ ctx.scale(face,1);
+ ellipse(3,19,23,8,'#21597f38');
+ if(ghost){ctx.globalAlpha=.86;ctx.shadowColor='#8eeefe';ctx.shadowBlur=lowGraphics()?0:8}
+ if(['crimson','aurora','king','emperor','wraith'].includes(id)){
+  poly([[-16,-18],[-24,3],[-20,24],[0,18],[17,24],[22,-17]],id==='crimson'?'#7d344c':id==='aurora'?'#71aed3':id==='king'?'#e1d2b7':ghost?'#75e7fb':'#883d6b');
+ }
+ if(id==='fox'){poly([[-18,-20],[-31,-8],[-26,0],[-17,-4]],'#e2e5e1');ellipse(-27,-4,8,5,'#f2f4ee')}
+ if(id==='dragon'){poly([[-16,-18],[-30,-10],[-30,4],[-12,-3]],'#4f82b8')}
+ if(id==='penguin'){
+  ellipse(0,-6,18,24,'#253e53');ellipse(4,-7,12,19,'#fff5df');
+  for(const side of [-1,1]){ctx.save();ctx.translate(side*17,-8);ctx.rotate(side*swing*.035);ellipse(side*4,3,6,14,'#203c53');ctx.restore()}
+  roundRect(-14,12+swing,12,9,4,'#edac5b');roundRect(3,12-swing,12,9,4,'#edac5b');
+ }else{
+  for(const side of [-1,1]){
+   const x=side<0?-12:5,step=side*swing;
+   roundRect(x,6+step,10,17,5,id==='wraith'?'#a6f9ff':id==='king'?'#f8f5ec':'#4d5867');
+   ellipse(x+5,21+step,7,4,id==='wraith'?'#d3ffff':'#a5c8d3');
+  }
+  poly([[-16,-21],[16,-21],[21,12],[9,17],[-9,17],[-20,11]],skin.coat);
+  ellipse(0,-7,17,19,skin.coat);roundRect(-9,-15,18,6,3,skin.trim);
+  // Shoulder armor / coat sleeves.
+  for(const side of [-1,1]){
+   ctx.save();ctx.translate(side*19,-9);ctx.rotate(side*swing*.05);
+   ellipse(0,0,7,14,skin.coat);ellipse(0,12,6,6,skin.trim);ctx.restore()
+  }
+ }
+ if(id==='engineer'){roundRect(-12,-2,24,7,3,'#865e3d');roundRect(-3,-5,7,13,3,'#ffd66b')}
+ if(['knight','dragon','emperor'].includes(id)){
+  poly([[-9,-13],[0,-18],[9,-13],[5,-3],[-5,-3]],skin.accent);
+  for(const side of [-1,1])poly([[side*15,-18],[side*27,-17],[side*23,-8],[side*16,-7]],skin.trim);
+ }else if(id==='aurora'){ellipse(0,-7,4,8,'#9df5eb')}
+ else if(id==='ninja'){roundRect(-10,-8,20,3,1,skin.accent)}
+ else if(id==='king'){poly([[-7,-10],[0,-17],[7,-10],[5,-5],[-5,-5]],'#edca64')}
+ else if(id==='wraith'){ellipse(0,-7,5,7,'#e7ffff')}
+ else{roundRect(-5,-9,10,6,3,skin.trim)}
+ // Head base.
+ ellipse(0,-31,15,16,skin.face);
+ if(id==='penguin'){ellipse(0,-32,16,16,'#263d52');ellipse(2,-28,12,12,'#fff7e9')}
+ if(id==='fox'){
+  poly([[-13,-37],[-16,-62],[-2,-46]],'#f9f4e6');
+  poly([[13,-37],[17,-62],[2,-46]],'#f8f0e3');
+  poly([[-13,-41],[-13,-55],[-5,-46]],'#e6aab4');
+  poly([[13,-41],[13,-55],[5,-46]],'#e6aab4');
+  ellipse(0,-26,11,8,'#fff9f0');
+ }
+ if(id==='king'){
+  ellipse(-13,-43,7,7,'#f7ecd8');ellipse(13,-43,7,7,'#f7ecd8');
+  ellipse(-13,-43,3,3,'#d8c1ab');ellipse(13,-43,3,3,'#d8c1ab');
+ }
+ if(id==='crimson'){poly([[-19,-33],[-20,-51],[-7,-58],[14,-52],[19,-35]],'#a73a49');ellipse(0,-30,12,12,'#442c35')}
+ if(id==='knight'){poly([[-16,-37],[-13,-53],[0,-58],[14,-52],[17,-34]],'#a2dbed');roundRect(-12,-38,24,10,3,'#4b8fb2');line(0,-57,0,-42,3,skin.accent)}
+ if(id==='engineer'){poly([[-16,-36],[-14,-51],[10,-52],[17,-35]],'#ba622c');roundRect(-13,-44,26,6,3,'#e8b478');ellipse(-7,-40,5,5,'#8ce5f5');ellipse(7,-40,5,5,'#8ce5f5')}
+ if(id==='ninja'){poly([[-16,-35],[-13,-52],[0,-56],[14,-50],[17,-34]],'#202e43');roundRect(-13,-36,26,8,3,'#26394e');line(-10,-35,10,-35,3,skin.accent)}
+ if(id==='aurora'){poly([[-16,-42],[-14,-55],[0,-61],[14,-54],[16,-42]],'#7066ac');poly([[-9,-54],[0,-66],[9,-54]],'#99f2de')}
+ if(id==='dragon'){poly([[-14,-46],[-21,-65],[-5,-55]],'#8fe1f8');poly([[14,-46],[21,-65],[5,-55]],'#8fe1f8');roundRect(-14,-44,28,10,4,'#254f8a')}
+ if(id==='wraith'){poly([[-16,-44],[-11,-62],[0,-55],[11,-62],[16,-44]],'#8adeeb');ctx.globalAlpha=.7}
+ if(royal){
+  poly([[-16,-49],[-12,-64],[-4,-55],[0,-71],[7,-55],[14,-64],[16,-49]],id==='king'?'#e8ba45':'#8edbe9');
+  ellipse(0,-56,3,4,id==='king'?'#fff7bd':'#f2ffff');
+ }
+ // Face remains distinct and readable at mobile-scale.
+ if(id==='penguin'){ellipse(-5,-31,2.2,2.9,'#17293c');ellipse(7,-31,2.2,2.9,'#17293c');poly([[-1,-27],[8,-27],[3,-21]],'#f8aa4d')}
+ else if(['ninja','knight','dragon'].includes(id)){
+  line(-8,-34,8,-34,2.7,skin.accent);
+  ellipse(-5,-34,1.2,1.5,'#faffff');ellipse(5,-34,1.2,1.5,'#faffff');
+ }else if(id==='wraith'){ellipse(-6,-32,3,4,'#eaffff');ellipse(6,-32,3,4,'#eaffff')}
+ else{ellipse(-5,-32,2,2.6,'#263644');ellipse(5,-32,2,2.6,'#263644');ellipse(-4.4,-33,0.8,1,'#ffffff');ellipse(5.5,-33,0.8,1,'#ffffff')}
+ if(['fox','king'].includes(id))ellipse(0,-25,3,2,'#443a37');
+ if(id==='scout'||id==='crimson'||id==='fox')line(-16,-16,16,-11,4,skin.accent);
+ if(['aurora','king','dragon','wraith','emperor'].includes(id)){
+  ctx.globalAlpha=.55+.22*Math.sin(now*3.5);
+  ellipse(0,-58,2.1,3.8,skin.accent);ctx.globalAlpha=ghost?.86:1;
+ }
+ ctx.restore();
+ const ratio=p.hp/Math.max(1,p.maxHp||125);
+ if(p.inv>0||ratio<.99){roundRect(p.x-25,p.y-51,50,5,3,'#32536cb0');roundRect(p.x-25,p.y-51,50*clamp(ratio,0,1),5,3,ratio<.3?'#ed7a85':'#88e6b6')}
+ const level=look&&look.level||game?.level||1;
+ if(level>=3){const a=now*2.7;ellipse(p.x+Math.cos(a)*29,p.y-27+Math.sin(a)*9,3,4,'#9dfaff')}
+}
+
+function loadSave(){try{const o=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||'{}');return {coins:clamp(Number(o.coins)||0,0,999999),inv:Object.fromEntries(MAT_KEYS.map(k=>[k,clamp(Number(o.inv?.[k])||0,0,99999)])),upd:{sword:clamp(Number(o.upd?.sword)||1,1,8),boots:clamp(Number(o.upd?.boots)||1,1,8),bag:clamp(Number(o.upd?.bag)||1,1,8),armor:clamp(Number(o.upd?.armor)||1,1,8)},craft:{...emptyCraft(),...o.craft},weapon:['steel','bone','ice','blood'].includes(o.weapon)?o.weapon:'steel',weapons:safeWeapons(o.weapons).filter(w=>!WEAPON_TYPES.find(t=>t.id===w.type)?.gun),shopBought:Array.isArray(o.shopBought)?o.shopBought.filter(x=>ARSENAL.some(a=>a.id===x)):[],shopTotal:clamp(Number(o.shopTotal)||0,0,999999),shopOwned:(o.shopOwned&&typeof o.shopOwned==='object')?o.shopOwned:{},skinOwned:Array.isArray(o.skinOwned)?o.skinOwned.filter(x=>CHARACTER_SKINS.some(c=>c.id===x)).slice(0,12):[],skinEquipped:safeSkinId(o.skinEquipped)}}catch{return {coins:0,inv:emptyInv(),upd:{sword:1,boots:1,bag:1,armor:1},craft:emptyCraft(),weapon:'steel',weapons:[]}}}
 function saveProgress(){if(!game)return;try{writeMeta({coins:game.coins,inv:game.inv,upd:game.upd,craft:game.craft,weapon:game.weapon,weapons:game.weapons})}catch{}}
 
 function readBest(){try{return JSON.parse(localStorage.getItem(BEST_KEY)||'{}')}catch{return {}}}
@@ -229,7 +418,7 @@ function initParticles(){particle.length=0;for(let i=0;i<Math.min(lowGraphics()?
 function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{x:rand(-half+350,half-350),y:rand(-half+350,half-350),dir:1,mx:0,my:0,hp:125+(saved.upd.armor-1)*8,maxHp:125+(saved.upd.armor-1)*8,inv:0,walk:0},uid:0,holes:[],holeCd:0};
- game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];for(let i=0;i<5;i++)game.bots.push(spawnBot(i));for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
+ game.p.skin=safeSkinId(saved.skinEquipped);game.dog={x:game.p.x+60,y:game.p.y+20,dir:-1,walk:0,moving:false,step:0};game.obstacles=makeObstacles();buildObsGrid();for(const id of saved.shopBought||[]){const t=ARSENAL.find(x=>x.id===id);if(t)game.weapons.push({...randWeapon(false,id),fromBoss:true})}if((saved.shopBought||[]).length)writeMeta({shopBought:[]});game.bots=[];for(let i=0;i<5;i++)game.bots.push(spawnBot(i));for(let i=0;i<HOLE_COUNT;i++)spawnHole(true);
  cam.x=game.p.x;cam.y=game.p.y;mode='playing';$('overlay').hidden=true;$('shop').hidden=true;$('inventory').hidden=true;$('levelChoice').hidden=true;$('hud').hidden=false;$('bottomHud').hidden=false;clearInput();updateHud();for(let i=0;i<4;i++)spawnBear(true);spawnTitan();for(let i=0;i<12;i++)spawnAbility(true,i);for(let i=0;i<4;i++){const a=rand(0,TAU),d=rand(120,320);spawnDrop(clamp(game.p.x+Math.cos(a)*d,-half+90,half-90),clamp(game.p.y+Math.sin(a)*d,-half+90,half-90),'weapon',1,randWeapon(false));}game.rackTimer=3;announce('ด่าน 1 · เฟส 1',`ยินดีต้อนรับ ${PLAYER_NAME} · ${zoneName(game.p.x,game.p.y)}`,2.5);connectOnline();
 }
 function zoneName(x,y){return (x<0?(y<0?'ป่าสนตะวันตก':'ทะเลสาบน้ำแข็ง'):(y<0?'หุบเขาลมหนาว':'ดินแดนหิมะ'))}
@@ -697,7 +886,7 @@ function drawSnowDog(d){
  ctx.restore();
 }
 
-function drawPlayer(p,look=null){const gear=look||{boots:game.upd.boots,armor:game.upd.armor,bag:game.upd.bag,furArmor:game.craft.furArmor,leatherPack:game.craft.leatherPack,level:game.level};ctx.save();ctx.translate(p.x,p.y);const spd=Math.hypot(p.mx||0,p.my||0),side=spd>10?Math.min(1,Math.abs(p.mx||0)/spd):0,face=(p.dir||1)<0?-1:1;ctx.translate(0,-Math.abs(Math.sin(p.walk||0))*1.6*side);ctx.rotate(Math.sin(p.walk||0)*.05*side*face);ctx.scale(face*(1-.14*side),1);let walking=spd>.1?Math.sin(p.walk||0)*(2+4*side):0;
+function drawPlayer(p,look=null){const selectedSkin=safeSkinId((look&&look.skin)||p.skin||'scout');if(selectedSkin!=='scout')return drawCosmeticPlayer(p,look,selectedSkin);const gear=look||{boots:game.upd.boots,armor:game.upd.armor,bag:game.upd.bag,furArmor:game.craft.furArmor,leatherPack:game.craft.leatherPack,level:game.level};ctx.save();ctx.translate(p.x,p.y);const spd=Math.hypot(p.mx||0,p.my||0),side=spd>10?Math.min(1,Math.abs(p.mx||0)/spd):0,face=(p.dir||1)<0?-1:1;ctx.translate(0,-Math.abs(Math.sin(p.walk||0))*1.6*side);ctx.rotate(Math.sin(p.walk||0)*.05*side*face);ctx.scale(face*(1-.14*side),1);let walking=spd>.1?Math.sin(p.walk||0)*(2+4*side):0;
  ellipse(4,18,25,11,'#21597f38'); // drop shadow
  // Boots are actually the speed upgrade: progressively more silver/blue.
  let boot=gear.boots>1?'#327d97':'#584a55';roundRect(-13,7+walking,10,16,5,boot);roundRect(5,7-walking,10,16,5,boot);
@@ -809,9 +998,16 @@ function shopUnlockTier(total){return 6}
 function addCoins(n){if(game){game.coins+=n;saveProgress()}else writeMeta({coins:loadSave().coins+n})}
 const ICON_CACHE={};
 function weaponIcon(t){if(ICON_CACHE[t.id])return ICON_CACHE[t.id];const c=document.createElement('canvas');c.width=c.height=96;const saved=ctx;let url='';try{ctx=c.getContext('2d');ctx.translate(48,48);ctx.scale(1.5,1.5);drawWeaponModel(0,0,-Math.PI/4,{type:t.id,rarity:'common',damage:t.base,reach:90})}catch(e){}finally{ctx=saved}try{url=c.toDataURL()}catch(e){}ICON_CACHE[t.id]=url;return url}
-function renderShop(){const m=loadSave(),unlock=shopUnlockTier(m.shopTotal);m.shopTotal=m.shopTotal||0;$('shopWallet').textContent=isGod()?'∞':m.coins;$('walletCoins').textContent=isGod()?'∞':m.coins;$('shopNote').textContent='ซื้อได้ทุกชิ้น · ราคาตามความหายาก · ของที่ซื้อจะใช้ตอนเริ่มเกมครั้งถัดไป';const ownedOf=id=>(m.shopOwned||{})[id]||0;$('shopList').innerHTML=ARSENAL.map(t=>{const locked=t.tier>unlock,price=shopPrice(t),can=!locked&&(isGod()||m.coins>=price),own=ownedOf(t.id);return `<div class="shopRow"><span class="nm"><img src="${weaponIcon(t)}" width="44" height="44" alt="" style="float:left;margin:0 10px 0 0;border-radius:12px;background:#dceff4"><b>${t.name}${own?' <span style="color:#2a9a6a"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>×'+own+'</span>':''}</b><small>DMG ${t.base} · ${t.gun?'ปืน':'ประชิด'} · ระดับ ${t.tier}</small></span><button data-buy="${t.id}" ${can?'':'disabled'}>${locked?'🔒 ระดับ '+t.tier:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> '+price}</button></div>`}).join('')}
+function renderShop(){if(shopSection==='skins')return renderSkinStore();selectShopTab('weapons');const m=loadSave(),unlock=shopUnlockTier(m.shopTotal);m.shopTotal=m.shopTotal||0;$('shopWallet').textContent=isGod()?'∞':m.coins;$('walletCoins').textContent=isGod()?'∞':m.coins;$('shopNote').textContent='ซื้อได้ทุกชิ้น · ราคาตามความหายาก · ของที่ซื้อจะใช้ตอนเริ่มเกมครั้งถัดไป';const ownedOf=id=>(m.shopOwned||{})[id]||0;$('shopList').innerHTML=ARSENAL.map(t=>{const locked=t.tier>unlock,price=shopPrice(t),can=!locked&&(isGod()||m.coins>=price),own=ownedOf(t.id);return `<div class="shopRow"><span class="nm"><img src="${weaponIcon(t)}" width="44" height="44" alt="" style="float:left;margin:0 10px 0 0;border-radius:12px;background:#dceff4"><b>${t.name}${own?' <span style="color:#2a9a6a"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>×'+own+'</span>':''}</b><small>DMG ${t.base} · ${t.gun?'ปืน':'ประชิด'} · ระดับ ${t.tier}</small></span><button data-buy="${t.id}" ${can?'':'disabled'}>${locked?'🔒 ระดับ '+t.tier:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> '+price}</button></div>`}).join('')}
 function buyItem(id){const t=ARSENAL.find(x=>x.id===id),m=loadSave(),god=isGod();if(!t||t.tier>shopUnlockTier(m.shopTotal)||(!god&&m.coins<shopPrice(t)))return;writeMeta({coins:god?m.coins:m.coins-shopPrice(t),shopBought:[...(m.shopBought||[]),id],shopOwned:{...(m.shopOwned||{}),[id]:((m.shopOwned||{})[id]||0)+1},shopTotal:(m.shopTotal||0)+1});renderShop();$('shopNote').textContent=`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> ซื้อ ${t.name} แล้ว · ${(m.shopBought||[]).length+1} ชิ้นในคลัง จะได้ตอนเริ่มเกมครั้งถัดไป`}
-document.addEventListener('click',e=>{const sh=e.target.closest&&e.target.closest('[data-shop]');if(sh){renderShop();const op=$('overlayPanel'),sp=$('shopPanel');sp.hidden=false;op.appendChild(sp);op.classList.add('shop-open');return}const b=e.target.closest&&e.target.closest('[data-buy]');if(b&&!b.disabled)buyItem(b.dataset.buy)});
+document.addEventListener('click',e=>{
+ const sh=e.target.closest&&e.target.closest('[data-shop],[data-skins-shop]');
+ if(sh){shopSection=sh.hasAttribute('data-skins-shop')?'skins':'weapons';renderShop();const op=$('overlayPanel'),sp=$('shopPanel');sp.hidden=false;op.appendChild(sp);op.classList.add('shop-open');return}
+ const tab=e.target.closest&&e.target.closest('[data-shop-tab]');if(tab){shopSection=tab.dataset.shopTab;renderShop();return}
+ const skinAction=e.target.closest&&e.target.closest('[data-skin-action]');if(skinAction&&!skinAction.disabled){buyOrEquipSkin(skinAction.dataset.skinAction);return}
+ const preview=e.target.closest&&e.target.closest('[data-skin-preview]');if(preview){skinPreviewId=preview.dataset.skinPreview;renderShop();return}
+ const b=e.target.closest&&e.target.closest('[data-buy]');if(b&&!b.disabled)buyItem(b.dataset.buy)
+});
 $('shopClose').onclick=()=>{$('shopPanel').hidden=true;$('overlayPanel').classList.remove('shop-open')};setInterval(()=>{const e=$('walletCoins');if(e&&mode!=='playing')e.textContent=isGod()?'∞':loadSave().coins},400);
 const battleMusic=new Audio('battle-music.mp3');battleMusic.loop=true;battleMusic.preload='auto';
 const bossMusic=new Audio('boss-music.mp3');bossMusic.loop=true;bossMusic.preload='auto';
@@ -993,12 +1189,12 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
  if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
  if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,600),speed:clean(b.speed,5.5,1,20),count:clean(b.count,1,1,24),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
- if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel'}}
+ if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel',skin:safeSkinId(l.skin)}}
  updateOnlineInfo();
 }
 function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main',speed:spinSpeed(),count:Math.max(1,orbitCount())});
  allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(slotOffset(w)*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,24)}
-function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon},blades:ownBlades()}}
+function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon,skin:safeSkinId(game.p.skin)},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp)}}
 function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
  const sample=ownSample();mySamples.push(sample);if(mySamples.length>40)mySamples.shift();
