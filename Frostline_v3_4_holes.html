@@ -2778,7 +2778,7 @@ function publishNet(kind,payload){const event={kind,id:CLIENT_ID,...payload};try
 const SEND_INTERVAL=.05,MAX_BUF=48;
 let mySamples=[],cloudSentT=0,lastMetaKey='',lastMetaAt=0;
 const nowMs=()=>Date.now();
-function spinSpeed(){const countFactor=clamp(.35+orbitCount()*.06,.35,1.6);return (5.25+game.upd.sword*.48)*(1+(game.perks.haste||0)*.16)*countFactor*.5}
+function spinSpeed(){const countFactor=clamp(.4+orbitCount()*.004,.4,.46);return (5.25+game.upd.sword*.48)*(1+(game.perks.haste||0)*.16)*countFactor}
 function normSample(s){if(!s||typeof s!=='object')return null;const t=Number(s.t);if(!Number.isFinite(t))return null;return {t,x:clean(s.x,0,-half,half),y:clean(s.y,0,-half,half),vx:clean(s.vx,0,-1200,1200),vy:clean(s.vy,0,-1200,1200),s:clean(s.s,0,-1e9,1e9),w:clean(s.w,6,0,60),h:clean(s.h,100,0,10000),em:typeof s.em==='string'&&EMOTIONS[s.em]?s.em:'',es:clean(s.es,0,0,1e8)}}
 function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)return buf[0];const last=buf[n-1];
  if(rt>=last.t){const e=Math.min(rt-last.t,250)/1000;return {x:clamp(last.x+last.vx*e,-half+50,half-50),y:clamp(last.y+last.vy*e,-half+50,half-50),s:last.s+last.w*e}}
