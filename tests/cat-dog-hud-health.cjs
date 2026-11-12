@@ -8,10 +8,16 @@ const nodes=new Map();function node(id){if(!nodes.has(id))nodes.set(id,{textCont
 const s={screen:'play',turn:'cat',turnReady:true,round:1,hp:{cat:6,dog:6},weak:{cat:false,dog:false},reaction:null,throwSeq:null,ball:null,finish:null,wind:0,noWind:false,power:745,angle:48,items:{cat:{heal:1},dog:{heal:1}},selected:null,doubleSecond:false,winTeam:null,particles:[],floats:[],groundFx:[],shake:0};
 let turns=0;
 const c={s,Math,MAX_HP:6,$:node,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),renderSkills(){},activeBot:()=>false,confirm:()=>true,toast(){},nextTurn(){turns++},beginReaction(){},burst(){},rand:(a,b)=>(a+b)/2,GROUND:588};
-vm.createContext(c);vm.runInContext(extract('function updateHud(){','function clamp(')+extract('function hitPlayer(target){','function miss(')+extract('function chooseSkill(id){','\n\nreset('),c);
+vm.createContext(c);vm.runInContext(extract('const HUD_ICONS=', 'function clamp(')+extract('function hitPlayer(target){','function miss(')+extract('function chooseSkill(id){','\n\nreset('),c);
 c.updateHud();assert.equal(node('catFill').style.width,'100%');assert.equal(node('dogFill').style.width,'100%');assert.equal((node('catHearts').textContent.match(/♥/g)||[]).length,6);
 s.hp.cat=3;s.hp.dog=1;c.updateHud();assert.equal(node('catFill').style.width,'50%');assert.equal((node('catHearts').textContent.match(/♡/g)||[]).length,3);assert(node('turnText').attrs['aria-label'],'turn icon remains accessible');
-s.reaction={kind:'hit',index:0,focus:'dog',stages:[{who:'dog',mood:'hurt',label:'โดนโจมตี'}]};c.updateHud();assert(node('turnText').textContent.startsWith('🐶'),'reaction icon identifies the affected player');s.reaction=null;
+assert((node('turnText').innerHTML||'').includes('<svg'),'turn uses a clear SVG character');
+assert((node('aimText').innerHTML||'').includes('<svg'),'aim uses a clear SVG icon');
+s.wind=12;c.updateHud();assert((node('windText').innerHTML||'').includes('data-direction="right"'),'positive wind points right');assert.match(node('windText').attrs['aria-label'],/12/);
+s.wind=-9;c.updateHud();assert((node('windText').innerHTML||'').includes('data-direction="left"'),'negative wind points left');
+s.noWind=true;c.updateHud();assert.match(node('windText').attrs['aria-label'],/ไม่มีลม/);s.noWind=false;s.wind=0;
+s.finish={focus:'dog'};c.updateHud();assert(node('turnText').innerHTML.includes('data-animal="dog"'),'victory icon identifies the winner');s.finish=null;
+s.reaction={kind:'hit',index:0,focus:'dog',stages:[{who:'dog',mood:'hurt',label:'โดนโจมตี'}]};c.updateHud();assert(node('turnText').innerHTML.includes('data-animal="dog"'),'reaction icon identifies the affected player');s.reaction=null;
 const statusContext={s,$:node};vm.createContext(statusContext);vm.runInContext(extract('function toast(', 'function hideToast('),statusContext);statusContext.toast('💥 หมาหัวโน!');assert.equal(node('toast').textContent,'💥');assert.equal(node('toast').attrs['aria-label'],'💥 หมาหัวโน!');
 s.hp.dog=6;s.ball={from:'cat',x:1360,y:500,skill:null};c.hitPlayer('dog');assert.equal(s.hp.dog,5);
 s.ball={from:'cat',x:1360,y:500,skill:'power'};c.hitPlayer('dog');assert.equal(s.hp.dog,3);

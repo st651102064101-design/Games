@@ -58,6 +58,24 @@
  .game-frame.in-match{margin-bottom:74px}
  .skill-bar{bottom:-70px;width:min(360px,calc(100% - 12px))}
 }
+
+/* Big, simple visual readouts for turns, aiming and wind. */
+.hud-symbol{display:block;width:30px;height:30px;flex:none;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.center-top{gap:6px}
+.round,.turn-pill{display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:0;font-size:15px;font-weight:900}
+.round{padding:5px 12px}.round .hud-symbol{width:22px;height:22px}
+.turn-pill{padding:5px 10px}.turn-pill .hud-symbol{width:32px;height:32px}
+.turn-pill .state-symbol{width:22px;height:22px;color:#b35b38}
+.wind-pill{position:absolute;z-index:11;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:5px;padding:6px 9px;border:2px solid #fff;border-radius:16px;background:#fff8e9ed;color:#203c4b;box-shadow:0 4px 0 #7e9c89a0,0 6px 18px #17364d33;pointer-events:none}
+.wind-reading{display:flex;align-items:center;gap:1px}.wind-pill .wind-symbol{width:28px;height:28px;color:#267c91}.wind-pill .wind-arrow{width:22px;height:22px;color:#287d92}.wind-pill .wind-arrow.left{transform:scaleX(-1)}
+.wind-pill .wind-word{font-size:12px;line-height:1;font-weight:900}.wind-pill strong{font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
+.aim-panel{width:210px;max-width:35%;padding:7px 10px;border:2px solid #fff8;border-radius:16px}
+.aim-head{display:grid;grid-template-columns:1fr 1fr;gap:6px}.aim-item{display:flex;align-items:center;gap:4px;white-space:nowrap}.aim-item .hud-symbol{width:28px;height:28px}.aim-item strong{font-size:16px;font-variant-numeric:tabular-nums}.aim-head .power{color:#ffe08a}
+@media(max-width:680px){
+ .center-top{gap:3px}.round,.turn-pill{font-size:10px;padding:3px 6px;gap:3px}.round .hud-symbol{width:15px;height:15px}.turn-pill .hud-symbol{width:22px;height:22px}.turn-pill .state-symbol{width:15px;height:15px}
+ .wind-pill{padding:3px 5px;gap:3px;border-radius:11px}.wind-reading{display:flex;align-items:center;gap:1px}.wind-pill .wind-symbol{width:20px;height:20px}.wind-pill .wind-arrow{width:16px;height:16px}.wind-pill .wind-word{font-size:9px}.wind-pill strong{font-size:15px}
+ .aim-panel{width:140px;min-width:0;max-width:38%;padding:5px 6px}.aim-head{gap:3px}.aim-item{gap:2px}.aim-item .hud-symbol{width:19px;height:19px}.aim-item strong{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -66,10 +84,11 @@
 <div class="hud" id="hud" hidden>
  <div class="top">
   <div class="life"><div class="life-title"><span aria-hidden="true">🐱</span><span class="tag"><span id="catHp">6</span>/6</span></div><div class="health-track"><div class="health-fill" id="catFill"></div></div><div class="hearts" id="catHearts" aria-label="เลือดแมว 6 จาก 6">♥ ♥ ♥ ♥ ♥ ♥</div></div>
-  <div class="center-top"><div class="round" id="roundText" aria-label="รอบที่ 1">01</div><div class="turn-pill" id="turnText" aria-live="polite" aria-label="ตาแมว">🐱</div><div class="wind-pill" id="windText" aria-label="ลมสงบ">🍃 ↔</div></div>
+  <div class="center-top"><div class="round" id="roundText" aria-label="รอบที่ 1">รอบ 01</div><div class="turn-pill" id="turnText" aria-live="polite" aria-label="ตาแมว">🐱 ตาแมว</div></div>
   <div class="life life-dog"><div class="life-title"><span aria-hidden="true">🐶</span><span class="tag"><span id="dogHp">6</span>/6</span></div><div class="health-track"><div class="health-fill" id="dogFill"></div></div><div class="hearts" id="dogHearts" aria-label="เลือดหมา 6 จาก 6">♥ ♥ ♥ ♥ ♥ ♥</div></div>
  </div>
- <div id="skillInfo" class="skill-info" aria-live="polite"></div><div id="skillBar" class="skill-bar" aria-label="ไอเทมสกิล"></div><div class="aim-panel"><div class="aim-head"><span id="aimText" aria-label="มุมเล็ง 48 องศา">↗ 48°</span><span class="power" id="powerText" aria-label="พลัง 65 เปอร์เซ็นต์">⚡ 65%</span></div><div class="meter"><div id="powerFill"></div></div><div class="hint">ลากเมาส์ / แตะลากเพื่อขว้าง · ← → ปรับมุม · ↑ ↓ ปรับแรง · SPACE ขว้าง</div></div>
+ <div class="wind-pill" id="windText" aria-label="ลมสงบ">ลม 0</div>
+ <div id="skillInfo" class="skill-info" aria-live="polite"></div><div id="skillBar" class="skill-bar" aria-label="ไอเทมสกิล"></div><div class="aim-panel"><div class="aim-head"><span class="aim-item" id="aimText" aria-label="มุมเล็ง 48 องศา">↗ 48°</span><span class="power aim-item" id="powerText" aria-label="พลัง 65 เปอร์เซ็นต์">⚡ 65%</span></div><div class="meter"><div id="powerFill"></div></div><div class="hint">ลากเมาส์ / แตะลากเพื่อขว้าง · ← → ปรับมุม · ↑ ↓ ปรับแรง · SPACE ขว้าง</div></div>
  <button class="mobile-fire" id="fireButton" type="button" aria-label="ขว้างเลย" title="ขว้างเลย">🎯</button>
  <div class="controlbar"><button class="small-btn" id="soundButton" type="button" title="เปิด/ปิดเสียง">🔊</button><button class="small-btn" id="pauseButton" type="button" title="หยุดเกม">⏸</button><button class="small-btn" id="resetButton" type="button" title="เริ่มใหม่">↺</button></div>
 </div>
@@ -133,6 +152,20 @@ function setTurn(t){
 function setMode(mode){s.mode=mode;document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('selected',b.dataset.mode===mode));updateHud()}
 function activeBot(){return s.mode==='bot'&&s.turn==='dog'}
 
+const HUD_ICONS={
+ cat:'<svg class="hud-symbol" viewBox="0 0 48 48" data-animal="cat" aria-hidden="true"><path d="M8 18 8 5l10 7a22 22 0 0 1 12 0l10-7v13c3 4 4 8 4 12 0 10-8 15-20 15S4 40 4 30c0-4 1-8 4-12z" fill="#fff"/><path d="M15 27v2M33 27v2M20 35q4 3 8 0"/></svg>',
+ dog:'<svg class="hud-symbol" viewBox="0 0 48 48" data-animal="dog" aria-hidden="true"><path d="M11 12Q3 8 3 20v9q0 7 8 5M37 12q8-4 8 8v9q0 7-8 5" fill="#eab67e"/><path d="M10 22q0-14 14-14t14 14v9q0 13-14 13T10 31z" fill="#fff"/><path d="M17 25v2M31 25v2M20 34q4 3 8 0"/></svg>',
+ flag:'<svg class="hud-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 43V6m2 2h25l-5 8 5 8H12"/></svg>',
+ aim:'<svg class="hud-symbol" viewBox="0 0 48 48" aria-hidden="true"><circle cx="22" cy="27" r="14"/><circle cx="22" cy="27" r="5"/><path d="M25 23 41 7M32 7h9v9"/></svg>',
+ power:'<svg class="hud-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="M27 3 9 27h13l-2 18 19-26H26z" fill="#ffe078"/></svg>',
+ wind:'<svg class="hud-symbol wind-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 15h24c9 0 9-10 2-10-4 0-6 3-6 5M3 24h34c10 0 10 11 3 11-4 0-6-3-6-5M5 33h17c8 0 8 10 2 10-3 0-5-2-5-4"/></svg>',
+ arrow:'<svg class="hud-symbol wind-arrow" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 24h33M27 12l12 12-12 12"/></svg>',
+ shield:'<svg class="hud-symbol wind-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 40 9v12c0 11-6 18-16 23C14 39 8 32 8 21V9z"/><path d="M15 24h18"/></svg>',
+ hit:'<svg class="hud-symbol state-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="m24 3 4 13 12-7-5 13 10 4-12 4 3 12-12-7-8 10 1-14L5 28l12-6-5-13 11 7z" fill="#ffc75a"/></svg>',
+ laugh:'<svg class="hud-symbol state-symbol" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#fff"/><path d="M14 18l4-3 4 3M27 18l4-3 4 3M14 27q10 15 20 0z"/></svg>',
+ sulk:'<svg class="hud-symbol state-symbol" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#fff"/><path d="m13 17 7 3m15-3-7 3M17 34q7-7 14 0"/></svg>',
+ wait:'<svg class="hud-symbol state-symbol" viewBox="0 0 48 48" aria-hidden="true"><path d="M13 5h22M13 43h22M16 6c0 10 2 12 8 18-6 6-8 8-8 18M32 6c0 10-2 12-8 18 6 6 8 8 8 18"/></svg>'
+};
 function updateHud(){
  $('catHp').textContent=s.hp.cat;$('dogHp').textContent=s.hp.dog;
  for(const team of ['cat','dog']){
@@ -141,22 +174,22 @@ function updateHud(){
   hearts.textContent='♥ '.repeat(hp)+'♡ '.repeat(MAX_HP-hp)+(s.weak?.[team]?' 🐟':'');
   hearts.setAttribute('aria-label',`เลือด${team==='cat'?'แมว':'หมา'} ${hp} จาก ${MAX_HP}`+(s.weak?.[team]?' ติดสถานะอ่อนแอ':''));
  }
- const r=s.reaction,label=r?r.stages[r.index]?.label:'',teamIcon=s.turn==='cat'?'🐱':'🐶',teamName=s.turn==='cat'?'ตาแมว':'ตาหมา',reactionTeam=r?.focus||s.turn;
- const moodIcon={hurt:'💥',headbump:'🤕',dizzy:'💫',recover:'✨',laugh:'😆',sulk:'💢'};
- const turnIcon=s.finish?'🏆':r?(reactionTeam==='cat'?'🐱':'🐶')+' '+(moodIcon[r.stages[r.index]?.mood]||'✨'):s.throwSeq?teamIcon+' 🎯':!s.turnReady?teamIcon+' ⏳':teamIcon;
+ const r=s.reaction,label=r?r.stages[r.index]?.label:'',teamName=s.turn==='cat'?'ตาแมว':'ตาหมา',reactionTeam=r?.focus||s.turn;
+ const shownTeam=s.finish?.focus||(r?reactionTeam:s.turn),shownName=s.finish?'ชนะ':r&&r.kind!=='turnLaugh'?(shownTeam==='cat'?'แมว':'หมา'):(shownTeam==='cat'?'ตาแมว':'ตาหมา');
+ const mood=r?.stages[r.index]?.mood,stateIcon=s.finish?'':mood==='laugh'?HUD_ICONS.laugh:mood==='sulk'?HUD_ICONS.sulk:(mood==='hurt'||mood==='headbump'||mood==='dizzy')?HUD_ICONS.hit:r||s.throwSeq||!s.turnReady?HUD_ICONS.wait:'';
  const turnLabel=s.finish?'ฉลองชัย':r?`${r.kind==='turnLaugh'?teamName:(reactionTeam==='cat'?'แมว':'หมา')} · ${label}`:s.throwSeq?'กำลังขว้าง':!s.turnReady?'กล้องกำลังเข้าตัวละคร':teamName+(activeBot()?' บอท':'');
- $('turnText').textContent=turnIcon;$('turnText').setAttribute('aria-label',turnLabel);$('turnText').title=turnLabel;
- $('roundText').textContent=String(s.round).padStart(2,'0');$('roundText').setAttribute('aria-label',`รอบที่ ${s.round}`);
- const power=Math.round((s.power-280)/730*100);$('powerText').textContent=`⚡ ${power}%`;$('powerText').setAttribute('aria-label',`พลัง ${power} เปอร์เซ็นต์`);
+ $('turnText').innerHTML=HUD_ICONS[shownTeam]+'<span>'+shownName+'</span>'+stateIcon;$('turnText').setAttribute('aria-label',turnLabel);$('turnText').title=turnLabel;
+ $('roundText').innerHTML=HUD_ICONS.flag+'<span>รอบ '+String(s.round).padStart(2,'0')+'</span>';$('roundText').setAttribute('aria-label',`รอบที่ ${s.round}`);
+ const power=Math.round((s.power-280)/730*100);$('powerText').innerHTML=HUD_ICONS.power+'<strong>'+power+'%</strong>';$('powerText').setAttribute('aria-label',`พลัง ${power} เปอร์เซ็นต์`);
  $('powerFill').style.width=Math.min(100,Math.max(0,(s.power-280)/730*100))+'%';
- const aimIcon=s.finish?'🏆':r?'⏳':s.throwSeq?'🎯':s.ball?'☄️':activeBot()?'🤖':`↗ ${Math.round(s.angle)}°`;
- const aimLabel=s.finish?'ฉลองก่อนจบเกม':r?(r.kind==='turnLaugh'?'หัวเราะให้จบก่อนเริ่มเล่น':'รอแอนิเมชันก่อนเปลี่ยนเทิร์น'):s.throwSeq?'กำลังขว้าง':s.ball?'กระสุนกำลังลอย':activeBot()?'บอทกำลังเล็ง':`มุมเล็ง ${Math.round(s.angle)} องศา`;
- $('aimText').textContent=aimIcon;$('aimText').setAttribute('aria-label',aimLabel);$('aimText').title=aimLabel;
+ const aimLabel=`มุมเล็ง ${Math.round(s.angle)} องศา`;$('aimText').innerHTML=HUD_ICONS.aim+'<strong>'+Math.round(s.angle)+'°</strong>';$('aimText').setAttribute('aria-label',aimLabel);$('aimText').title=aimLabel;
  const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();
  $('fireButton').disabled=disabled;renderSkills();
- const calm=Math.abs(s.wind)<4,windIcon=s.noWind?'🛡️ 0':calm?'🍃 ↔':`🍃 ${s.wind>0?'→':'←'} ${Math.round(Math.abs(s.wind))}`;
- const windLabel=s.noWind?'ลูกถัดไปไม่มีลม':calm?'ลมสงบ':`ลมไปทาง${s.wind>0?'ขวา':'ซ้าย'} ${Math.round(Math.abs(s.wind))}`;
- $('windText').textContent=windIcon;$('windText').setAttribute('aria-label',windLabel);$('windText').title=windLabel;
+ const strength=s.noWind?0:Math.round(Math.abs(s.wind)),direction=strength===0?'none':s.wind>0?'right':'left';
+ const windLabel=s.noWind?'ลูกถัดไปไม่มีลม':direction==='none'?'ลมสงบ':`ลมไปทาง${direction==='right'?'ขวา':'ซ้าย'} ${strength}`;
+ const windArrow=direction==='none'?'':HUD_ICONS.arrow.replace('wind-arrow','wind-arrow '+direction);
+ $('windText').innerHTML='<span class="wind-reading" data-direction="'+direction+'">'+(s.noWind?HUD_ICONS.shield:HUD_ICONS.wind)+windArrow+'</span><span class="wind-word">ลม</span><strong>'+strength+'</strong>';
+ $('windText').setAttribute('aria-label',windLabel);$('windText').title=windLabel;
 }
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))}function rand(a,b){return a+(b-a)*Math.random()}
 
