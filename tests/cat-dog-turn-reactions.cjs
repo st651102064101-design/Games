@@ -21,4 +21,15 @@ assert.equal(s.turn,'cat');assert.equal(s.doubleSecond,true);assert.equal(s.pend
 ctx.beginReaction('miss','cat','dog');advanceUntil(()=>s.reaction?.kind==='turnLaugh');assert.equal(s.turn,'dog');
 reset('cat',1);ctx.beginReaction('miss','cat','dog');advanceUntil(()=>s.reaction===null);ctx.beginReaction('hit','cat','dog','body');assert.equal(s.pendingMissLaugh,null);
 reset('cat');s.mode='bot';ctx.beginReaction('miss','cat','dog');advanceUntil(()=>s.reaction?.kind==='turnLaugh');assert.equal(s.botTimer,1.05);ctx.step(.1);assert.equal(s.botTimer,1.05);advanceUntil(()=>s.reaction===null);assert.equal(s.turn,'dog');assert.equal(s.botTimer,1.05);
-console.log('Cat vs Dog miss reactions and double-throw turn order passed');
+s.mode='human';
+for(const [attacker,defender] of [['cat','dog'],['dog','cat']])for(const zone of ['head','body'])for(const winning of [false,true]){
+ reset(attacker);s.winTeam=winning?attacker:null;ctx.beginReaction('hit',attacker,defender,zone);
+ assert(!s.reaction.stages.some(stage=>stage.mood==='laugh'),'a successful hit must not trigger laughter');
+ advanceUntil(()=>s.reaction===null);
+ if(winning)assert.equal(s.finish?.focus,attacker,'winning animation follows the hit');
+ else assert.equal(s.turn,defender,'the defender receives the next turn');
+ assert.equal(s.pendingMissLaugh,null);
+}
+assert(!html.includes('id="tauntButton"'),'manual laughter button is removed');
+assert(!html.includes("if(e.key==='t'||e.key==='T'){taunt();return}"),'manual laughter shortcut is removed');
+console.log('Cat vs Dog hit, miss, victory, bot and double-throw reactions passed');
