@@ -41,13 +41,13 @@ export default async function handler(request) {
     if (body.kind !== 'state' || !body.alive || !Array.isArray(body.samples) || !body.samples.length) return respond({error:'Expected player state'},400);
     const now = Date.now();
     const samples = body.samples.slice(-MAX_SAMPLES).map(s=>({
-      t:num(s?.t,now,0,4e12),x:num(s?.x,0,-3600,3600),y:num(s?.y,0,-3600,3600),
+      t:num(s?.t,now,0,4e12),x:num(s?.x,0,-10125,10125),y:num(s?.y,0,-10125,10125),
       vx:num(s?.vx,0,-1200,1200),vy:num(s?.vy,0,-1200,1200),
-      s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,60),h:num(s?.h,100,0,10000)
+      s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,60),h:num(s?.h,100,0,10000),em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
     })).sort((a,b)=>a.t-b.t);
     const blades = Array.isArray(body.blades) ? body.blades.slice(0,24).map(b=>({
       id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
-      type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
+      speed:num(b?.speed,6,1,20),count:num(b?.count,1,1,24),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
     const me = {
@@ -56,9 +56,9 @@ export default async function handler(request) {
       look:{boots:num(body.look?.boots,1,1,8),bag:num(body.look?.bag,1,1,8),
         armor:num(body.look?.armor,1,1,8),furArmor:body.look?.furArmor===true,
         leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
-        weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel'},
-      shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-3600,3600),y:num(b.y,0,-3600,3600),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
-      clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'main').slice(0,20),t:num(c.t,now,now-5000,now+1000)})):[],
+        weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel',skin:String(body.look?.skin||'scout').slice(0,24)},
+      shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
+      clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'main').slice(0,20),x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),t:num(c.t,now,now-5000,now+1000)})):[],
       updatedAt:now
     };
     await store.setJSON(key, me);
