@@ -4428,8 +4428,8 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
 
 
     // Rendering-only Dawn Sequence. The game never pauses or blocks input for this transition.
-    const DAWN_SEQUENCE_MS=2550;
-    let dawnSequence=null;
+    const DAWN_SEQUENCE_MS=2550,DUSK_SEQUENCE_MS=1550;
+    let dawnSequence=null,duskSequence=null;
     function smoothDay01(value){
       const x=clamp(value,0,1);
       return x*x*(3-2*x);
@@ -4509,6 +4509,45 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       }
       c.restore();
     }
+    function drawDuskSequence(c,nowMs){
+      if(!duskSequence)return;
+      const age=nowMs-duskSequence.start;
+      if(age<0||age>=DUSK_SEQUENCE_MS)return;
+      const p=clamp(age/DUSK_SEQUENCE_MS,0,1),w=view.width,h=view.height;
+      const fade=smoothDay01(p/.82),quiet=1-smoothDay01((p-.75)/.25);
+      c.save();
+      // Sunset glow drains toward the horizon as moonlight replaces daylight.
+      const sunset=c.createLinearGradient(0,h*.12,0,h);
+      sunset.addColorStop(0,'rgba(255,203,145,0)');
+      sunset.addColorStop(.55,'rgba(252,161,115,.12)');
+      sunset.addColorStop(1,'rgba(255,129,86,.28)');
+      c.globalAlpha=(1-fade)*.75;c.fillStyle=sunset;c.fillRect(0,0,w,h);
+      const mx=w*.81,my=h*(.19+.025*(1-fade)),r=Math.min(34,Math.max(16,w*.05));
+      c.globalAlpha=fade*quiet;
+      c.fillStyle='#fff4c8';c.beginPath();c.arc(mx,my,r,0,Math.PI*2);c.fill();
+      c.fillStyle='#293148';c.beginPath();c.arc(mx+r*.37,my-r*.20,r*.9,0,Math.PI*2);c.fill();
+      if(!reducedMotion){
+        c.globalAlpha=fade*quiet*.64;
+        c.fillStyle='#fff3ce';
+        for(let i=0;i<8;i++){
+          const x=(i*173.7+Math.sin(i*2.2)*38+w)%w;
+          const y=h*(.10+((i*43)%27)*.012);
+          c.beginPath();c.arc(x,y,1.1+i%2*.55,0,Math.PI*2);c.fill();
+        }
+      }
+      // Non-blocking, fading banner. Never a modal or a paused game tick.
+      const visible=smoothDay01((p-.12)/.14)*(1-smoothDay01((p-.71)/.20));
+      if(visible>.002){
+        const ww=Math.min(w-26,330),cy=Math.max(100,Math.min(h*.26,218));
+        c.globalAlpha=visible*.85;c.fillStyle='rgba(15,24,44,.72)';
+        c.strokeStyle='rgba(178,201,252,.59)';c.lineWidth=1.3;
+        c.beginPath();c.roundRect(w/2-ww/2,cy-27,ww,54,13);c.fill();c.stroke();
+        c.textAlign='center';c.textBaseline='middle';
+        c.fillStyle='#f5f3df';c.font='800 '+Math.min(22,Math.max(17,w*.054))+'px "Noto Sans Thai","Segoe UI",Tahoma,sans-serif';
+        c.fillText('คืนที่ '+duskSequence.night+' เริ่มแล้ว',w/2,cy-1,ww-20);
+      }
+      c.restore();
+    }
     /** Replace a complete rendering snapshot; the caller's objects are copied. */
     function setSnapshot(snapshot){
       if(!snapshot||!snapshot.hud||!snapshot.player||!snapshot.fire)throw new TypeError('Snapshot requires hud, player and fire. See CLAUDE_LOGIC_HANDOFF.md.');
@@ -4522,11 +4561,18 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       // Trigger only on the live night-to-day edge. Loading a daytime save
       // should never replay a long scene or interrupt the player.
       const wasNight=previousModel?.campaign?.phase==='running';
+      const wasDay=previousModel?.campaign?.phase==='intermission';
       const becameDay=model.campaign?.phase==='intermission';
+      const becameNight=model.campaign?.phase==='running';
       if(wasNight&&becameDay){
         dawnSequence={start:now,night:previousModel.campaign.day||model.campaign.day||1};
-      }else if(!becameDay||!previousModel){
+        duskSequence=null;
+      }else if(wasDay&&becameNight){
+        duskSequence={start:now,night:model.campaign.day||1};
         dawnSequence=null;
+      }else{
+        if(!becameDay||!previousModel)dawnSequence=null;
+        if(!becameNight||!previousModel)duskSequence=null;
       }
       smoothModel=makeSmoothSnapshot(model,previousModel);
       updateProjection();
@@ -4622,7 +4668,9 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       const age=dawnSequence?ms-dawnSequence.start:Infinity;
       const transitioning=!!(isRest&&dawnSequence&&age>=0&&age<DAWN_SEQUENCE_MS);
       const lightening=transitioning?smoothDay01(age/1900):1;
-      const nightOpacity=isRest?1-lightening:1;
+      const eveningAge=duskSequence?ms-duskSequence.start:Infinity;
+      const evening=!!(!isRest&&duskSequence&&eveningAge>=0&&eveningAge<DUSK_SEQUENCE_MS);
+      const nightOpacity=isRest?1-lightening:(evening?smoothDay01(eveningAge/1190):1);
       // Crossfade the actual dark-night renderer rather than instantly swapping palettes.
       if(nightOpacity>.001){
         ctx.save();ctx.globalAlpha=nightOpacity;
@@ -4647,6 +4695,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         ctx.fillStyle=haze;ctx.fillRect(0,0,view.width,view.height);
         ctx.restore();
       }
+      if(evening)drawDuskSequence(ctx,ms);
       if(transitioning)drawDawnSequence(ctx,ms);
       // Only the HP bar is drawn above the hero. No nickname and no alternating
       // name/HP animation; the health bar remains visible throughout gameplay.
@@ -5266,7 +5315,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
     const TAU=Math.PI*2,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
     const copy=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
     const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59.2',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59','0.3.59.1','0.3.59.2'];
+    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59.3',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59','0.3.59.1','0.3.59.2','0.3.59.3'];
     const WEAPON_NAMES={axe:'ขวานวงเหวี่ยง',spear:'หอกทะลวง',bow:'ธนูนักล่า',sword:'ดาบผู้กล้า',staff:'คทาเวทมนตร์',hammer:'ค้อนยักษ์',dagger:'มีดสั้นคู่',magic:'คัมภีร์สายฟ้า',gun:'ปืนพก',shield:'โล่ผู้พิทักษ์'};
     // ASSUMPTION (3.0): axe, spear and bow stay the starting weapons because every existing save has them;
     // the reference hero's sword arrives on day 5 and the other six follow every 10 days.
@@ -7639,7 +7688,7 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
         else if(event.type==='milestone:close')UI.closeMilestone();
         else if(event.type==='lightning:strike')UI.showLightningStrike?.(event);
         else if(event.type==='phase:day'){/* Canvas dawn animation replaces the old day banner. */}
-        else if(event.type==='phase:night')UI.showPhaseNotice('night');
+        else if(event.type==='phase:night'){/* Canvas moonrise replaces the old night banner. */}
         else if(event.type==='tutorial:notice')featureNotice(event.id,event.message);
         else if(event.type==='tier'){UI.showTierUp?.(event);featureNotice(event.tier<=1?'orbitFirst':'orbitUpgrade',event.tier<=1?'ขวานหมุนปลดตามด่าน ใช้อาวุธหลักจัดการตัวเกราะหนา':'อาวุธหมุนเพิ่มระดับแล้ว! จำนวนและวงหมุนโจมตีได้มากขึ้น');}
         else if(event.type==='mini:open')UI.openMiniGame(engine.snapshot().miniGame);
