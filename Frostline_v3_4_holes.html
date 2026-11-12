@@ -2563,7 +2563,92 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  if(!lowGraphics())for(let s of particle){ctx.globalAlpha=.36+.19*Math.sin(s.p+now*2);ellipse(s.x,s.y,s.r,s.r,isHotTheme()?'#ffb347':'#ffffff')}ctx.globalAlpha=1;
  if(game.hitFlash>0){ctx.fillStyle=`rgba(222,78,95,${game.hitFlash*.16})`;ctx.fillRect(0,0,w,h)}
 }
-function drawEnemyArrows(){if(!game?.radar)return;const current=performance.now(),margin=35,cx=w/2,cy=h/2;for(const r of peers.values()){if(!r.init||current-r.last>6500)continue;const dx=r.x-cam.x,dy=(r.y-cam.y)*cameraPitchScale();if(Math.abs(dx)*screenScale<cx-margin&&Math.abs(dy)*screenScale<cy-margin)continue;const angle=Math.atan2(dy,dx),factor=Math.min((cx-margin)/(Math.abs(dx)||.001),(cy-margin)/(Math.abs(dy)||.001)),x=cx+dx*factor,y=cy+dy*factor;ctx.save();ctx.translate(x,y);ctx.rotate(angle);poly([[15,0],[-10,-9],[-6,0],[-10,9]],'#f5655f');ctx.restore()}}
+// Player awareness is always enabled; the radar pickup only EXTENDS bot range.
+function collectEnemyArrowTargets(){
+ if(!game||!game.p)return [];
+ const timestamp=performance.now(),p=game.p;
+ const results=[];
+ for(const r of peers.values()){
+  if(!r.init||timestamp-r.last>6500||!Number.isFinite(r.x)||!Number.isFinite(r.y))continue;
+  results.push({kind:'player',x:r.x,y:r.y,distance:Math.hypot(r.x-p.x,r.y-p.y),id:r.id||r.name||''});
+ }
+ const range=game.radar?4600:2200;
+ for(const b of game.bots||[]){
+  if(b.dead>0||!Number.isFinite(b.x)||!Number.isFinite(b.y))continue;
+  const distance=Math.hypot(b.x-p.x,b.y-p.y);
+  if(distance<=range)results.push({kind:'bot',x:b.x,y:b.y,distance,id:b.id||''});
+ }
+ // Real people receive priority over AI. Only draw the closest few markers.
+ results.sort((a,b)=>(a.kind==='player'?0:1)-(b.kind==='player'?0:1)||a.distance-b.distance);
+ return results.slice(0,lowGraphics()?4:6);
+}
+function enemyArrowPosition(x,y){
+ const pitch=cameraPitchScale(),dx=(x-cam.x)*screenScale,dy=(y-cam.y)*screenScale*pitch;
+ const left=40,right=Math.max(41,w-40),top=Math.min(Math.max(92,h*.22),150),bottom=Math.max(top+44,h-68);
+ const cx=clamp(w/2,left,right),cy=clamp(h/2,top,bottom);
+ const sx=w/2+dx,sy=h/2+dy;
+ if(sx>left+22&&sx<right-22&&sy>top+15&&sy<bottom-22)
+  return {x:sx,y:sy,onscreen:true,angle:Math.atan2(dy,dx)};
+ const ratios=[
+  dx>0?(right-cx)/dx:dx<0?(left-cx)/dx:Infinity,
+  dy>0?(bottom-cy)/dy:dy<0?(top-cy)/dy:Infinity
+ ];
+ const factor=Math.min(...ratios);
+ if(!Number.isFinite(factor))return {x:cx,y:cy,onscreen:true,angle:0};
+ return {x:clamp(cx+dx*factor,left,right),y:clamp(cy+dy*factor,top,bottom),
+  onscreen:false,angle:Math.atan2(dy,dx)};
+}
+function drawEnemyArrowMarker(target,pos){
+ const isHuman=target.kind==='player',color=isHuman?'#f36f7b':'#f4b65d';
+ const label=isHuman?(lang==='en'?'PLAYER':'คน'):(lang==='en'?'BOT':'บอต');
+ ctx.save();
+ if(pos.onscreen){
+  // When the opponent is visible, show a small chevron over the head.
+  const height=clamp(83*screenScale,48,90);
+  const y=pos.y-height;
+  if(y<96){ctx.restore();return}
+  ctx.translate(pos.x,y);
+  ctx.globalAlpha=.83+.17*Math.sin(now*5);
+  ctx.fillStyle='#16354db8';ctx.beginPath();ctx.arc(0,0,12,0,TAU);ctx.fill();
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(-7,-3);ctx.lineTo(7,-3);
+  ctx.lineTo(0,6);ctx.closePath();ctx.fill();
+ }else{
+  // Screen-space border marker, not affected by zoom or 2.5D camera tilt.
+  ctx.translate(pos.x,pos.y);
+  ctx.shadowColor='#081c2d7d';ctx.shadowBlur=lowGraphics()?0:6;
+  ctx.fillStyle='#15374ee9';ctx.strokeStyle='#f8ffff';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(0,0,18,0,TAU);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;ctx.rotate(pos.angle);
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-9,-8);
+  ctx.lineTo(-5,0);ctx.lineTo(-9,8);ctx.closePath();ctx.fill();
+  ctx.rotate(-pos.angle);
+  // Text ensures children can distinguish online opponents from AI.
+  roundRect(-18,20,36,17,7,'#ecf9ffec');
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#23556e';ctx.font='900 10px system-ui';
+  ctx.fillText(label,0,28);
+ }
+ ctx.restore();
+}
+function drawEnemyArrows(){
+ if(!game?.p)return;
+ const occupied=[];
+ for(const target of collectEnemyArrowTargets()){
+  const pos=enemyArrowPosition(target.x,target.y);
+  // Avoid stacking multiple markers on exactly the same screen edge.
+  if(!pos.onscreen){
+   const x0=pos.x,y0=pos.y;
+   for(let j=0;j<7;j++){
+    if(!occupied.some(q=>Math.hypot(q.x-pos.x,q.y-pos.y)<44))break;
+    const step=(j%2===0?1:-1)*(j+1)*17;
+    if(pos.x<65||pos.x>w-65)pos.y=clamp(y0+step,165,h-73);
+    else pos.x=clamp(x0+step,40,w-40);
+   }
+   occupied.push({x:pos.x,y:pos.y});
+  }
+  drawEnemyArrowMarker(target,pos);
+ }
+}
 function renderMenuBackdrop(t){now=t;cam.x=Math.sin(now*.05)*70;cam.y=Math.cos(now*.075)*50;drawGround();ctx.fillStyle='#153e5d12';ctx.fillRect(0,0,w,h);for(let s of particle){ctx.globalAlpha=.55;ellipse(s.x,s.y,s.r,s.r,'#fff')}ctx.globalAlpha=1}
 function draw(){if(mode==='menu'){renderMenuBackdrop(now)}else{drawGame()}}
 function tick(t){if(!last)last=t;let dt=Math.min((t-last)/1000,.045);last=t;frame++;cameraTilt+=(cameraTiltTarget-cameraTilt)*Math.min(1,dt*13);if(tiltNoticeUntil<performance.now())$('tiltStatus').hidden=true;if(mode==='playing')update(dt);if(mode==='menu')now+=dt;for(let s of particle){s.x+=s.vx*dt;s.y+=s.vy*dt;s.p+=dt;if(s.y>h+8){s.y=-8;s.x=rand(0,w)}if(s.x<-8)s.x=w+8}draw();if(howToOpen)renderHowToScene(t/1000);requestAnimationFrame(tick)}
