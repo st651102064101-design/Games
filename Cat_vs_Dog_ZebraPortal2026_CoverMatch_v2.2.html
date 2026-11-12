@@ -77,7 +77,7 @@ function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:1037,y:472}}
 
 function reset(newScreen='play'){
  s.items={cat:{double:1,power:1,stink:1,heal:1,wind:1},dog:{double:1,power:1,stink:1,heal:1,wind:1}};s.selected=null;s.noWind=false;s.doubleRemaining=0;s.doubleSecond=false;s.weak={cat:false,dog:false};s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
- s.ball=null;s.reaction=null;s.throwSeq=null;s.finish=null;s.hitStop=0;s.groundFx=[];s.turnReady=true;s.botTimer=0;s.shotTimer=0;s.shake=0;s.particles=[];s.floats=[];
+ s.ball=null;s.reaction=null;s.pendingMissLaugh=null;s.throwSeq=null;s.finish=null;s.hitStop=0;s.groundFx=[];s.turnReady=true;s.botTimer=0;s.shotTimer=0;s.shake=0;s.particles=[];s.floats=[];
  s.drag=null;s.clock=0;s.idleSince=0;s.tauntUsed=false;s.winTeam=null;s.emote={cat:{kind:'idle',until:0},dog:{kind:'idle',until:0}};
  s.bumps={cat:{n:0,until:0},dog:{n:0,until:0}};rigMotion.cat=null;rigMotion.dog=null;s.camX=AIM_CAM_X('cat');s.camY=AIM_CAM_Y;
  s.ambient=Array.from({length:20},(_,i)=>({x:rand(0,W),y:rand(85,GROUND-45),speed:rand(4,18),r:rand(2,4),phase:rand(0,7)}));
@@ -88,6 +88,12 @@ function setTurn(t){
  s.wind=(Math.random()-.5)*36;s.tauntUsed=false;
  s.botTimer=s.mode==='bot'&&t==='dog' ? 1.05:0;
  if(s.bumps[t].n&&s.clock>s.bumps[t].until){s.bumps[t].n=0}
+ if(s.pendingMissLaugh===t){
+  s.pendingMissLaugh=null;
+  const stages=[{who:t,focus:t,mood:'laugh',duration:3.10,label:'หัวเราะเยาะเต็มท่า'},{who:t,focus:t,mood:'recover',duration:.68,label:'เตรียมเทิร์นใหม่'}];
+  s.reaction={kind:'turnLaugh',attacker:t==='cat'?'dog':'cat',defender:t,stages,index:0,phase:0,focus:t,time:0};
+  enterReactionStage(s.reaction);
+ }
  updateHud();
 }
 function setMode(mode){s.mode=mode;document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('selected',b.dataset.mode===mode));updateHud()}
@@ -99,11 +105,11 @@ function updateHud(){
  $('catHearts').textContent='♥ '.repeat(s.hp.cat)+'♡ '.repeat(3-s.hp.cat)+(s.weak?.cat?'  🐟 อ่อนแอ +1':'');
  $('dogHearts').textContent='♥ '.repeat(s.hp.dog)+'♡ '.repeat(3-s.hp.dog)+(s.weak?.dog?'  🐟 อ่อนแอ +1':'');
  const r=s.reaction; const label=r?r.stages[r.index]?.label:' ';
- $('turnText').textContent=s.finish?'🏆 ฉลองชัย':r?'🎬 '+label:s.throwSeq?'🎯 กำลังขว้าง':!s.turnReady?'🎥 กล้องกำลังเข้าตัวละคร':(s.turn==='cat'?'🐱 ตาแมว':'🐶 ตาหมา'+(activeBot()?' · BOT':''));
+ $('turnText').textContent=s.finish?'🏆 ฉลองชัย':r?(r.kind==='turnLaugh'?(s.turn==='cat'?'🐱 ตาแมว':'🐶 ตาหมา')+' · '+label:'🎬 '+label):s.throwSeq?'🎯 กำลังขว้าง':!s.turnReady?'🎥 กล้องกำลังเข้าตัวละคร':(s.turn==='cat'?'🐱 ตาแมว':'🐶 ตาหมา'+(activeBot()?' · BOT':''));
  $('roundText').textContent='ROUND '+String(s.round).padStart(2,'0');
  $('powerText').textContent='พลัง '+Math.round((s.power-280)/730*100)+'%';
  $('powerFill').style.width=Math.min(100,Math.max(0,(s.power-280)/730*100))+'%';
- $('aimText').textContent=s.finish?'🏆 แสดงท่าฉลองก่อนจบเกม':r?'🎭 เล่นแอนิเมชันให้จบก่อนเปลี่ยนเทิร์น':s.throwSeq?'🎬 เตรียมขว้าง / ปล่อยกระสุน':s.ball?'☄ กำลังลอย...':activeBot()?'🤖 BOT กำลังเล็ง...':`↗ มุม ${Math.round(s.angle)}°`;
+ $('aimText').textContent=s.finish?'🏆 แสดงท่าฉลองก่อนจบเกม':r?(r.kind==='turnLaugh'?'🎭 หัวเราะให้จบก่อนเริ่มเล่น':'🎭 เล่นแอนิเมชันให้จบก่อนเปลี่ยนเทิร์น'):s.throwSeq?'🎬 เตรียมขว้าง / ปล่อยกระสุน':s.ball?'☄ กำลังลอย...':activeBot()?'🤖 BOT กำลังเล็ง...':`↗ มุม ${Math.round(s.angle)}°`;
  const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();
  $('fireButton').disabled=disabled;
  $('tauntButton').disabled=disabled||s.tauntUsed;
@@ -168,6 +174,7 @@ function startReactionPerformance(r){
 function beginReaction(kind,attacker,defender,zone='head'){
  s.throwSeq=null;
  const hit=kind==='hit',win=!!s.winTeam;
+ s.pendingMissLaugh=hit?null:defender;
  const stages=hit?[
   {who:defender,focus:defender,mood:'hurt',duration:1.05,label:'โดนโจมตี'},
   ...(zone==='head'?[{who:defender,focus:defender,mood:'headbump',duration:1.40,label:'หัวโน'},
@@ -175,9 +182,7 @@ function beginReaction(kind,attacker,defender,zone='head'){
   {who:attacker,focus:attacker,mood:'laugh',duration:1.65,label:'หัวเราะเยาะ'},
   {who:attacker,focus:attacker,mood:'recover',duration:.52,label:'คืนท่าก่อนจบ'}
  ]:[
-  {who:defender,focus:defender,mood:'laugh',duration:3.10,label:'หัวเราะเยาะเต็มท่า'},
-  {who:attacker,focus:attacker,mood:'sulk',duration:2.05,label:'หน้าบูดและถอนหายใจ'},
-  {who:defender,focus:defender,mood:'recover',duration:.68,label:'เตรียมเทิร์นใหม่'}
+  {who:attacker,focus:attacker,mood:'sulk',duration:2.05,label:'หน้าบูดและถอนหายใจ'}
  ];
  s.reaction={kind,attacker,defender,stages,index:0,phase:0,focus:defender,time:0};
  if(hit){
@@ -186,7 +191,7 @@ function beginReaction(kind,attacker,defender,zone='head'){
    toast(zone==='head'?(defender==='dog'?'💥 หมาหัวโน!':'💥 แมวหัวโน!'):(defender==='dog'?'💥 หมาโดนลำตัว!':'💥 แมวโดนลำตัว!'),1.65);
    tone(185,.28,'sawtooth',.07);tone(110,.35,'triangle',.05,.08);
  }else{
-   toast(kind==='wall'?'🧱 ปาโดนกำแพง! หัวเราะให้จบก่อน!':'💨 ปาพลาด! อีกฝ่ายหัวเราะเยาะ!',1.8);
+   toast(kind==='wall'?'🧱 ปาโดนกำแพง!':'💨 ปาพลาด!',1.8);
  }
  enterReactionStage(s.reaction);
 }
@@ -252,7 +257,8 @@ function step(dt){
     r.index++;
     if(r.index>=r.stages.length){
       s.reaction=null;
-      if(s.winTeam){
+      if(r.kind==='turnLaugh'){s.turnReady=false}
+      else if(s.winTeam){
        setMood(s.winTeam,'victory',3.2);
        const loser=s.winTeam==='cat'?'dog':'cat';setMood(loser,'defeat',3.1);
        s.finish={time:0,duration:3.0,focus:s.winTeam};
