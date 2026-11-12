@@ -1254,7 +1254,7 @@ function drawHaki(){const g=game;if(!g.haki)return;for(const h of g.haki){if(!is
  if(t<.25){ctx.fillStyle='rgba(255,255,255,'+(1-t/.25)+')';ctx.beginPath();ctx.arc(0,0,10*(1-t/.25)+3,0,TAU);ctx.fill()}
  ctx.restore()}}
 function drawYouLabel(p){labelQ.push([lang==='en'?'You':'คุณ',p.x,p.y+52,'#ffe28a','900 12px system-ui'])}
-function drawWeaponCount(p){if(lowGraphics())return;const n=game.weapons.length,t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
+function drawWeaponCount(p,count=game.weapons.length){const n=Math.max(0,Math.floor(Number(count)||0)),t=String(n);ctx.save();ctx.font='900 15px system-ui';const tw=Math.max(26,ctx.measureText(t).width+18),y=p.y-88;roundRect(p.x-tw/2,y-11,tw,22,11,'#173b50ee');ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-tw/2,y-11,tw,22,11);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(t,p.x,y+1);ctx.restore()}
 
 // ===== Loot racks: 2 rows x 6 columns, or random scatter =====
 function spawnRack(){const g=game;if(!g)return;g.racks=g.racks||[];if(g.racks.length>=3)g.racks.shift();
@@ -1782,7 +1782,7 @@ function drawCelestial(){const g=game;if(!g||!g.celestial)return;const el=now-g.
 function drawBot(b){ctx.save();if(b.warp){const el=now-b.warp.t0,k=el<b.warp.out?1-el/b.warp.out:(el-b.warp.out)/b.warp.inDur;ctx.globalAlpha=clamp(k,.08,1)}drawPlayer(b,BOT_LOOK);ctx.restore();
  const rad=60;for(let k=0;k<b.blades;k++){const a=b.s+k*TAU/4,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawSwordModel(x,y,a,'steel')}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+52,'#ffffff','900 11px system-ui']);
- roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore()}
+ roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore();drawWeaponCount(b,b.blades)}
 
 
 // Menu ambience: soft chord pad that plays only on the menu.
@@ -3492,11 +3492,11 @@ let mySamples=[],cloudSentT=0,lastMetaKey='',lastMetaAt=0;
 const nowMs=()=>Date.now();
 // More carried blades = quicker orbit; capped to keep collisions and rendering stable.
 function spinSpeed(){
- const count= Math.max(1,orbitCount()),countFactor=clamp(.4+count*.004,.4,.46);
- const speedUp=1.55+Math.min(2.45,(count-1)*.12);
- return clamp((5.25+game.upd.sword*.48)*(1+(game.perks.haste||0)*.16)*countFactor*speedUp,2,20);
+ // Doubling the number of carried weapons doubles orbital speed through 100+ weapons.
+ const count=Math.max(1,game.weapons.length),base=4.2+game.upd.sword*.38;
+ return clamp(base*(1+(game.perks.haste||0)*.16)*count,2,620);
 }
-function normSample(s){if(!s||typeof s!=='object')return null;const t=Number(s.t);if(!Number.isFinite(t))return null;return {t,x:clean(s.x,0,-half,half),y:clean(s.y,0,-half,half),vx:clean(s.vx,0,-1200,1200),vy:clean(s.vy,0,-1200,1200),s:clean(s.s,0,-1e9,1e9),w:clean(s.w,6,0,60),h:clean(s.h,100,0,10000),em:typeof s.em==='string'&&EMOTIONS[s.em]?s.em:'',es:clean(s.es,0,0,1e8)}}
+function normSample(s){if(!s||typeof s!=='object')return null;const t=Number(s.t);if(!Number.isFinite(t))return null;return {t,x:clean(s.x,0,-half,half),y:clean(s.y,0,-half,half),vx:clean(s.vx,0,-1200,1200),vy:clean(s.vy,0,-1200,1200),s:clean(s.s,0,-1e9,1e9),w:clean(s.w,6,0,620),h:clean(s.h,100,0,10000),em:typeof s.em==='string'&&EMOTIONS[s.em]?s.em:'',es:clean(s.es,0,0,1e8)}}
 function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)return buf[0];const last=buf[n-1];
  if(rt>=last.t){const e=Math.min(rt-last.t,250)/1000;return {x:clamp(last.x+last.vx*e,-half+50,half-50),y:clamp(last.y+last.vy*e,-half+50,half-50),s:last.s+last.w*e}}
  for(let i=n-1;i>0;i--){const a=buf[i-1],c=buf[i];if(rt>=a.t){const f=(rt-a.t)/Math.max(1,c.t-a.t);if(Math.hypot(c.x-a.x,c.y-a.y)>450)return f<1?a:c;return {x:lerp(a.x,c.x,f),y:lerp(a.y,c.y,f),s:lerp(a.s,c.s,f)}}}
@@ -3527,13 +3527,14 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
  const tp=performance.now();if(peer.lastArr)peer.gap=lerp(peer.gap,Math.min(tp-peer.lastArr,1500),.2);peer.lastArr=tp;peer.last=tp;
  peer.name=String(event.name||peer.name).slice(0,25).replace(/[<>]/g,'');
  if(event.maxHp!==undefined)peer.maxHp=clean(event.maxHp,125,1,10000);
- if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,600),speed:clean(b.speed,5.5,1,20),count:clean(b.count,1,1,24),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
+ if(event.weaponTotal!==undefined)peer.weaponTotal=clean(event.weaponTotal,peer.bl?.length||0,0,10000);
+ if(Array.isArray(event.blades))peer.bl=event.blades.slice(0,24).map(b=>({id:String(b.id||'').slice(0,100),o:clean(b.o,0,-1e4,1e4),m:clean(b.m,1,.1,5),reach:clean(b.reach,80,35,220),damage:clean(b.damage,12,3,600),speed:clean(b.speed,5.5,1,620),count:clean(b.count,1,1,10000),type:WEAPON_TYPES.some(t=>t.id===b.type)?b.type:(LEGACY_WEAPON_MIGRATION[b.type]||'ars01'),rarity:RARITIES.some(t=>t.id===b.rarity)?b.rarity:'common'}));
  if(event.look){const l=event.look;peer.look={boots:clean(l.boots,1,1,8),bag:clean(l.bag,1,1,8),armor:clean(l.armor,1,1,8),furArmor:!!l.furArmor,leatherPack:!!l.leatherPack,level:clean(l.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(l.weapon)?l.weapon:'steel',skin:safeSkinId(l.skin)}}
  updateOnlineInfo();
 }
 function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main',speed:spinSpeed(),count:Math.max(1,orbitCount())});
  allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(slotOffset(w)*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage),type:w.type,rarity:w.rarity,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,24)}
-function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon,skin:safeSkinId(game.p.skin)},blades:ownBlades()}}
+function ownMeta(){return {name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),weaponTotal:game.weapons.length,look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon,skin:safeSkinId(game.p.skin)},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp),em:p.emotion&&p.emotion.until>game.elapsed?p.emotion.key:'',es:p.emoSerial||0}}
 function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
  const sample=ownSample();mySamples.push(sample);if(mySamples.length>40)mySamples.shift();
@@ -3580,6 +3581,7 @@ function drawRemotePlayers(){const ts=performance.now();for(const r of peers.val
   if(b.type==='main')drawSwordModel(r.x+Math.cos(b.a)*(b.reach-45),r.y+Math.sin(b.a)*(b.reach-45),b.a,r.look?.weapon||'steel');
   else drawWeaponModel(r.x+Math.cos(b.a)*b.reach,r.y+Math.sin(b.a)*b.reach,b.a,{type:b.type,rarity:b.rarity||'common'});
  }
+ drawWeaponCount(r,r.weaponTotal??r.bl?.length??0);
 }}
 async function connectOnline(){
  if(network==='connecting'||network==='p2p'||network==='ready')return;
@@ -3649,7 +3651,7 @@ translateUI();
 window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{backupRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}});
 
 // Read-only health check for automated smoke tests; does not alter gameplay.
-Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3-arsenal',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,botCount:game?.bots?.length||0,playerName:PLAYER_NAME,pvpKills})});
+Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.4-fast-blade-clashes',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,botCount:game?.bots?.length||0,playerName:PLAYER_NAME,pvpKills})});
 })()
 </script>
 </body>
