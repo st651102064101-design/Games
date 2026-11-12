@@ -48,7 +48,7 @@
 (()=>{'use strict';
 const W=1280,H=720,GROUND=588,WALL={x:615,y:348,w:50,h:240},G=660,MAX_HP=3;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=2.20,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
+const VIEW_ZOOM=1.10,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
 // Keep the active character prominent, with the ground low in the frame.
 const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
 const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
@@ -132,8 +132,8 @@ function shoot(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.react
 function launch(){
  if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish)return;
  // Projectile is spawned only after animated paw/arm release: prevents visual desynchronization.
- const inv=s.items[s.turn];let skill=s.selected;if(skill){inv[skill]--;if(skill==='double')s.doubleRemaining=1;}const windless=s.noWind;if(windless)inv.wind--;s.selected=null;s.noWind=false; s.throwSeq={team:s.turn,stage:'anticipation',elapsed:0,angle:s.angle,power:s.power,emitted:false,skill,windless};
- s.drag=null;setMood(s.turn,'anticipation',.24);updateHud();
+ const inv=s.items[s.turn];let skill=s.selected;if(skill){inv[skill]--;if(skill==='double')s.doubleRemaining=1;}const windless=s.noWind;if(windless)inv.wind--;s.selected=null;s.noWind=false; s.throwSeq={team:s.turn,stage:'anticipation',elapsed:0,totalElapsed:0,angle:s.angle,power:s.power,emitted:false,skill,windless};
+ s.drag=null;setMood(s.turn,'anticipation',.36);updateHud();
 }
 function emitProjectile(seq){
  const pos=throwHandWorld(seq.team),d=seq.team==='cat'?1:-1,theta=seq.angle*Math.PI/180;
@@ -143,9 +143,9 @@ function emitProjectile(seq){
 }
 function updateThrowSequence(dt){
  const q=s.throwSeq;if(!q)return;
- q.elapsed+=dt;
- if(q.stage==='anticipation'&&q.elapsed>=.24){q.stage='release';q.elapsed=0;setMood(q.team,'release',1.05)}
- else if(q.stage==='release'&&q.elapsed>=.33&&throwHandWorld(q.team).y<GROUND-32){emitProjectile(q);q.stage='follow';q.elapsed=0;setMood(q.team,'follow',.42)}
+ q.elapsed+=dt;q.totalElapsed=(q.totalElapsed||0)+dt;
+ if(q.stage==='anticipation'&&q.elapsed>=.28){q.stage='release';q.elapsed=0;setMood(q.team,'release',1.05)}
+ else if(q.stage==='release'&&q.elapsed>=.14&&throwHandWorld(q.team).y<GROUND-32){emitProjectile(q);q.stage='follow';q.elapsed=0;setMood(q.team,'follow',.42)}
  else if(q.stage==='follow'&&q.elapsed>=.37){s.throwSeq=null;setMood(q.team,'recover',.50)}
 }
 function enterReactionStage(r){
@@ -770,7 +770,7 @@ CHARACTER_ATLAS.addEventListener('load',()=>{
 const CHARACTER_CLIPS={
  idle:{frames:[0,0,0,0,0,0,1,0],fps:2},aim:{frames:[2],fps:1},
  anticipation:{frames:[2,3],fps:8},release:{frames:[4,5],fps:6},
- follow:{frames:[6,7],fps:5},recover:{frames:[7,0],fps:4},
+ throw:{frames:[2,3,4,5,6,7],fps:8},follow:{frames:[6,7],fps:5},recover:{frames:[7,0],fps:4},
  hurt:{frames:[8,8,9],fps:7},headbump:{frames:[9],fps:1},dizzy:{frames:[10],fps:1},
  laugh:{frames:[12,13,12,13],fps:4},smug:{frames:[0],fps:1},
  sulk:{frames:[11],fps:1},victory:{frames:[12,14,14,12],fps:5},defeat:{frames:[15],fps:1}
@@ -778,13 +778,26 @@ const CHARACTER_CLIPS={
 function characterFrame(team,mood,elapsed){
  const clip=CHARACTER_CLIPS[mood]||CHARACTER_CLIPS.idle;
  const loop=mood==='idle'||mood==='laugh'||mood==='victory';
- const n=Math.floor(Math.max(0,Number.isFinite(elapsed)?elapsed:0)*clip.fps);
- const pose=clip.frames[loop?n%clip.frames.length:Math.min(n,clip.frames.length-1)];
- return {pose,index:pose+(team==='dog'?16:0),col:pose%8,row:Math.floor(pose/8)+(team==='dog'?2:0)};
+ const position=Math.max(0,Number.isFinite(elapsed)?elapsed:0)*clip.fps;
+ const n=Math.floor(position),fraction=position-n;
+ const frameIndex=loop?n%clip.frames.length:Math.min(n,clip.frames.length-1);
+ const nextIndex=loop?(frameIndex+1)%clip.frames.length:Math.min(frameIndex+1,clip.frames.length-1);
+ const pose=clip.frames[frameIndex],nextPose=clip.frames[nextIndex];
+ const blend=mood==='throw'&&nextPose!==pose?ease01(fraction):0;
+ return {pose,nextPose,blend,index:pose+(team==='dog'?16:0),col:pose%8,row:Math.floor(pose/8)+(team==='dog'?2:0),nextCol:nextPose%8,nextRow:Math.floor(nextPose/8)+(team==='dog'?2:0)};
 }
 function actorFrame(team){
  const mood=moodOf(team),rig=rigMotion[team];
- const elapsed=s.throwSeq?.team===team?s.throwSeq.elapsed:Math.max(0,s.clock-(rig?.start||0));
+ if(s.throwSeq?.team===team)return characterFrame(team,'throw',s.throwSeq.totalElapsed||0);
+ const elapsed=Math.max(0,s.clock-(rig?.start||0));
+ // Vary the pause and blink rhythm independently for each character.
+ if(mood==='idle'){
+  const t=s.clock+(team==='cat'?1.7:5.1),cycle=Math.floor(t/13),phase=t-cycle*13;
+  const blinkAt=2.1+((cycle*37+(team==='cat'?11:23))%31)/10;
+  const blink=phase>=blinkAt&&phase<blinkAt+(cycle%3===0?.42:.16);
+  const pose=blink?1:0;
+  return {pose,nextPose:pose,blend:0,index:pose+(team==='dog'?16:0),col:pose,row:team==='dog'?2:0,nextCol:pose,nextRow:team==='dog'?2:0};
+ }
  return characterFrame(team,mood,elapsed);
 }
 function renderCoverMatchedCharacter(team,x,y,size=1){
@@ -798,17 +811,31 @@ function renderCoverMatchedCharacter(team,x,y,size=1){
  if(mood==='dizzy')lean=Math.sin(elapsed*5)*.065;
  if(mood==='laugh')lift=-Math.max(0,Math.sin(elapsed*Math.PI*8))*4;
  if(mood==='victory'&&f.pose===14)lift=-16;
- ctx.translate(85,151+lift);ctx.rotate(lean);
- ctx.drawImage(CHARACTER_ATLAS,f.col*cw,f.row*ch,cw,ch,-105,-216,210,245);
+ // Small overlapping body motions keep the feet planted during idle and aiming.
+ if(mood==='idle'||mood==='aim'){
+  const cat=team==='cat',t=s.clock+(cat?.8:2.6);
+  const breath=Math.sin(t*(cat?1.55:1.85));
+  const shift=Math.sin(t*(cat?.54:.68)+.9);
+  const earPulse=Math.pow(Math.max(0,Math.sin(t*(cat?1.17:.91)+2.2)),18);
+  lift+=breath*.8;lean+=shift*.012+(cat?1:-1)*earPulse*.008;
+  ctx.translate(85+shift*.8,151+lift);ctx.rotate(lean);
+  ctx.scale(1+breath*.006,1-breath*.009);
+ }else{ctx.translate(85,151+lift);ctx.rotate(lean)}
+ const baseAlpha=ctx.globalAlpha;
+ const drawFrame=(col,row,alpha)=>{ctx.globalAlpha=alpha;ctx.drawImage(CHARACTER_ATLAS,col*cw,row*ch,cw,ch,-105,-216,210,245)};
+ drawFrame(f.col,f.row,baseAlpha*(1-f.blend));
+ if(f.blend>0)drawFrame(f.nextCol,f.nextRow,baseAlpha*f.blend);
+ ctx.globalAlpha=baseAlpha;
  ctx.restore();moodEffects(team,x+size*85,y-size*36,mood);
 }
 // Authored paw positions in the same 210 x 245 display rectangle as the atlas.
 throwHandWorld=function(team){
  const f=actorFrame(team),cat=team==='cat',size=cat?1.08:1;
  const paws={2:[148,121],3:[91,100],4:[135,98],5:[155,108],6:[157,107],7:[134,179]};
- const point=paws[f.pose]||paws[2];
- const px=cat?point[0]:192-point[0];
- return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+point[1]*245/256)*size};
+ const point=paws[f.pose]||paws[2],next=paws[f.nextPose]||point;
+ const x=point[0]+(next[0]-point[0])*f.blend,y=point[1]+(next[1]-point[1])*f.blend;
+ const px=cat?x:192-x;
+ return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+y*245/256)*size};
 };
 // Ready/windup frames already contain the exact Z disc in the paw.
 drawHeldWeapon=function(){};
