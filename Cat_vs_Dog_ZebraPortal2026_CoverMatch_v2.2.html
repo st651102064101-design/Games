@@ -30,6 +30,34 @@
 .toast.on{animation:event-pop .48s cubic-bezier(.2,.85,.25,1.3) both}
 @keyframes event-pop{0%{opacity:0;transform:translate(-50%,12px) scale(.45)}65%{opacity:1;transform:translate(-50%,-5px) scale(1.18)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.toast.on{animation:none}}
+
+/* Large, simple skill cards with a short label for young players. */
+.skill-bar{width:min(450px,calc(100% - 24px));max-width:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;overflow:visible;padding:6px;border-radius:18px}
+.skill{width:100%;min-width:0;min-height:78px;padding:4px 2px;background:var(--c);color:#10243b;border:3px solid #ffffffa8;border-radius:15px;box-shadow:0 3px 0 #08162980;gap:1px}
+.skill:nth-child(n){border-radius:15px}
+.skill .icon{width:42px;height:42px;display:grid;place-items:center;line-height:1}
+.skill .icon svg{width:100%;height:100%;display:block}
+.skill small{display:block;font-size:12px;line-height:1.15;font-weight:900;white-space:nowrap}
+.skill b{right:3px;top:3px;min-width:18px;padding:2px 4px;font-size:11px;line-height:1.1;color:#fff;background:#14243b;border-radius:10px}
+.skill.selected{border-color:#fff;box-shadow:0 0 0 3px #14243b,0 0 0 6px #ffe278,0 0 20px #ffe278aa;transform:translateY(-3px)}
+.skill:disabled{opacity:.56;filter:grayscale(.35)}
+.skill-info{bottom:106px}
+@media(max-width:680px){.skill-bar{bottom:49px;width:min(360px,calc(100% - 12px));padding:4px;gap:3px}.skill{min-height:60px;padding:2px 1px;border-width:2px;border-radius:12px}.skill:nth-child(n){border-radius:12px}.skill .icon{width:33px;height:33px}.skill small{font-size:10px}.skill b{font-size:9px;min-width:15px;padding:1px 3px;right:2px;top:2px}.skill-info{bottom:116px;font-size:11px}}
+
+/* Keep large touch targets outside the field when the viewport is small. */
+.skill-bar[hidden]{display:none}
+@media(max-width:680px),(max-height:500px){
+ .game-frame{overflow:visible;width:min(100%,calc((100dvh - 130px)*1.7777778));max-height:calc(100dvh - 130px)}
+ .game-frame.in-match{margin-bottom:94px}
+ .game-frame>canvas,.game-frame>.overlay{border-radius:inherit}
+ .skill-bar{bottom:-90px;width:min(450px,calc(100% - 12px))}
+ .skill-info{bottom:0}
+}
+@media(max-width:680px){
+ .game-frame{width:min(100%,calc((100dvh - 110px)*1.7777778));max-height:calc(100dvh - 110px)}
+ .game-frame.in-match{margin-bottom:74px}
+ .skill-bar{bottom:-70px;width:min(360px,calc(100% - 12px))}
+}
 </style>
 </head>
 <body>
@@ -78,7 +106,7 @@ function twinkle(){tone(520,.09,'triangle',.045);tone(750,.11,'triangle',.04,.07
 function burst(x,y,type,count=18){const colors=type==='hit'?['#fff2ab','#ffa466','#ff6f77','#ffe5de']:type==='wall'?['#d7e4fb','#9ba8b9','#657791']:['#ffffff','#f9d89b','#addcf9'];for(let i=0;i<count;i++){const a=Math.PI*2*Math.random(),v=70+Math.random()*270;s.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,life:.35+Math.random()*.45,max:.8,r:3+Math.random()*6,color:colors[Math.random()*colors.length|0]})}}
 function toast(msg,seconds=1.55){const el=$('toast'),icon=Array.from(msg.trim())[0]||'✨';el.classList.remove('on');void el.offsetWidth;el.textContent=icon;el.setAttribute('aria-label',msg);el.title=msg;el.classList.add('on');s.toastTimer=seconds}
 function hideToast(){$('toast').classList.remove('on');s.toastTimer=0}
-function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';if(screen!=='play')s.drag=null;updateHud()}
+function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';$('skillBar').hidden=screen!=='play';$('frame').classList.toggle('in-match',screen==='play');if(screen!=='play')s.drag=null;updateHud()}
 function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:DOG_X-3,y:472}}
 
 function reset(newScreen='play'){
@@ -943,8 +971,15 @@ drawProjectile=function(b,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.translat
 window.__catdogAnimationTest={frame:characterFrame,clips:CHARACTER_CLIPS,ready:()=>CHARACTER_ATLAS.complete&&CHARACTER_ATLAS.naturalWidth>0};
 
 
-const SKILLS=[['double','🔁','ปาเบิ้ล','#59dcff','ปาได้ 2 ครั้งในเทิร์นเดียว'],['power','💥','ปาพลัง','#ff7863','กระสุนใหญ่ โจมตี 2 HP'],['stink','🐟','เหม็น','#c4d94d','ติดอ่อนแอ โดนครั้งหน้า +1 HP'],['heal','🩹','ฟื้นฟู','#69e9a1','ฟื้น 1 HP และจบเทิร์น'],['wind','🛡️','ตัดลม','#c59cff','ตัดผลลมของกระสุนลูกถัดไป']];
-function renderSkills(){const bar=$('skillBar');if(!bar||!s.items)return;const inv=s.items[s.turn];const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();bar.innerHTML=SKILLS.map(([id,icon,label,color,desc])=>{let chosen=id==='wind'?s.noWind:s.selected===id;let locked=disabled||!inv[id]||(id==='heal'&&s.hp[s.turn]>=MAX_HP)||(s.doubleSecond&&id!=='wind');return '<button type="button" class="skill '+(chosen?'selected':'')+'" style="--c:'+color+'" data-skill="'+id+'" title="'+desc+'" aria-label="'+label+': '+desc+'" '+(locked?'disabled':'')+'><span class="icon">'+icon+'</span><small>'+label+'</small><b>'+inv[id]+'</b></button>'}).join('');bar.querySelectorAll('button').forEach(b=>{b.onclick=()=>chooseSkill(b.dataset.skill);b.onmouseenter=()=>{$('skillInfo').textContent=SKILLS.find(x=>x[0]===b.dataset.skill)[4]};b.onmouseleave=()=>{$('skillInfo').textContent=''}})}
+const SKILLS=[['double','2 ครั้ง','#a6eafa','ปาได้ 2 ครั้งในเทิร์นเดียว'],['power','แรง','#ffc1a8','กระสุนใหญ่ โจมตี 2 HP'],['stink','ปลาเหม็น','#e4efab','ติดอ่อนแอ โดนครั้งหน้า +1 HP'],['heal','เพิ่มเลือด','#aeecc7','ฟื้น 1 HP และจบเทิร์น'],['wind','กันลม','#dac5ff','ตัดผลลมของกระสุนลูกถัดไป']];
+const SKILL_ICONS={
+ double:'<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="15" cy="15" r="10" fill="#fff" stroke="currentColor" stroke-width="3"/><circle cx="33" cy="33" r="10" fill="#fff" stroke="currentColor" stroke-width="3"/><path d="M11 12h8l-8 6h8M29 30h8l-8 6h8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ power:'<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 3l4 10 9-5-3 10 11 4-11 4 3 10-9-5-4 12-4-12-9 5 3-10-11-4 11-4-3-10 9 5z" fill="#fff" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="24" cy="23" r="6" fill="currentColor"/></svg>',
+ stink:'<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M10 19c6-8 17-9 25-3l8-5v21l-8-5c-8 6-19 5-25-3l-5 3v-11z" fill="#fff" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="21" r="2" fill="currentColor"/><path d="M17 8c2-3 2-5 0-7M26 8c2-3 2-5 0-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+ heal:'<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 41S5 30 5 17C5 7 17 4 24 13 31 4 43 7 43 17c0 13-19 24-19 24z" fill="#fff" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M24 16v14M17 23h14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
+ wind:'<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 4l15 5v12c0 10-6 17-15 23C15 38 9 31 9 21V9z" fill="#fff" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M14 21h14c6 0 6-7 1-7-2 0-3 1-4 3M15 28h13c5 0 5 6 1 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
+};
+function renderSkills(){const bar=$('skillBar');if(!bar||!s.items)return;const inv=s.items[s.turn];const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();bar.innerHTML=SKILLS.map(([id,label,color,desc])=>{let chosen=id==='wind'?s.noWind:s.selected===id;let locked=disabled||!inv[id]||(id==='heal'&&s.hp[s.turn]>=MAX_HP)||(s.doubleSecond&&id!=='wind');return '<button type="button" class="skill '+(chosen?'selected':'')+'" style="--c:'+color+'" data-skill="'+id+'" title="'+desc+'" aria-label="'+label+': '+desc+'" aria-pressed="'+(chosen?'true':'false')+'" '+(locked?'disabled':'')+'><span class="icon">'+SKILL_ICONS[id]+'</span><small>'+label+'</small><b>'+inv[id]+'</b></button>'}).join('');bar.querySelectorAll('button').forEach(b=>{b.onclick=()=>chooseSkill(b.dataset.skill);b.onmouseenter=()=>{$('skillInfo').textContent=SKILLS.find(x=>x[0]===b.dataset.skill)[3]};b.onmouseleave=()=>{$('skillInfo').textContent=''}})}
 function chooseSkill(id){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot()||!s.items[s.turn][id])return;if(id==='heal'){if(s.hp[s.turn]>=MAX_HP)return;if(!confirm('ฟื้น 1 HP และจบเทิร์น ใช้เลยหรือไม่?'))return;s.items[s.turn].heal--;s.hp[s.turn]=Math.min(MAX_HP,s.hp[s.turn]+1);toast('💚 ฟื้น 1 HP',1.3);nextTurn();return}if(id==='wind')s.noWind=!s.noWind;else if(!s.doubleSecond)s.selected=s.selected===id?null:id;updateHud()}
 
 reset('menu');setMode('bot');showScreen('menu');requestAnimationFrame(loop);

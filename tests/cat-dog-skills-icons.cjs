@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const html=fs.readFileSync('Cat_vs_Dog_ZebraPortal2026_CoverMatch_v2.2.html','utf8');
+const start=html.indexOf('const SKILLS='),end=html.indexOf('function chooseSkill(id){',start);
+assert(start>=0&&end>start);
+const bar={innerHTML:'',querySelectorAll:()=>[]},info={textContent:''};
+const s={screen:'play',turn:'cat',turnReady:true,ball:null,reaction:null,throwSeq:null,finish:null,doubleSecond:false,selected:null,noWind:false,hp:{cat:6,dog:6},items:{cat:{double:1,power:1,stink:1,heal:1,wind:1},dog:{double:1,power:1,stink:1,heal:1,wind:1}}};
+const c={s,MAX_HP:6,$:id=>id==='skillBar'?bar:info,activeBot:()=>false,chooseSkill(){}};vm.createContext(c);vm.runInContext(html.slice(start,end),c);
+c.renderSkills();
+assert.equal((bar.innerHTML.match(/<svg\b/g)||[]).length,5,'each skill has an SVG icon');
+for(const name of ['double','power','stink','heal','wind'])assert(bar.innerHTML.includes(`data-skill="${name}"`));
+for(const label of ['2 ครั้ง','แรง','ปลาเหม็น','เพิ่มเลือด','กันลม'])assert(bar.innerHTML.includes(label),`${label} is visible`);
+assert.equal((bar.innerHTML.match(/aria-label=/g)||[]).length,5,'all buttons have accessible explanations');
+assert(/data-skill="heal"[^>]*disabled/.test(bar.innerHTML),'heal is disabled at full HP');
+s.selected='power';c.renderSkills();assert(/class="skill selected"[^>]*data-skill="power"/.test(bar.innerHTML),'selected skill remains marked');
+s.hp.cat=5;s.items.cat.heal=1;c.renderSkills();assert(!/data-skill="heal"[^>]*disabled/.test(bar.innerHTML),'heal becomes usable after damage');
+console.log('Five readable SVG skills, selection and healing availability passed');
