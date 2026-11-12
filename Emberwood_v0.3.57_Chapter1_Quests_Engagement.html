@@ -6971,7 +6971,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         if(pool.length<3)pool.push(...full.filter(v=>!pool.includes(v)));
         const options=[];while(options.length<3&&pool.length)options.push(pool.splice(Math.floor(this.random()*pool.length),1)[0]);
         q.options=copy(options);q.rerolls=count+1;
-        this.sound('confirm');this.event('day:open',{request:{...copy(q),resources:{coins:s.coins,gems:s.gems}}});this.event('save');return true;
+        this.sound('confirm');this.event('toast',{message:'สุ่มรางวัลใหม่แล้ว'});this.event('save');return true;
       }
       chooseDayReward(choice){
         const s=this.state,q=s.dayChoice;if(s.phase!=='day-choice'||!q||choice?.requestId!==q.requestId||!q.options.some(o=>o.id===choice.choiceId))return false;
