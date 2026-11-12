@@ -47,7 +47,7 @@
 (()=>{'use strict';
 const W=1280,H=720,GROUND=588,WALL={x:615,y:348,w:50,h:240},G=660,MAX_HP=3;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=2.20,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
+const VIEW_ZOOM=1.10,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
 // Keep the active character prominent, with the ground low in the frame.
 const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
 const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
