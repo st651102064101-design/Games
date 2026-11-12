@@ -2561,7 +2561,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  for(const b of game.bots||[])if(!b.dead&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y+18,obj:b});
  arr.sort((a,b)=>a.y-b.y);for(let a of arr){if(a.kind==='bear')drawBear(a.obj);else if(a.kind==='obs')drawObstacle(a.obj);else if(a.kind==='bot')drawBot(a.obj);else if(a.kind==='dog')drawSnowDog(a.obj);else{if(a.obj===game.p&&game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;if(a.obj===game.p)drawHeroPose(a.obj);else drawPlayer(a.obj);ctx.globalAlpha=1}}
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawBearShots();drawSlashes();
- for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
+ for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.blastRing?f.r*(1-.65*f.life/f.max):f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;worldTiltActive=false;ctx.restore();
  drawDayNight();
  if(!lowGraphics()){drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial()}
@@ -3300,7 +3300,7 @@ function drawArsenalModel(x,y,a,w,t,r){ctx.save();ctx.translate(x,y);ctx.rotate(
 const shotPool=[],shots=[],recentShots=[],clashes=[],seenCombat=new Map();let combatSeq=0;
 function combatSpec(w){return WEAPON_TYPES.find(t=>t.id===w.type)||WEAPON_TYPES[0]}
 function emitShot(w,spec,x,y,a,owner=CLIENT_ID,id=null){
- const b=shotPool.pop()||{},longRange=['lmg','minigun','rpg'].includes(spec.shape),speed=spec.shape==='rpg'?700:longRange?8000:1000;Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,longRange,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:spec.range/speed,damage:(w.damage||spec.base)*PLAYER_DAMAGE_MULTIPLIER,shape:spec.shape,blast:spec.shape==='rpg'?120:0,hitRadius:spec.shape==='rpg'?19:5});
+ const b=shotPool.pop()||{},longRange=['lmg','minigun','rpg'].includes(spec.shape),speed=spec.shape==='rpg'?700:longRange?8000:1000;Object.assign(b,{id:id||CLIENT_ID+'s'+(++combatSeq),owner,x,y,px:x,py:y,longRange,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:spec.range/speed,damage:(w.damage||spec.base)*PLAYER_DAMAGE_MULTIPLIER,shape:spec.shape,blast:spec.shape==='rpg'?600:0,hitRadius:spec.shape==='rpg'?19:5});
  if(shots.length>=1200){shotPool.push(shots.shift())}shots.push(b);return b;
 }
 function emitRotatingVolley(w,spec,x,y,a){playSound('gun',x,y,spec.shape);const count=spec.shape==='shotgun'?8:1;for(let k=0;k<count;k++){const angle=a+(k-(count-1)/2)*.065,b=emitShot(w,spec,x,y,angle);recentShots.push({id:b.id,type:w.type,x,y,a:angle,damage:b.damage,t:Date.now(),rays:1})}while(recentShots.length>18)recentShots.shift()}
@@ -3318,7 +3318,7 @@ function rocketContact(b,ax,ay,bx,by){
 }
 function explodeRocket(b,x,y){
  const radius=b.blast;playSound('explosion',x,y);sparks(x,y,'#ffb65b',20);
- game.fx.push({x,y,vx:0,vy:0,life:.45,max:.45,r:radius,color:'#ffc16c',ring:true});
+ game.fx.push({x,y,vx:0,vy:0,life:.65,max:.65,r:radius,color:'#ffc16c',ring:true,blastRing:true});
  if(b.owner===CLIENT_ID){
   for(const m of game.mobs)if(m.hp>0&&d2(m.x-x,m.y-y)<(radius+(m.r||0))**2)weaponImpact(m,b);
   for(const bot of game.bots||[]){if(bot.dead>0||bot.hp<=0||d2(bot.x-x,bot.y-y)>(radius+21)**2)continue;if(bot.blades>0){bot.blades--;spawnDrop(bot.x,bot.y,'weapon',1,randWeapon(false,'ars11'))}bot.hp-=b.damage;showEmotion(bot,'hurt');if(bot.hp<=0){bot.dead=6;bot.blades=4;bot.hits=0;earnXP(20);addCoins(5);recordPlayerKill()}}
