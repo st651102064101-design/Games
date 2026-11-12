@@ -1833,6 +1833,8 @@ function renderVoxelGround(){
  }
 }
 function renderVoxelRoof(){
+ const roofCenter=isoPoint(VOXEL.x0+11.5*VOXEL.cell,VOXEL.y0+9.5*VOXEL.cell,0);
+ ctx.save();ctx.translate(roofCenter.x,roofCenter.y);ctx.scale(2,2);ctx.translate(-roofCenter.x,-roofCenter.y);
  // Only the original 3 × 3 shelter has elevated canopy; generated terrain continues everywhere.
  for(const i of [10,12])for(const j of [8,10]){
   const x=VOXEL.x0+(i+.5)*VOXEL.cell,y=VOXEL.y0+(j+.5)*VOXEL.cell;
@@ -1847,10 +1849,11 @@ function renderVoxelRoof(){
   const a=isoPoint(x,y,4),b=isoPoint(x+c,y,4),cc=isoPoint(x+c,y+c,4),d=isoPoint(x,y+c,4);
   ctx.save();ctx.globalAlpha=opacity;voxelDrawPolygon([b,cc,{x:cc.x,y:cc.y+13},{x:b.x,y:b.y+13}],'#96704d');voxelDrawPolygon([d,cc,{x:cc.x,y:cc.y+13},{x:d.x,y:d.y+13}],'#ad895c');voxelDrawPolygon([a,b,cc,d],'#b98d61','#fff1d9',1.6);ctx.restore()
  }
+ ctx.restore();
 }
-function voxelBillboard(x,y,draw,z){
+function voxelBillboard(x,y,draw,z,scale=1){
  const p=isoPoint(x,y,z===undefined?voxelTerrainHeight(x,y):z);
- ctx.save();ctx.translate(p.x-x,p.y-y);draw();ctx.restore()
+ ctx.save();ctx.translate(p.x,p.y);ctx.scale(scale,scale);ctx.translate(-x,-y);draw();ctx.restore()
 }
 /* v4.10: Block inventory and block tools removed; survival shortcuts replace them. */
 let voxelMineHold=null,voxelPointerId=null,voxelActionCooldown=0;
@@ -1902,7 +1905,7 @@ function renderIsoWorld(){
  if(state.pet)put(petPos.x,petPos.y,()=>drawPet());
  if(state.built.trader){const b=buildings.find(x=>x.id==='trader');if(b)put(b.x+45,b.y+30,drawMerchant)}
  list.sort((a,b)=>a.order-b.order);
- for(const ob of list)voxelBillboard(ob.x,ob.y,ob.draw,ob.z);
+ for(const ob of list)voxelBillboard(ob.x,ob.y,ob.draw,ob.z,2);
  // Keep the player's body and carried goods above unfinished construction.
  voxelBillboard(state.x,state.y,()=>human(state.x,state.y,state.face,state.step),state.voxelZ||0);
  for(const d of fortFlights){if(d.t<0)continue;const p=clamp(d.t/d.duration,0,1),ease=1-(1-p)*(1-p),x=d.x+(d.tx-d.x)*ease,y=d.y+(d.ty-d.y)*ease-Math.sin(p*Math.PI)*43;voxelBillboard(x,y,()=>drawFlyingMaterial(d,x,y,p))}
@@ -2598,9 +2601,6 @@ document.querySelectorAll('[data-ico]').forEach(el=>{const name=el.getAttribute(
     const pose=modelAnimation.update(dt,dogFacing8,dogIsWalking,dogMotionIntensity,dogIsRunning);
     ctx.save();ctx.translate(x,y);
     ctx.beginPath();ctx.ellipse(1,12,28,8,0,0,Math.PI*2);ctx.fillStyle='#3f647453';ctx.fill();
-    const carry=state.carryType,count=carryCount();
-    if(carry&&count>0){ctx.save();if(/W/.test(dogFacing8))ctx.scale(-1,1);
-      if(carry==='wood')drawCarryStack();else drawCarryAccessories();ctx.restore()}
     if(modelReady){
       const strike=attackAnim>0?Math.sin(Math.PI*Math.min(1,attackAnim/.28)):0;
       const left=/W/.test(dogFacing8),thrust=strike*3*(left?-1:1);
