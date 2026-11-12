@@ -3897,7 +3897,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
     function drawTower(c,tower,time=0,card=false){
       c.save();c.translate(tower.x||0,tower.y||0);c.scale(tower.scale||1,tower.scale||1);const type=tower.type;
       const building=!card&&tower.buildProgress!==undefined&&tower.buildProgress<1;
-      if(building){const k=clamp(tower.buildProgress,0,1);c.save();c.globalAlpha=.85;for(let i=0;i<3;i++)box(c,-43+i*28,-7-k*58,25,6,2,'#b7955e','#56462e',1);c.restore();c.beginPath();c.rect(-95,-180*k,190,193);c.clip();}if(!card&&tower.hp!==undefined&&tower.hp<=0){drawRuinedTower(c,tower);c.restore();return;}if(!card&&tower.flash>0)c.translate(Math.sin(time*80+tower.x)*2.8,0);
+      if(building){const k=clamp(tower.buildProgress,0,1);c.save();c.globalAlpha=.85;for(let i=0;i<3;i++)box(c,-43+i*28,-7-k*58,25,6,2,'#b7955e','#56462e',1);c.restore();c.beginPath();c.rect(-95,-180*k,190,193);c.clip();}if(!card&&tower.flash>0)c.translate(Math.sin(time*80+tower.x)*2.8,0);
       ellipse(c,0,7,type==='cannon'?56:40,13,'#14241a77');
       if(type==='cannon'){
         const interval=Math.max(.12,tower.interval||1.7),cycle=card||!tower.hasTarget?0:clamp(1-((tower.cooldown||0)/interval),0,1),fuseProgress=card?0:clamp((cycle-.52)/.33,0,1),fuseLit=!!tower.hasTarget&&fuseProgress>0,postShot=card?0:clamp((tower.shotFlash||0)/.17,0,1),recoil=postShot*8,bulge=Math.max(postShot*.2,Math.sin(clamp((cycle-.9)/.1,0,1)*Math.PI)*.12),muzzleBloom=postShot;
@@ -3959,13 +3959,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         if(tower.type==='lightning'){window.EmberwoodRuneArt?.draw(c,'electricity',28,top-26,37,.95);}
         c.restore();
       }
-      if(!card&&Number.isFinite(tower.hp)&&Number.isFinite(tower.maxHp))drawTowerCracks(c,clamp(tower.hp/tower.maxHp,0,1),tower.flash||0);
-      if(!card&&Number.isFinite(tower.hp)&&Number.isFinite(tower.maxHp)){
-        const ratio=clamp(tower.hp/tower.maxHp,0,1);
-        box(c,-34,-147,68,8,3,'#2d2f2b','#1b2a1d',1.5);
-        if(ratio>0)box(c,-32,-145,64*ratio,4,1,ratio>.4?'#91e46b':'#e97c6f');
-        if(tower.hp<=0){c.globalAlpha=1;text(c,'ซ่อม',0,-159,15,'#ffb1a0');}
-      }
+      // Permanently hide health bars and cracks on towers.
       c.restore();
     }
     function drawRange(c,tower){if(tower.hp===0||!tower.showRange||!tower.range)return;const x=tower.x,y=tower.y-35,r=tower.range,g=c.createRadialGradient(x,y,r*.76,x,y,r);g.addColorStop(0,'#c53b4e04');g.addColorStop(1,'#d8385e50');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,TAU);c.fill();}
@@ -4246,7 +4240,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
     $('dayDiscover').addEventListener('click',()=>{const siteId=$('dayDiscover').dataset.siteId;if(siteId)emit('day:interact',{siteId});});
     $('daySkipButton').addEventListener('click',()=>emit('day:skip'));
     function updateNearbyRepair(){
-      const button=$('nearbyRepair');if(!button)return;
+      const button=$('nearbyRepair');if(button)button.hidden=true;return;
       if(!model||!model.player||['lost','won','dying'].includes(model.campaign?.phase)){button.hidden=true;return;}
       const damaged=(model.towers||[]).filter(t=>t.hp<t.maxHp&&Math.hypot(t.x-model.player.x,t.y-model.player.y)<128);
       if(!damaged.length){button.hidden=true;return;}
@@ -5150,7 +5144,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
     const TAU=Math.PI*2,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
     const copy=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
     const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59'];
+    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59.1',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59','0.3.59.1'];
     const WEAPON_NAMES={axe:'ขวานวงเหวี่ยง',spear:'หอกทะลวง',bow:'ธนูนักล่า',sword:'ดาบผู้กล้า',staff:'คทาเวทมนตร์',hammer:'ค้อนยักษ์',dagger:'มีดสั้นคู่',magic:'คัมภีร์สายฟ้า',gun:'ปืนพก',shield:'โล่ผู้พิทักษ์'};
     // ASSUMPTION (3.0): axe, spear and bow stay the starting weapons because every existing save has them;
     // the reference hero's sword arrives on day 5 and the other six follow every 10 days.
@@ -5591,12 +5585,19 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
           this.sound('upgrade');this.depositClock=0;this.event('save');
           return;
         }
-        const upgrade=false;
-        s.buildRequest={siteId:site.id,currentType:null,stars:{...s.towerStars},requestId:`${this.run}-build-${++this.requestSerial}`,upgrade,resumePhase:s.phase};
-        s.phase='choosing';s.player.moving=false;this.input={x:0,y:0};
-        this.event('build:open',{request:{...s.buildRequest,options:[...TYPES],
-          title:upgrade?'เพิ่มดาวป้อม':'สร้างป้อม',
-          description:upgrade?'ป้อมเดิม +1★ / เปลี่ยนชนิดไม่เพิ่ม★':'เลือกป้อมที่ต้องการ'}});
+        // Choose a tower automatically and complete construction in this tick.
+        const resumePhase=s.phase,previousInput={...this.input};
+        const available=TYPES.filter(type=>!s.towers.some(t=>t.type===type));
+        const pool=available.length?available:TYPES;
+        const towerType=pool[Math.floor(this.random()*pool.length)];
+        const requestId=`${this.run}-build-${++this.requestSerial}`;
+        s.buildRequest={siteId:site.id,currentType:null,stars:{...s.towerStars},requestId,upgrade:false,resumePhase};
+        s.phase='choosing';
+        if(!this.chooseTower({siteId:site.id,requestId,towerType})){
+          s.buildRequest=null;s.phase=resumePhase;
+          this.event('toast',{message:'สร้างป้อมไม่สำเร็จ ลองใหม่อีกครั้ง'});
+        }
+        this.input=previousInput;
       }
       newTower(type,x,y,level=1){
         // First star is granted upon building, regardless of whether this tower came from the shop.
@@ -6130,35 +6131,20 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         this.sound('boss');this.event('toast',{message:'จ้าวรัตติกาลเข้าสู่ร่างที่ 2! ระวังพายุธนู'});
       }
       emperorRage(boss){boss.stage=2;boss.speed*=1.3;boss.clock=.5;this.summon(boss,'golden',4,boss.summoned+4);this.state.effects.push({type:'heal',x:boss.x,y:boss.y-30,radius:150,age:0,ttl:.8});this.sound('boss');this.event('toast',{message:'จักรพรรดิโกรธแล้ว!'});}
-      /** Towers are destructible; a ruined tower stays in its existing shop card for repairs. */
-      hurtTower(tower,raw){
-        const s=this.state;if(!tower||tower.hp<=0||raw<=0||s.elapsed<(tower.hurtUntil||0))return false;
-        const hit=Math.max(1,Math.round(raw*.65*.80));if(tower.hp===tower.maxHp)this.event('tutorial:notice',{id:'towerHurt',message:'ป้อมถูกโจมตี! สังเกตหลอด HP และรอยร้าว ยิ่งเลือดน้อยยิ่งแตกร้าว'});tower.hp=Math.max(0,tower.hp-hit);tower.hurtUntil=s.elapsed+.5;tower.flash=.15;
-        s.damageTexts.push({text:`−${hit}`,x:tower.x,y:tower.y-152,kind:'friendly',age:0,ttl:.65});this.sound('hit');
-        if(tower.hp<=0){this.event('tutorial:notice',{id:'towerDestroyed',message:'ป้อมพัง! เดินเข้าใกล้แล้วแตะซ่อม'});tower.cooldown=0;
-          s.effects.push({type:'towerShatter',x:tower.x,y:tower.y-52,radius:87,variant:tower.type,age:0,ttl:1.15});
-          this.sound('explode');this.event('toast',{message:'ป้อมพัง! เดินเข้าใกล้เพื่อซ่อม'});
-        }
-        return true;
-      }
-      nearestEnemyTarget(e){
-        const s=this.state;let target=s.player,kind='player',dist=distance(e,s.player);
-        for(const tower of s.towers){if(tower.hp<=0)continue;const d=distance(e,tower);if(d<dist){target=tower;kind='tower';dist=d;}}
-        return {target,kind,dist};
+      /** Towers remain intact, and every enemy selects the player as its target. */
+      hurtTower(_tower,_raw){return false;}
+      nearestEnemyTarget(enemy){
+        const target=this.state.player;
+        return {target,kind:'player',dist:distance(enemy,target)};
       }
       /** Every hit on the player goes through here: armour, i-frames, damage text and defeat. */
       hurtPlayer(raw){
         const s=this.state,p=s.player,c=this.config;if(raw<=0||s.elapsed<p.hurtUntil||['won','lost','dying'].includes(s.phase))return false;
         const hit=Math.max(1,Math.round(Math.max(1,raw-s.perks.armor)*.80));p.hp=Math.max(0,p.hp-hit);this.sound('hurt');p.hurtUntil=s.elapsed+c.contactCooldown;p.flash=.15;
-        // An accepted hit knocks away ONE axe. Invulnerable/blocked hits never call this path.
-        const arsenal=s.arsenal,visibleBefore=this.orbitRings().reduce((n,ring)=>n+ring.blades,0);
-        if(visibleBefore>0){
-          arsenal.orbitPenalty=Math.min(6,Math.ceil(arsenal.orbitPenalty||0)+1);
-          s.effects.push({type:'impact',x:p.x+18,y:p.y-36,radius:15,age:0,ttl:.24});
-        }
+        // Player damage never removes unlocked flying axes.
         s.damageTexts.push({text:`−${hit}`,x:p.x,y:p.y-85,kind:'friendly',age:0,ttl:.7});this.setEmotion('surprised',.6);if(p.hp<=0)this.finish(false);return true;
       }
-      explode(x,y,radius,damage){const s=this.state,p=s.player;s.effects.push({type:'explosion',x,y,radius,age:0,ttl:.5});this.sound('explode');if(Math.hypot(p.x-x,p.y-26-y)<=radius)this.hurtPlayer(damage);for(const tower of s.towers)if(tower.hp>0&&Math.hypot(tower.x-x,tower.y-35-y)<=radius)this.hurtTower(tower,damage);}
+      explode(x,y,radius,damage){const s=this.state,p=s.player;s.effects.push({type:'explosion',x,y,radius,age:0,ttl:.5});this.sound('explode');if(Math.hypot(p.x-x,p.y-26-y)<=radius)this.hurtPlayer(damage);}
       /** A bomber that finishes its fuse blows up: it counts toward the day but is not a player kill. */
       selfDestruct(e){
         e.alive=false;e.burn=null;this.state.waveKills++;
@@ -6293,10 +6279,19 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       }
       equipWeapon(id){if(!this.weaponUnlocked(id)||['won','lost','choosing','day-choice','tower-reward'].includes(this.state.phase)||this.miniGame)return false;this.state.equipped=id;this.state.player.attackSequence=0;this.state.player.attackTechnique=0;return true;}
       upgradeWeapon(id){
-        const s=this.state;if(!this.weaponUnlocked(id)||s.weapons[id]>=MAX_WEAPON_LEVEL||this.pendingWeaponEvolution(id)||['won','lost','choosing','day-choice','tower-reward'].includes(s.phase)||this.miniGame)return false;
+        const s=this.state;
+        if(!this.weaponUnlocked(id)||s.weapons[id]>=MAX_WEAPON_LEVEL||
+          ['won','lost','choosing','day-choice','tower-reward'].includes(s.phase)||this.miniGame)return false;
+        while(this.pendingWeaponEvolution(id)){
+          if(!this.chooseWeaponEvolution(id,EVOLUTION_PATHS[Math.floor(this.random()*EVOLUTION_PATHS.length)]))return false;
+        }
         const cost=this.weaponCost(id);if(s.coins<cost.coins||s.gems<cost.gems)return false;
-        s.coins-=cost.coins;s.gems-=cost.gems;s.weapons[id]++;this.sound('upgrade');const lv=s.weapons[id];
-        this.event('toast',{message:lv%10===0?`${WEAPON_NAMES[id]} Lv.${lv} เลือกวิวัฒนาการ 1 จาก 3 สายในร้านค้า!`:`${WEAPON_NAMES[id]} ระดับ ${lv}`});return true;
+        s.coins-=cost.coins;s.gems-=cost.gems;s.weapons[id]++;
+        this.sound('upgrade');
+        if(this.pendingWeaponEvolution(id))
+          this.chooseWeaponEvolution(id,EVOLUTION_PATHS[Math.floor(this.random()*EVOLUTION_PATHS.length)]);
+        else this.event('toast',{message:`${WEAPON_NAMES[id]} ระดับ ${s.weapons[id]}`});
+        return true;
       }
       nextWeaponTechnique(stats){
         const p=this.state.player;
@@ -6437,14 +6432,14 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       gainArsenal(amount){
         const s=this.state,a=s.arsenal;if(!(amount>0))return;
         a.count=Math.min(1e6,a.count+amount);a.by[s.equipped]+=amount;
-        a.orbitPenalty=Math.max(0,(a.orbitPenalty||0)-Math.min(amount,1));
+        a.orbitPenalty=0;
       }
       tierOf(count){let tier=0;ARSENAL_TIERS.forEach((need,i)=>{if(count>=need)tier=i;});return tier;}
       orbitTier(){return this.tierOf(Math.max(1,this.state.wave));}
       orbitCap(wave=this.state.wave){return Math.min(6,Math.max(1,Math.ceil(wave*6/100)));}
       orbitRings(){
         const s=this.state,c=this.config,tier=this.orbitTier(),rings=[];
-        let remaining=Math.max(0,this.orbitCap(s.wave)-Math.ceil(s.arsenal.orbitPenalty||0));
+        let remaining=this.orbitCap(s.wave);
         const speedMultiplier=1+Math.min(5,tier)*.09;
         for(let r=0;r<3&&remaining>0;r++){
           const blades=Math.min(c.orbitCaps[r],remaining);remaining-=blades;
@@ -6779,10 +6774,18 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         const s=this.state;return DAY_REWARDS.filter(r=>r.id!=='attack'||s.perks.attack<1).filter(r=>r.id!=='speed'||s.perks.speed<.25).filter(r=>r.id!=='armor'||s.perks.armor<8).filter(r=>r.id!=='haste'||s.perks.haste<this.config.hasteMax-1e-9).filter(r=>r.id!=='health'||s.player.maxHp<this.config.maxHpCap);
       }
       requestDayChoice(){
-        const s=this.state,pool=this.availableDayRewards().slice();s.enemyShots=[];
-        s.graves=[]; // Wave complete: clear all graves for the daytime reward/rest.
-        const options=[];while(options.length<3&&pool.length){options.push(pool.splice(Math.floor(this.random()*pool.length),1)[0]);}
-        s.dayChoice={requestId:`${this.run}-day-${++this.requestSerial}`,day:s.wave,options:copy(options),rerolls:0};s.phase='day-choice';this.setEmotion('happy',1.5);s.moves.dash=null;s.moves.special=null;this.sound('day');s.player.moving=false;this.input={x:0,y:0};this.event('day:open',{request:{...copy(s.dayChoice),resources:{coins:s.coins,gems:s.gems}}});
+        const s=this.state,pool=this.availableDayRewards().slice();
+        s.enemyShots=[];s.graves=[];
+        const options=[];while(options.length<3&&pool.length)
+          options.push(pool.splice(Math.floor(this.random()*pool.length),1)[0]);
+        s.dayChoice={requestId:`${this.run}-day-${++this.requestSerial}`,day:s.wave,options:copy(options),rerolls:0};
+        s.phase='day-choice';this.setEmotion('happy',1.5);
+        s.moves.dash=null;s.moves.special=null;this.sound('day');
+        const choice=options[Math.floor(this.random()*Math.max(1,options.length))];
+        if(choice){
+          this.chooseDayReward({requestId:s.dayChoice.requestId,choiceId:choice.id});
+          this.event('toast',{message:`สุ่มพรประจำวัน: ${choice.title}`});
+        }else{s.dayChoice=null;this.openTowerReward(s.wave);}
       }
       rerollDayReward(action){
         const s=this.state,q=s.dayChoice;
@@ -6875,7 +6878,9 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
           s.effects.push({type:'heal',x:site.x,y:site.y-15,age:0,ttl:.7,radius:24});
           this.event('toast',{message:`หีบกลางวัน! +${reward.wood} ไม้ +${reward.coins} เหรียญ${reward.gems?' +'+reward.gems+' เพชร':''}`});this.event('save');return true;
         }
-        this.event('dayEncounter:show',{data:this.dayChoicePayload(site)});return true;
+        const available=this.dayChoicePayload(site).choices.filter(choice=>choice.available);
+        if(!available.length){this.event('toast',{message:'ยังไม่มีข้อเสนอที่เลือกได้'});return false;}
+        return this.chooseDayEncounter(site.id,available[Math.floor(this.random()*available.length)].id);
       }
       chooseDayEncounter(siteId,choiceId){
         const s=this.state,site=s.daySites?.find(v=>v.id===siteId&&!v.claimed);
@@ -6894,7 +6899,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
           }
           site.stock[choiceId]=0;this.sound('coin',site);
           this.event('toast',{message:'ซื้อขายสำเร็จ!'});
-          this.event('dayEncounter:show',{data:this.dayChoicePayload(site)});
+          // Show a brief toast instead of opening a blocking merchant dialog.
         }else{
           if(site.eventType==='traveller'){
             if(choiceId==='safe'){if(s.player.hp>=max)s.coins+=30;else s.player.hp=Math.min(max,s.player.hp+35);}
@@ -6931,10 +6936,11 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         ];
       }
       offerQuest(day){
-        const s=this.state;
-        if(!this.questOptions(day).length||s.questOffer||s.quest||s.phase!=='intermission')return false;
-        s.questOffer={day};s.phase='quest-choice';s.player.moving=false;this.input={x:0,y:0};
-        this.event('quest:open',{request:{day,options:this.questOptions(day)}});this.event('save');return true;
+        const s=this.state;if(!this.questOptions(day).length||s.questOffer||s.quest||s.phase!=='intermission')return false;
+        const options=this.questOptions(day),choice=options[Math.floor(this.random()*options.length)];
+        s.quest={id:choice.id,day,title:choice.title,target:choice.target,progress:0,selectedAt:s.elapsed};
+        s.questOffer=null;this.event('toast',{message:`สุ่มภารกิจ: ${choice.title}`});
+        this.event('save');return true;
       }
       chooseQuest(day,id){
         const s=this.state;if(s.phase!=='quest-choice'||s.questOffer?.day!==day)return false;
@@ -6957,9 +6963,11 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       }
       openChapterReward(){
         const s=this.state;if(s.chapterClaimed)return false;
-        s.chapterClaimed=true;s.chapterPending=true;s.coins+=250;s.gems+=2;s.bagWood+=30;
-        s.enemies=[];s.enemyShots=[];s.projectiles=[];s.phase='chapter-reward';
-        this.sound('milestone');this.event('chapter:open');this.event('save');return true;
+        s.chapterClaimed=true;s.chapterPending=false;
+        s.coins+=250;s.gems+=2;s.bagWood+=30;
+        this.sound('milestone');
+        this.event('toast',{message:'ผ่านบทแรก! +250 เหรียญ +2 เพชร +30 ไม้'});
+        this.event('save');return true;
       }
       continueChapter(){
         const s=this.state;if(s.phase!=='chapter-reward'||!s.chapterPending)return false;
@@ -6978,14 +6986,19 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
         // Acknowledge only. The automatic star was already applied once on opening.
         this.event('tower-reward:close');this.enterDaylightRest();return true;
       }
-      /** "Something new" card for a milestone day. Shown once per save; the day waits until it is acknowledged. */
+      /** Apply all milestone unlocks without interrupting gameplay. */
       openMilestone(day){
-        const s=this.state,items=MILESTONES[day];if(!items||s.milestoneSeen>=day||s.milestoneRequest)return false;
-        // ASSUMPTION (3.0): a newly unlocked weapon starts two levels below the best older weapon, so trying it is not a step back.
-        const best=Math.max(...WEAPONS.filter(id=>WEAPON_DAYS[id]<day).map(id=>s.weapons[id]));
-        for(const item of items)if(item.kind==='weapon')s.weapons[item.id]=Math.max(s.weapons[item.id],Math.min(MAX_WEAPON_LEVEL,best-2));
-        s.milestoneRequest={requestId:`${this.run}-milestone-${++this.requestSerial}`,day,items:copy(items)};this.input={x:0,y:0};s.player.moving=false;
-        this.sound('milestone');this.event('milestone:open',{request:copy(s.milestoneRequest)});return true;
+        const s=this.state,items=MILESTONES[day];
+        if(!items||s.milestoneSeen>=day||s.milestoneRequest)return false;
+        const older=WEAPONS.filter(id=>WEAPON_DAYS[id]<day),best=older.length?Math.max(...older.map(id=>s.weapons[id])):1;
+        for(const item of items)if(item.kind==='weapon'){
+          s.weapons[item.id]=Math.max(s.weapons[item.id],Math.min(MAX_WEAPON_LEVEL,best-2));
+          while(this.pendingWeaponEvolution(item.id))
+            this.chooseWeaponEvolution(item.id,EVOLUTION_PATHS[Math.floor(this.random()*EVOLUTION_PATHS.length)]);
+        }
+        s.milestoneSeen=day;this.sound('milestone');
+        this.event('toast',{message:`ปลดล็อกใหม่ คืนที่ ${day}`});
+        this.event('save');return true;
       }
       ackMilestone(choice){
         const s=this.state,q=s.milestoneRequest;if(!q||choice?.requestId!==q.requestId)return false;
@@ -7261,14 +7274,31 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
             }
           }
           this.run=newRun;this.seed=d.seed;this.randomState=d.randomState;this.serial=d.serial;this.requestSerial=d.requestSerial;this.depositClock=d.depositClock;this.state=s;this._finalBossWarning=false;this.enemyFireTokens=8;this.miniGame=mini;this.pauses=new Set();this.input={x:0,y:0};s.player.moving=false;this.events=[];
-          // Existing v0.3.56 saves paused before night 11/14 can still choose their first quest.
-          if(d.version!=='0.3.57'&&s.phase==='intermission'&&!s.quest&&!s.questOffer){const offered=this.nextQuestDay(s.wave);if(offered)this.offerQuest(offered);}
-          if(s.buildRequest){s.buildRequest.requestId=`${newRun}-build-${++this.requestSerial}`;this.event('build:open',{request:{...copy(s.buildRequest),options:[...TYPES],title:site.level?'อัปเกรดหรือเปลี่ยนป้อม':'เลือกสิ่งก่อสร้าง'}});}
-          if(s.milestoneRequest){s.milestoneRequest.requestId=`${newRun}-milestone-${++this.requestSerial}`;s.milestoneRequest.items=copy(MILESTONES[s.milestoneRequest.day]);this.event('milestone:open',{request:copy(s.milestoneRequest)});}
-          if(s.towerReward){s.towerReward.requestId=`${newRun}-tower-reward-${++this.requestSerial}`;this.event('tower-reward:open',{request:copy(s.towerReward)});}
-          if(s.questOffer&&s.phase==='quest-choice'&&!this.events.some(v=>v.type==='quest:open'))this.event('quest:open',{request:{day:s.questOffer.day,options:this.questOptions(s.questOffer.day)}});
-          if(s.chapterPending)this.event('chapter:open');
-          if(s.dayChoice){s.dayChoice.requestId=`${newRun}-day-${++this.requestSerial}`;s.dayChoice.options=s.dayChoice.options.map(o=>copy(DAY_REWARDS.find(r=>r.id===o.id)));this.event('day:open',{request:{...copy(s.dayChoice),resources:{coins:s.coins,gems:s.gems}}});}
+          // Recover old saves paused at choice dialogs and restore all permanent equipment.
+          for(const tower of s.towers){tower.hp=tower.maxHp;tower.hurtUntil=0;tower.flash=0;}
+          if(s.arsenal)s.arsenal.orbitPenalty=0;
+          for(const shot of s.enemyShots||[])if(shot.target==='tower'){shot.target='player';shot.targetId=null;}
+          for(const enemy of s.enemies){enemy.targetKind='player';enemy.targetId=null;}
+          for(const id of WEAPONS)while(s.weaponPaths[id].length<Math.floor(s.weapons[id]/10))
+            s.weaponPaths[id].push(EVOLUTION_PATHS[Math.floor(this.random()*EVOLUTION_PATHS.length)]);
+          if(s.phase==='choosing'&&s.buildRequest){
+            const request=s.buildRequest,buildSite=this.findSite(request.siteId);
+            if(buildSite){s.site=buildSite;const available=TYPES.filter(type=>!s.towers.some(t=>t.type===type));
+              const pool=available.length?available:TYPES;
+              this.chooseTower({siteId:buildSite.id,requestId:request.requestId,towerType:pool[Math.floor(this.random()*pool.length)]});}
+          }
+          if(s.phase==='quest-choice'&&s.questOffer){
+            const day=s.questOffer.day,options=this.questOptions(day);
+            this.chooseQuest(day,options[Math.floor(this.random()*options.length)].id);
+          }
+          if(s.phase==='chapter-reward'&&s.chapterPending)this.continueChapter();
+          if(s.phase==='day-choice'&&s.dayChoice){
+            const q=s.dayChoice,options=q.options;
+            if(options?.length)this.chooseDayReward({requestId:q.requestId,choiceId:options[Math.floor(this.random()*options.length)].id});
+          }
+          if(s.phase==='tower-reward'&&s.towerReward)this.selectTowerReward({requestId:s.towerReward.requestId});
+          if(s.milestoneRequest)this.ackMilestone({requestId:s.milestoneRequest.requestId});
+          if(s.phase==='intermission'&&!s.quest){const next=this.nextQuestDay(s.wave);if(next)this.offerQuest(next);}
           if(mini)this.event('mini:open');if(['won','lost'].includes(s.phase))this.event('result',{result:this.resultData(s.phase==='won')});return true;
         }catch{return false;}
       }
@@ -7323,7 +7353,7 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
           }
           // Survivors vanish when dawn breaks; death graves disappear at night end.
           this.awardSpecialNight();this.finishQuest(s.wave);
-          if(s.wave===15&&!s.chapterClaimed&&this.openChapterReward())return;
+          if(s.wave===15&&!s.chapterClaimed)this.openChapterReward();
           s.enemies=[];s.enemyShots=[];s.projectiles=[];
           if(s.wave===this.config.waves){this.finish(true);return;}
           this.requestDayChoice();return;
@@ -7481,7 +7511,7 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
         else if(event.type==='dayEncounter:show')UI.openDayEncounter(event.data);
         else if(event.type==='dayEncounter:close')UI.closeDayEncounter();
         else if(event.type==='tower-reward:open')UI.openTowerReward(event.request);
-        else if(event.type==='tower-reward:close'){UI.closeTowerReward();if(engine.state.wave===1&&!shopGuideDone){engine.pause('shopGuide',true);UI.showShopGuide();}}
+        else if(event.type==='tower-reward:close')UI.closeTowerReward();
         else if(event.type==='day:close')UI.closeDayChoice();
         else if(event.type==='milestone:open')UI.openMilestone(event.request);
         else if(event.type==='milestone:close')UI.closeMilestone();
@@ -7503,7 +7533,7 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
       else if(action.type==='menu:state'){engine.pause(action.menu,action.open);if(action.menu==='weapon'&&!action.open)guidedShopSession=false;}
       else if(action.type==='campaign:new'){
         UI.playSound('start');
-        if(!WEAPONS.includes(action.weaponId))return;UI.closeMenus();UI.hideShopGuide();engine.pause('shopGuide',false);engine.restart(true);engine.equipWeapon(action.weaponId);if(currentProfile){currentProfile.stats.plays=(currentProfile.stats.plays||0)+1;currentProfile.stats.trackedKills=0;currentProfile.stats.trackedTime=0;persistProfiles();}active=true;previous=0;save();try{tutorialDone=tutorialDone||localStorage.getItem(TUTORIAL_KEY)==='done';}catch{}if(!tutorialDone)UI.openHelp?.();
+        if(!WEAPONS.includes(action.weaponId))return;UI.closeMenus();UI.hideShopGuide();engine.pause('shopGuide',false);engine.restart(true);engine.equipWeapon(action.weaponId);if(currentProfile){currentProfile.stats.plays=(currentProfile.stats.plays||0)+1;currentProfile.stats.trackedKills=0;currentProfile.stats.trackedTime=0;persistProfiles();}active=true;previous=0;save();try{tutorialDone=tutorialDone||localStorage.getItem(TUTORIAL_KEY)==='done';}catch{}/* Help remains optional; never force it when a run starts. */
       }
       else if(action.type==='campaign:resume'){
         UI.playSound('start');
