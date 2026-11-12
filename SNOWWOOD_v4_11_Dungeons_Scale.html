@@ -361,6 +361,17 @@ body #activityHud{backdrop-filter:none!important}
 #referencePause.show{display:flex}
 .referenceStage{position:relative;aspect-ratio:1672 / 941;width:min(100vw,calc(100dvh * 1672 / 941));max-height:100dvh;flex-shrink:0;overflow:hidden;box-shadow:0 0 80px #001a2f55}
 .referenceImage{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+/* Lightweight composited atmosphere; the original illustrated menu stays in place. */
+.menuAtmosphere{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;contain:strict}
+.menuAtmosphere::before,.menuAtmosphere::after{content:'';position:absolute;inset:-110% -15% 0;pointer-events:none;background-repeat:repeat;will-change:transform;animation:menuSnowFall 20s linear infinite}
+.menuAtmosphere::before{opacity:.64;background-image:radial-gradient(circle at 10px 22px,#fff 0 1.2px,transparent 2.6px),radial-gradient(circle at 89px 83px,#e1f7ffdd 0 1px,transparent 2px),radial-gradient(circle at 151px 42px,#fff9 0 1.1px,transparent 2px);background-size:190px 160px}
+.menuAtmosphere::after{opacity:.38;background-image:radial-gradient(circle at 22px 31px,#fff 0 1.7px,transparent 3px),radial-gradient(circle at 137px 109px,#f1fbff 0 1.2px,transparent 2.4px);background-size:190px 160px;animation-duration:29s;animation-direction:reverse}
+.menuGlow{position:absolute;z-index:1;inset:0;pointer-events:none;background:radial-gradient(ellipse 6% 11% at 83% 78%,#ffad3552,transparent 75%),radial-gradient(ellipse 4% 6% at 33% 35%,#ffdc8050,transparent 75%),radial-gradient(ellipse 4% 6% at 67% 35%,#ffdc8050,transparent 75%);animation:menuFireGlow 2.6s ease-in-out infinite alternate;will-change:opacity}
+@keyframes menuSnowFall{from{transform:translate3d(0,-160px,0)}to{transform:translate3d(190px,160px,0)}}
+@keyframes menuFireGlow{0%,100%{opacity:.42}38%{opacity:.9}63%{opacity:.58}}
+.mobileAtmosphere{display:none}
+@media(max-width:690px) and (orientation:portrait){.mobileAtmosphere{display:block;position:fixed;z-index:0}.mobileReferenceMenu{z-index:1}}
+@media(prefers-reduced-motion:reduce){.menuAtmosphere::before,.menuAtmosphere::after,.menuGlow{animation:none}.menuAtmosphere,.menuGlow{display:none}}
 .referenceHit{position:absolute;z-index:3;border:0;appearance:none;background:transparent;color:transparent;font-size:1px;border-radius:12px;cursor:pointer;touch-action:manipulation}
 .referenceHit:hover{outline:3px solid #b4faffc0;outline-offset:0;background:#c6f4ff0f;box-shadow:0 0 18px #a5f8ff80}
 .referenceHit:focus-visible{outline:4px solid #79f8ff}
@@ -605,6 +616,7 @@ body.cleanPlay #hud{display:none!important;visibility:hidden!important;pointer-e
 <div id="splash" class="show" aria-label="SNOWWOOD main menu">
   <div class="referenceStage" id="homeReference">
     <div class="referenceImage" id="refHomeImage" role="img" aria-label="SNOWWOOD snowy winter voxel world"></div>
+    <div class="menuAtmosphere" aria-hidden="true"></div><div class="menuGlow" aria-hidden="true"></div>
     <button class="referenceHit hitPlay" id="startBtn" aria-label="Play — เลือกโลก"><span class="srVisuallyHidden">Play</span></button>
     <button class="referenceHit hitContinue" id="continueBtn" aria-label="Continue — เล่นต่อ"><span class="srVisuallyHidden">Continue</span></button>
     <button class="referenceHit hitWorlds" id="homeWorldsBtn" aria-label="Worlds — เลือกโลก"><span class="srVisuallyHidden">Worlds</span></button>
@@ -613,6 +625,7 @@ body.cleanPlay #hud{display:none!important;visibility:hidden!important;pointer-e
     <button class="referenceHit hitProfile" id="homeProfileBtn" aria-label="ข้อมูลผู้เล่น"></button>
     <button class="referenceHit hitTrophy" id="homeTrophyBtn" aria-label="ความสำเร็จ"></button>
   </div>
+  <div class="menuAtmosphere mobileAtmosphere" aria-hidden="true"></div>
   <div class="mobileReferenceMenu">
     <div class="mobileSnowmark">❄ SNOWWOOD</div><small>WINTER FRONTIER</small>
     <button data-home="play" class="snowButton featured">▶ Play</button>
@@ -2536,7 +2549,7 @@ function initReferenceMenus(){
  try{applyUiConfig(JSON.parse(localStorage.getItem('snowwood-display-settings-v44')||'{}'))}catch(e){applyUiConfig({})}
 }
 
-function frame(t){const dt=Math.min((t-lastTime)/1000||0,.055);lastTime=t;if(state){update(dt);worldRender()}if(mapOpen&&t-lastFullMap>80){lastFullMap=t;renderFullMap()}requestAnimationFrame(frame)}
+function frame(t){const dt=Math.min((t-lastTime)/1000||0,.055);lastTime=t;if(state){update(dt);if(!$('splash').classList.contains('show'))worldRender()}if(mapOpen&&t-lastFullMap>80){lastFullMap=t;renderFullMap()}requestAnimationFrame(frame)}
 document.querySelectorAll('[data-ico]').forEach(el=>{const name=el.getAttribute('data-ico');el.innerHTML=svgIcon(name,el.classList.contains('splashTree')?77:el.classList.contains('brand-icon')?25:el.id==='knob'?30:el.classList.contains('big')?42:20)});
 
 
