@@ -788,7 +788,7 @@ const craftRecipes=[
 const control={joyX:0,joyY:0,joyPid:null,held:false,pid:null,keys:new Set(),auto:false,sound:false};
 let dogFacing8='SE',dogMotionIntensity=0,dogIsWalking=false;
 
-let lastManualAction=-1,selectedBuild=null,manualFocus=null,woodSwing=0,fortFlights=[],actionHoldClock=0,deliveryTimer=0,deliverySiteId='',placingAnim=0,placingKind=null;
+let lastManualAction=-1,selectedBuild=null,manualFocus=null,fortFlights=[],actionHoldClock=0,deliveryTimer=0,deliverySiteId='',placingAnim=0,placingKind=null;
 // Ephemeral one-tap action. Never saved: reloads must not replay a command.
 let autoWork=null,carrySwitchFx=null,activityHudCache='';
 // Nearby tasks trigger only on entering their radius; no unwanted ping-pong
@@ -880,7 +880,7 @@ function accessibleAmount(k){
 }
 
 function save(){if(!state)return;syncCarry();state.lastSaved=Date.now();try{const json=JSON.stringify(state);localStorage.setItem(SAVEKEY,json);if(activeWorldId){localStorage.setItem(worldSlotKey(activeWorldId),json);const entry=worldRegistry.find(w=>w.id===activeWorldId);if(entry){entry.lastSaved=state.lastSaved;entry.level=state.level;entry.playTime=state.gameTime;localStorage.setItem(WORLD_REGISTRY_KEY,JSON.stringify(worldRegistry));}}}catch(e){}}
-function reset(){try{localStorage.removeItem(SAVEKEY)}catch(e){}state=defaultState();voxelMineHold=null;voxelPointerId=null;worldInit();particles=[];floaters=[];drops=[];combo={count:0,time:0};clock=0;moveTarget=null;selectedBuild=null;manualFocus=null;fortFlights=[];woodSwing=0;actionHoldClock=0;deliveryTimer=0;deliverySiteId='';placingAnim=0;placingKind=null;autoWork=null;carrySwitchFx=null;activityHudCache='';proximitySeen.clear();proximityClock=0;reveal();control.auto=false;control.sound=false;control.keys.clear();control.joyX=control.joyY=0;checkQuest();hudUpdate(true);save()}
+function reset(){try{localStorage.removeItem(SAVEKEY)}catch(e){}state=defaultState();voxelMineHold=null;voxelPointerId=null;worldInit();particles=[];floaters=[];drops=[];combo={count:0,time:0};clock=0;moveTarget=null;selectedBuild=null;manualFocus=null;fortFlights=[];actionHoldClock=0;deliveryTimer=0;deliverySiteId='';placingAnim=0;placingKind=null;autoWork=null;carrySwitchFx=null;activityHudCache='';proximitySeen.clear();proximityClock=0;reveal();control.auto=false;control.sound=false;control.keys.clear();control.joyX=control.joyY=0;checkQuest();hudUpdate(true);save()}
 function worldInit(){resetWorldChunks();trees=[];rocks=[];bushes=[];wildlife=[];deco=[];let r=rngGen(94731 ^ ((state?.worldSeed||0)>>>0));
  const rr=(a,b)=>a+r()*(b-a),placed=new Set(),treeCells=new Set();
  const cellFromWorld=(x,y)=>({i:Math.floor((x-VOXEL.x0)/VOXEL.cell),j:Math.floor((y-VOXEL.y0)/VOXEL.cell)});
@@ -1411,7 +1411,7 @@ nearBuilding=null;for(const b of buildings){if(dist(state.x,state.y,b.x,b.y)<115
 for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=p.gravity*dt;p.life-=dt}particles=particles.filter(p=>p.life>0);
 for(const f of floaters){f.y-=dt*34;f.life-=dt}floaters=floaters.filter(f=>f.life>0);
 for(const s of snow){s.y+=s.v*dt;s.x+=Math.sin(clock*.8+s.phase)*.23;if(s.y>viewH+12){s.y=-9;s.x=rand()*viewW}}
-if(carrySwitchFx){carrySwitchFx.t-=dt;if(carrySwitchFx.t<=0)carrySwitchFx=null}syncCarry();if(combo.time>0)combo.time=Math.max(0,combo.time-dt);woodSwing=Math.max(0,woodSwing-dt);autoWorkTick(dt);updateAutoDelivery(dt);proximityAutoTick(dt);updateFortFlights(dt);updateActivityHud();if(walking&&Math.floor(state.gameTime*2)!==Math.floor((state.gameTime-dt)*2))reveal();updateDrops(dt);voxelUpdate(dt);if(Math.floor(clock*5)!==lastHud){lastHud=Math.floor(clock*5);hudUpdate()}
+if(carrySwitchFx){carrySwitchFx.t-=dt;if(carrySwitchFx.t<=0)carrySwitchFx=null}syncCarry();if(combo.time>0)combo.time=Math.max(0,combo.time-dt);autoWorkTick(dt);updateAutoDelivery(dt);proximityAutoTick(dt);updateFortFlights(dt);updateActivityHud();if(walking&&Math.floor(state.gameTime*2)!==Math.floor((state.gameTime-dt)*2))reveal();updateDrops(dt);voxelUpdate(dt);if(Math.floor(clock*5)!==lastHud){lastHud=Math.floor(clock*5);hudUpdate()}
 }
 function pathRound(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function oval(x,y,rx,ry,color){
@@ -1700,7 +1700,7 @@ function human(x,y,face,step,helper=false){
  rect(-20,-57,41,5,0,helper?'#efb7a5':'#b8eff9');
  rect(7,-51,4,4,0,'#25425e');
  line(18,-31,21,-7,'#e7ad84',7);line(21,-7,37,-32,'#976b44',6);
- ctx.save();ctx.translate(36,-33);ctx.rotate(!helper&&woodSwing>0?-.7+Math.sin((1-woodSwing/.30)*Math.PI)*1.5:0);
+ ctx.save();ctx.translate(36,-33);
  cubeSprite(-8,-7,19,12,4,'#aac3d0','#f2ffff','#6a93a8');ctx.restore();
  if(!helper){rect(-16,-10,32,5,0,'#e1faff');drawCarryAccessories();
   if(placingAnim>0){const p=1-placingAnim/.55;line(17,-28,28,-7+Math.sin(p*Math.PI)*6,'#e6ac84',7);drawFlyingMaterial({k:placingKind||'wood'},30,-7+Math.sin(p*Math.PI)*6,0)}
@@ -2078,7 +2078,7 @@ for(const u of upgrades){const lv=state.up[u.id],max=lv>=u.max,cost=u.cost(lv),a
  }else if(type==='craft'){fillCraft(body)
  }else if(type==='pause'){
 const minutes=Math.floor(state.gameTime/60),st=state.stats;
-body.innerHTML=`<div class="pauseHero"><div class="pauseLogo">SNOWWOOD</div><div class="pauseSub">Winter Frontier</div><div class="pauseStats"><span>🌲 ${fmt(st.trees)}</span><span>🪵 ${fmt(st.woodCollected)}</span><span>🪨 ${fmt(st.rocks)}</span><span>⏱ ${minutes}m</span></div></div>`;
+body.innerHTML=`<div class="pauseHero"><div class="pauseLogo">SNOWWOOD</div><div class="pauseSub">Winter Frontier</div><div class="pauseStats"><span>🫐 ${fmt(st.berriesCollected)}</span><span>🪵 ${fmt(st.woodCollected)}</span><span>🪨 ${fmt(st.rocks)}</span><span>⏱ ${minutes}m</span></div></div>`;
 const grid=document.createElement('div');grid.className='pauseMenuGrid';body.appendChild(grid);
 const addPauseBtn=(label,icon,fn,kind='')=>{const b=document.createElement('button');b.className='pauseMenuBtn '+kind;b.innerHTML=`<span class="pmIcon">${icon}</span><span>${label}</span>`;b.onclick=fn;grid.appendChild(b);return b};
 addPauseBtn('Resume','▶',()=>closeModal(),'primary');
@@ -2511,7 +2511,7 @@ function initReferenceMenus(){
  $('homeWorldsBtn').onclick=()=>showWorlds('home');$('homeSettingsBtn').onclick=()=>showReferenceSettings('home');
  $('homeExitBtn').onclick=()=>{if(confirm('ออกจาก SNOWWOOD หรือไม่?')){if(history.length>1)history.back();else alert('คุณสามารถปิดแท็บเกมนี้ได้เมื่อพร้อม')}};
  $('homeProfileBtn').onclick=()=>{const w=worldRegistry.find(x=>x.id===activeWorldId);alert('SNOWWOOD · '+(w?.name||'Player')+'\nLv. '+(state?.level||1))};
- $('homeTrophyBtn').onclick=()=>alert('Achievements\n🌲 '+(state?.stats?.trees||0)+'  🪨 '+(state?.stats?.rocks||0)+'  🏠 '+(state?.stats?.buildings||0));
+ $('homeTrophyBtn').onclick=()=>alert('Achievements\n🫐 '+(state?.stats?.berriesCollected||0)+'  🪨 '+(state?.stats?.rocks||0)+'  🏠 '+(state?.stats?.buildings||0));
  for(const b of document.querySelectorAll('[data-home]'))b.onclick=()=>({play:()=>$('startBtn').click(),continue:()=>$('continueBtn').click(),worlds:()=>$('homeWorldsBtn').click(),settings:()=>$('homeSettingsBtn').click(),exit:()=>$('homeExitBtn').click()}[b.dataset.home]());
  $('pauseResumeBtn').onclick=resumeFromPause;
  $('pauseSettingsBtn').onclick=()=>showReferenceSettings('pause');
