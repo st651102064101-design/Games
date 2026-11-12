@@ -553,7 +553,7 @@ const MAX_ACTIVE_EXTRA=18;
 // A unique ID per tab, intentionally not tied to an email or account.
 const CLIENT_ID='f'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 let PLAYER_NAME='player'+String(1000+Math.floor(Math.random()*9000));try{const sv=localStorage.getItem('frostline_name');if(sv&&sv.trim())PLAYER_NAME=sv.trim().slice(0,14)}catch{}
-let peers=new Map(),onlineRoom=null,sendStateFn=null,sendKillFn=null,network='offline',lastNetworkSend=0,pvpKills=0,localChannel=null,nextNetworkRetry=0,seenKills=new Set();
+let peers=new Map(),onlineRoom=null,backupRoom=null,sendStateFn=null,sendKillFn=null,backupStateFn=null,backupKillFn=null,network='offline',lastNetworkSend=0,pvpKills=0,localChannel=null,nextNetworkRetry=0,seenKills=new Set();
 // Optional Netlify server presence fallback: works across devices and network types.
 let cloudReady=false,cloudInFlight=false,cloudNextSync=0,cloudRetryMs=5000,cloudError='',cloudLastSuccess=0;
 let stateSequence=0;
@@ -3362,7 +3362,7 @@ function drawFlyingWeapons(){for(const f of game.flyWeapons||[]){ctx.save();ctx.
 
 // --- Online P2P (public room, Trystero over Nostr signaling, no account) ---
 // Other clients are not authoritative: this is friendly-casual PvP, not anti-cheat esports.
-const ROOM_ID='public-'+(location.hostname||'local-files').toLowerCase().replace(/[^a-z0-9.-]/g,'').slice(0,80);
+const ROOM_ID='frostline-public-arena-v3-6'; // Stable across PC/mobile, mirrors, www and other hosts.
 const clean=(v, fallback=0, low=-half, high=half)=>Number.isFinite(Number(v))?clamp(Number(v),low,high):fallback;
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Unit conversion for player separation. One world coordinate unit is displayed as one meter.
@@ -3382,11 +3382,23 @@ function updateOnlineInfo(force=false){
  const people=[...peers.values()].filter(r=>Number.isFinite(r.x)&&Number.isFinite(r.y)&&now-r.last<6500)
    .map(r=>({name:String(r.name||'ผู้เล่น').replace(/\s+/g,' ').trim().slice(0,25)||'ผู้เล่น',distance:Math.hypot(r.x-pos.x,r.y-pos.y)}))
    .sort((a,b)=>a.distance-b.distance||a.name.localeCompare(b.name,'th'));
- if(!people.length){el.hidden=true;el.textContent='';return}
+ if(!people.length){
+  el.hidden=false;
+  el.textContent=cloudReady?(lang==='en'?'Online · waiting for players':'ออนไลน์ · รอผู้เล่นอื่น'):
+    (network==='p2p'||network==='ready'?
+    (lang==='en'?'Looking for nearby players…':'กำลังค้นหาผู้เล่น…'):
+    (lang==='en'?'No online relay yet':'ยังเชื่อมต่อออนไลน์ไม่ได้'));
+  return;
+ }
  el.hidden=false;
  el.textContent=(lang==='en'?'Players':'รายชื่อ')+'\n'+people.map((r,i)=>(i+1)+'. '+r.name).join('\n');
 }
-function publishNet(kind,payload){const event={kind,id:CLIENT_ID,...payload};try{localChannel?.postMessage(event)}catch{}try{if(kind==='state')sendStateFn?.send?.(event);else if(kind==='kill')sendKillFn?.send?.(event)}catch{}}
+function publishNet(kind,payload){
+ const event={kind,id:CLIENT_ID,...payload};
+ try{localChannel?.postMessage(event)}catch{}
+ const actions=kind==='state'?[sendStateFn,backupStateFn]:[sendKillFn,backupKillFn];
+ for(const action of actions)try{action?.send?.(event)}catch{}
+}
 // ---- Realtime sync: timestamped samples + snapshot interpolation (remote players render slightly in the past, always smooth) ----
 const SEND_INTERVAL=.05,MAX_BUF=48;
 let mySamples=[],cloudSentT=0,lastMetaKey='',lastMetaAt=0;
@@ -3447,7 +3459,7 @@ function sendMyState(dt){if(!game||mode!=='playing')return;lastNetworkSend-=dt;i
 // Cross-device HTTP relay: posts every sample since the last success, so remote players still get a smooth path.
 async function syncCloud(){if(!game||mode!=='playing'||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),5000);
  const fresh=mySamples.filter(s=>s.t>cloudSentT),batch=(fresh.length?fresh:mySamples.slice(-1)).slice(-14);if(!batch.length){cloudInFlight=false;clearTimeout(timer);cloudNextSync=performance.now()+100;return}
- try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500),...ownMeta()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?150:2500);updateOnlineInfo();}
+ try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500),...ownMeta()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?400:1100);updateOnlineInfo();}
  catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(30000,cloudRetryMs*1.5);updateOnlineInfo();}
  finally{clearTimeout(timer);cloudInFlight=false;}
 }
@@ -3482,34 +3494,72 @@ function drawRemotePlayers(){const ts=performance.now();for(const r of peers.val
   else drawWeaponModel(r.x+Math.cos(b.a)*b.reach,r.y+Math.sin(b.a)*b.reach,b.a,{type:b.type,rarity:b.rarity||'common'});
  }
 }}
-async function connectOnline(){if(network==='connecting'||network==='p2p'||network==='ready')return;
- // Offline and cross-tab fallback are always available, even if CDN or relay is blocked.
+async function connectOnline(){
+ if(network==='connecting'||network==='p2p'||network==='ready')return;
  if(!localChannel&&typeof BroadcastChannel!=='undefined'){
-  try{localChannel=new BroadcastChannel('frostline-snow-pvp-v3-6-'+ROOM_ID);localChannel.onmessage=e=>handleNet(e.data);network='local'}catch{}
+  try{
+   localChannel=new BroadcastChannel('frostline-snow-pvp-v3-6-'+ROOM_ID);
+   localChannel.onmessage=e=>handleNet(e.data);
+   network='local';
+  }catch{}
  }
- if(typeof navigator!=='undefined'&&navigator.onLine===false){updateOnlineInfo();return}
- network='connecting';updateOnlineInfo();
- try{
-  const {joinRoom}=await Promise.race([import('https://esm.sh/trystero@0.26.0?bundle'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('network timeout')),8500))]);
-  if(!game)return;
-  onlineRoom=joinRoom({appId:'games.frostline.survival.pvp.v3.6.public'},ROOM_ID);
-  const stateAction=onlineRoom.makeAction('state'),killAction=onlineRoom.makeAction('kill');
-  stateAction.onMessage=(event)=>handleNet(event);killAction.onMessage=(event)=>handleNet(event);
-  sendStateFn=stateAction;sendKillFn=killAction;
-  onlineRoom.onPeerJoin=()=>{network='p2p';lastNetworkSend=0;lastMetaAt=0;updateOnlineInfo()};
-  onlineRoom.onPeerLeave=()=>{if(peers.size===0)network='ready';updateOnlineInfo()};
-  // Joining a room does not guarantee WebRTC discovery, so expose initial 'connecting'.
-  network='ready';updateOnlineInfo();
- }catch(e){network=localChannel?'local':'offline';nextNetworkRetry=performance.now()+30000;updateOnlineInfo();console.warn('Frostline online relay unavailable; offline mode active:',e)}
+ if(typeof navigator!=='undefined'&&navigator.onLine===false){updateOnlineInfo(true);return}
+ network='connecting';updateOnlineInfo(true);
+ // Redundant public signaling strategies: one Nostr relay outage can no
+ // longer prevent PCs and phones from finding the same P2P room.
+ const strategies=[
+  {name:'nostr',url:'https://esm.sh/trystero@0.26.0?bundle'},
+  {name:'torrent',url:'https://esm.sh/@trystero-p2p/torrent@0.26.0?bundle'}
+ ];
+ const appId='games.frostline.survival.pvp.v3.6.public';
+ let established=0;
+ const joinStrategy=async (strategy)=>{
+  try{
+   const mod=await Promise.race([
+    import(strategy.url),
+    new Promise((_,reject)=>setTimeout(()=>reject(Error('CDN import timeout')),9500))
+   ]);
+   if(!game)return;
+   if(typeof mod.joinRoom!=='function')throw Error('joinRoom unavailable');
+   const room=mod.joinRoom({appId},ROOM_ID,{
+    onJoinError:({error})=>console.warn('Frostline WebRTC handshake',strategy.name,error)
+   });
+   const state=room.makeAction('state'),kill=room.makeAction('kill');
+   state.onMessage=(event)=>handleNet(event);
+   kill.onMessage=(event)=>handleNet(event);
+   if(strategy.name==='nostr'){
+    onlineRoom=room;sendStateFn=state;sendKillFn=kill;
+   }else{
+    backupRoom=room;backupStateFn=state;backupKillFn=kill;
+   }
+   room.onPeerJoin=()=>{
+    network='p2p';lastNetworkSend=0;lastMetaAt=0;updateOnlineInfo(true);
+   };
+   room.onPeerLeave=()=>{
+    if(peers.size===0)network='ready';updateOnlineInfo(true);
+   };
+   established++;
+   network=network==='p2p'?'p2p':'ready';
+   updateOnlineInfo(true);
+  }catch(e){
+   console.warn('Frostline signaling strategy failed',strategy.name,e);
+  }
+ };
+ await Promise.allSettled(strategies.map(joinStrategy));
+ if(!established){
+  network=localChannel?'local':'offline';
+  nextNetworkRetry=performance.now()+30000;
+  updateOnlineInfo(true);
+  console.warn('Frostline public P2P signaling unavailable; HTTP relay will still be attempted');
+ }
 }
-
 const originalShopRenderer=renderShop,originalSkinRenderer=renderSkinStore,originalInventoryRenderer=renderInventory,originalResultRenderer=endGameNow;
 endGameNow=function(...args){originalResultRenderer(...args);translateUI($('overlayPanel'))};
 renderShop=function(){originalShopRenderer();translateUI($('shopPanel'))};
 renderSkinStore=function(){originalSkinRenderer();translateUI($('shopPanel'))};
 renderInventory=function(){originalInventoryRenderer();translateUI($('inventory'))};
 translateUI();
-window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}});
+window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{backupRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID}),keepalive:true}).catch(()=>{})}catch{}});
 
 // Read-only health check for automated smoke tests; does not alter gameplay.
 Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.3-arsenal',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,botCount:game?.bots?.length||0,playerName:PLAYER_NAME,pvpKills})});
