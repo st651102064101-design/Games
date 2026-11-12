@@ -1706,7 +1706,7 @@ function torchScreenPosition(p){
  return {
   x:w/2+(p.x+face*24-cam.x)*screenScale,
   y:h/2+(p.y-cam.y)*screenScale*cameraPitchScale()-57*screenScale,
-  radius:clamp(270*screenScale,155,410)*(p===game.p?1:.13+.34*torchVisibility(p))
+  radius:Math.max(1,Math.min(410,270*screenScale)*(p===game.p?1:.13+.34*torchVisibility(p)))
  };
 }
 function drawDayNight(){
