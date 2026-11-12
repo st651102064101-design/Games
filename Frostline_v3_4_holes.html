@@ -3438,12 +3438,91 @@ function throwLastWeaponDrop(x,y,ownerX,ownerY,before){
  const drop=game.drops[game.drops.length-1],a=Math.atan2(y-ownerY,x-ownerX);drop.vx=Math.cos(a)*570;drop.vy=Math.sin(a)*570-175;drop.age=0;
 }
 function breakBlade(id,x,y,type){if(!game)return false;if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0||combatSpec(game.weapons[i]).gun)return false;const dropped=game.weapons[i];game.weapons.splice(i,1);const before=game.drops.length;spawnDrop(x,y,'weapon',1,dropped);throwLastWeaponDrop(x,y,game.p.x,game.p.y,before)}playClang(x,y);playSound('break',x,y);spawnSparkBurst(x,y);spawnClashFlight(x,y,game.p.x,game.p.y,type);sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
-function receiveClashes(event){if(!Array.isArray(event.clashes))return;for(const c of event.clashes.slice(-6)){if(!c||c.to!==CLIENT_ID||typeof c.id!=='string'||seenCombat.has(c.id)||!Number.isFinite(c.t)||Math.abs(Date.now()-c.t)>5000)continue;if(!peers.has(event.id)||Math.hypot(peers.get(event.id).x-game.p.x,peers.get(event.id).y-game.p.y)>500)continue;seenCombat.set(c.id,Date.now());const x=Number(c.x),y=Number(c.y),valid=Number.isFinite(x)&&Number.isFinite(y)&&Math.hypot(x-game.p.x,y-game.p.y)<180;breakBlade(String(c.blade||''),valid?x:game.p.x,valid?y:game.p.y,c.type)}}
+function receiveClashes(event){if(!Array.isArray(event.clashes))return;for(const c of event.clashes.slice(-6)){if(!c||c.to!==CLIENT_ID||typeof c.id!=='string'||seenCombat.has(c.id)||!Number.isFinite(c.t)||Math.abs(Date.now()-c.t)>5000)continue;if(!peers.has(event.id)||Math.hypot(peers.get(event.id).x-game.p.x,peers.get(event.id).y-game.p.y)>500)continue;seenCombat.set(c.id,Date.now());const x=Number(c.x),y=Number(c.y),valid=Number.isFinite(x)&&Number.isFinite(y)&&Math.hypot(x-game.p.x,y-game.p.y)<220;breakBladeBatch(clamp(Math.floor(Number(c.amount)||1),1,24),valid?x:game.p.x,valid?y:game.p.y,String(c.blade||''))}}
+
+function breakBladeBatch(amount,x,y,preferredId=''){
+ if(!game)return 0;
+ const limit=Math.min(32,Math.max(0,Math.floor(Number(amount)||0)));
+ let broken=0;
+ for(let i=0;i<limit;i++){
+  let index=i===0&&preferredId?game.weapons.findIndex(w=>w.id===preferredId&&!combatSpec(w).gun):-1;
+  if(index<0)index=game.weapons.findIndex(w=>!combatSpec(w).gun);
+  if(index<0)break;
+  const w=game.weapons[index];
+  // Only the first couple of impacts produce full physics drops / sounds.
+  // Large melee collisions are batched to remain smooth at 60 FPS.
+  if(broken<2){if(!breakBlade(w.id,x+rand(-9,9),y+rand(-9,9),w.type))break}
+  else game.weapons.splice(index,1);
+  broken++;
+ }
+ if(broken){game.activeLength=-1;lastMetaAt=0;updateHud()}
+ return broken;
+}
 function updateClashes(dt){
- const p=game.p;for(const r of peers.values()){if(!r.init||performance.now()-r.last>1500||d2(p.x-r.x,p.y-r.y)>500**2)continue;const own=ownBlades().filter(b=>!combatSpec({type:b.type}).gun),other=remoteBlades(r).filter(b=>!combatSpec({type:b.type}).gun);if(!own.length||!other.length)continue;let dx=p.x-r.x,dy=p.y-r.y,d=Math.hypot(dx,dy),minimum=swordRange()+Math.max(0,...other.map(b=>b.reach))+12;if(d<minimum){if(d<.001){dx=CLIENT_ID<r.id?1:-1;dy=0;d=1}p.x=clamp(r.x+dx/d*minimum,-half+50,half-50);p.y=clamp(r.y+dy/d*minimum,-half+50,half-50);keepInWorld(p,75)}for(const a of own){const ms=bladeSeg(p.x,p.y,game.swordPhase+a.o,a.reach,a.type,game.growS||1);if(segmentDistanceSquared(r.x,r.y,ms[0],ms[1],ms[2],ms[3])<30*30){const away=Math.atan2(p.y-r.y,p.x-r.x);p.kvx=(p.kvx||0)+Math.cos(away)*360;p.kvy=(p.kvy||0)+Math.sin(away)*360;addSlash(r.x,r.y,away+Math.PI);break}}
- if(CLIENT_ID>r.id||now<(r.nextClash||0)||d>450)continue;
- outer:for(const a of own){const aa=game.swordPhase+a.o,ax=p.x+Math.cos(aa)*a.reach,ay=p.y+Math.sin(aa)*a.reach;for(const b of other){if(!b.id)continue;const bx=r.x+Math.cos(b.a)*b.reach,by=r.y+Math.sin(b.a)*b.reach;if(segSegDistS(bladeSeg(p.x,p.y,aa,a.reach,a.type,game.growS||1),bladeSeg(r.x,r.y,b.a,b.reach,b.type,1))<42**2){const ad=a.damage||1,bd=b.damage||1,mineStrong=ad>bd*1.25,theirStrong=bd>ad*1.25;sparks((ax+bx)/2,(ay+by)/2,'#fff3c4',10);game.swordPhase-=theirStrong?.5:.25;if(mineStrong){r.nextClash=now+.10;{const away=Math.atan2(r.y-p.y,r.x-p.x);addSlash((ax+bx)/2,(ay+by)/2,away)}}if(theirStrong){if(!breakBlade(a.id,ax,ay,a.type)){}else{const away=Math.atan2(p.y-r.y,p.x-r.x);p.kvx=(p.kvx||0)+Math.cos(away)*260;p.kvy=(p.kvy||0)+Math.sin(away)*260;r.nextClash=now+.10}break outer}if(!mineStrong&&breakBlade(a.id,ax,ay,a.type)||mineStrong){if(mineStrong){spawnClashFlight(bx,by,r.x,r.y,b.type);r.clashHidden=r.clashHidden||new Map();r.clashHidden.set(b.id,now+4.5);clashes.push({id:CLIENT_ID+'c'+(++combatSeq),to:r.id,blade:b.id,type:b.type,x:bx,y:by,t:Date.now()});if(clashes.length>6)clashes.shift();r.bl=r.bl.filter(v=>v.id!==b.id);r.nextClash=now+.10;break outer}spawnClashFlight(bx,by,r.x,r.y,b.type);r.clashHidden=r.clashHidden||new Map();r.clashHidden.set(b.id,now+4.5);clashes.push({id:CLIENT_ID+'c'+(++combatSeq),to:r.id,blade:b.id,type:b.type,x:bx,y:by,t:Date.now()});if(clashes.length>6)clashes.shift();r.bl=r.bl.filter(v=>v.id!==b.id);r.nextClash=now+.10}break outer}}}}
- if(game.flyWeapons)for(let i=game.flyWeapons.length-1;i>=0;i--){const f=game.flyWeapons[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=920*dt;f.a+=dt*23;if(f.life<=0)game.flyWeapons.splice(i,1)}
+ const p=game.p;
+ for(const r of peers.values()){
+  if(!r.init||performance.now()-r.last>1500||d2(p.x-r.x,p.y-r.y)>500**2)continue;
+  const own=ownBlades().filter(b=>!combatSpec({type:b.type}).gun);
+  const other=remoteBlades(r).filter(b=>!combatSpec({type:b.type}).gun);
+  if(!own.length||!other.length)continue;
+  let dx=p.x-r.x,dy=p.y-r.y,d=Math.hypot(dx,dy);
+  const minimum=swordRange()+Math.max(0,...other.map(b=>b.reach))+12;
+  if(d<minimum){
+   if(d<.001){dx=CLIENT_ID<r.id?1:-1;dy=0;d=1}
+   p.x=clamp(r.x+dx/d*minimum,-half+50,half-50);
+   p.y=clamp(r.y+dy/d*minimum,-half+50,half-50);
+   keepInWorld(p,75);
+  }
+  for(const a of own){
+   const ms=bladeSeg(p.x,p.y,game.swordPhase+a.o,a.reach,a.type,game.growS||1);
+   if(segmentDistanceSquared(r.x,r.y,ms[0],ms[1],ms[2],ms[3])<30*30){
+    const away=Math.atan2(p.y-r.y,p.x-r.x);
+    p.kvx=(p.kvx||0)+Math.cos(away)*360;
+    p.kvy=(p.kvy||0)+Math.sin(away)*360;
+    addSlash(r.x,r.y,away+Math.PI);
+    break;
+   }
+  }
+  // One client resolves PvP clashes; both participants receive identical batch losses.
+  if(CLIENT_ID>r.id||d>450)continue;
+  let contact=null;
+  clashSearch:for(const a of own){
+   const aa=game.swordPhase+a.o,as=bladeSeg(p.x,p.y,aa,a.reach,a.type,game.growS||1);
+   for(const b of other){
+    if(!b.id)continue;
+    const bs=bladeSeg(r.x,r.y,b.a,b.reach,b.type,1);
+    if(segSegDistS(as,bs)<42*42){contact={a,b,x:(as[2]+bs[2])*.5,y:(as[3]+bs[3])*.5};break clashSearch}
+   }
+  }
+  // At very high angular speeds, blades can sweep past each other between rendered frames.
+  if(!contact&&Math.max(spinSpeed(),r.w||0)*dt>1.2){
+   const a=own[0],b=other[0];
+   const maxReach=a.reach+bladeLen({type:a.type})*(game.growS||1)+b.reach+bladeLen({type:b.type})+14;
+   if(d<maxReach&&d>15)contact={a,b,x:(p.x+r.x)*.5,y:(p.y+r.y)*.5};
+  }
+  if(!contact){r.clashMeter=0;continue}
+  const ownCount=game.weapons.reduce((n,w)=>n+(!combatSpec(w).gun?1:0),0);
+  const otherCount=Math.max(0,Math.floor(r.weaponTotal??r.bl?.length??0));
+  if(!ownCount||!otherCount)continue;
+  const angularVelocity=Math.max(spinSpeed(),Number(r.w)||0);
+  const lossRate=clamp(angularVelocity/TAU*2.2,8,190);
+  r.clashMeter=Math.min(32,(r.clashMeter||0)+Math.min(dt,.10)*lossRate);
+  const batch=Math.min(24,ownCount,otherCount,Math.floor(r.clashMeter));
+  if(batch<1)continue;
+  r.clashMeter-=batch;
+  const lost=breakBladeBatch(batch,contact.x,contact.y,contact.a.id);
+  if(!lost)continue;
+  const opponentLoss=Math.min(lost,otherCount);
+  r.weaponTotal=Math.max(0,otherCount-opponentLoss);
+  if(r.bl&&r.weaponTotal<r.bl.length)r.bl=r.bl.slice(0,r.weaponTotal);
+  clashes.push({id:CLIENT_ID+'c'+(++combatSeq),to:r.id,blade:contact.b.id,amount:opponentLoss,type:contact.b.type,x:contact.x,y:contact.y,t:Date.now()});
+  if(clashes.length>6)clashes.shift();
+  sparks(contact.x,contact.y,'#fff3c4',Math.min(12,4+lost));
+ }
+ if(game.flyWeapons)for(let i=game.flyWeapons.length-1;i>=0;i--){
+  const f=game.flyWeapons[i];f.life-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=920*dt;f.a+=dt*23;
+  if(f.life<=0)game.flyWeapons.splice(i,1);
+ }
 }
 function drawFlyingWeapons(){for(const f of game.flyWeapons||[]){ctx.save();ctx.globalAlpha=Math.max(0,f.life/.45);drawWeaponModel(f.x,f.y,f.a,{type:f.type,rarity:'rare'});ctx.restore()}}
 
