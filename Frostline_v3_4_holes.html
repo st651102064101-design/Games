@@ -2149,9 +2149,10 @@ function drawGround(){const st=game?.stage||0,jungle=st===4,storm=st===5,crystal
  }
  // Organic small dotted snow texture: deterministic cells.
  const detailStep=77*Math.max(1,Math.ceil(.6/scale));for(let x=Math.floor(minX/detailStep)*detailStep;!lowGraphics()&&x<maxX;x+=detailStep)for(let y=Math.floor(minY/detailStep)*detailStep;y<maxY;y+=detailStep){let hsh=(Math.sin(x*12.9898+y*78.233)*43758.5453)%1,off=hsh*20;ellipse(x+25+off,y+22-off,2,1.4,'#ffffff9c');ellipse(x+56-off,y+61+off,1.7,1.1,'#9fced947')}
- if(!lowGraphics()){drawStageTerrainFx(minX,maxX,minY,maxY);drawWaterHabitats(minX,maxX,minY,maxY)}
+ if(!lowGraphics())drawStageTerrainFx(minX,maxX,minY,maxY);
+ if(!graphicsLow||screenScale<baseScale*.35)drawWaterHabitats(minX,maxX,minY,maxY);
  // Ring around center clears: environmental guide, no border.
- for(let cxCell=Math.floor((minX-85)/DECOR_CELL);screenScale>=baseScale*.35&&cxCell<=Math.floor((maxX+85)/DECOR_CELL);cxCell++)for(let cyCell=Math.floor((minY-90)/DECOR_CELL);cyCell<=Math.floor((maxY+90)/DECOR_CELL);cyCell++){const bucket=decorGrid.get(cxCell+','+cyCell);if(!bucket)continue;for(const d of bucket){if(d.x<minX-85||d.x>maxX+85||d.y<minY-90||d.y>maxY+90)continue;const sh=decorShake.get(d);if(sh&&now-sh.t0<1.2){const t=now-sh.t0,sk=sh.dir*.42*Math.sin(t*26)*Math.exp(-t*3.2);ctx.save();ctx.translate(d.x,d.y);ctx.transform(1,0,sk,1,0,0);ctx.translate(-d.x,-d.y);drawDecor(d);ctx.restore()}else drawDecor(d)}}
+ for(let cxCell=Math.floor((minX-85)/DECOR_CELL);cxCell<=Math.floor((maxX+85)/DECOR_CELL);cxCell++)for(let cyCell=Math.floor((minY-90)/DECOR_CELL);cyCell<=Math.floor((maxY+90)/DECOR_CELL);cyCell++){const bucket=decorGrid.get(cxCell+','+cyCell);if(!bucket)continue;for(const d of bucket){if(d.x<minX-85||d.x>maxX+85||d.y<minY-90||d.y>maxY+90)continue;if(screenScale<baseScale*.35){if(d.id%10!==0||d.kind==='patch')continue;ctx.fillStyle=d.kind==='tree'?'#438b86':d.kind==='rock'?'#8da9b2':d.kind==='ice'?'#91ccd9':'#7ca8a0';ctx.fillRect(d.x-25,d.y-25,50,50);continue}const sh=decorShake.get(d);if(sh&&now-sh.t0<1.2){const t=now-sh.t0,sk=sh.dir*.42*Math.sin(t*26)*Math.exp(-t*3.2);ctx.save();ctx.translate(d.x,d.y);ctx.transform(1,0,sk,1,0,0);ctx.translate(-d.x,-d.y);drawDecor(d);ctx.restore()}else drawDecor(d)}}
  drawWorldBoundary(minX,maxX,minY,maxY);
  worldTiltActive=false;ctx.restore()}
 function drawCrown(){ctx.save();ctx.translate(0,-52);ctx.shadowColor='#ffc928';ctx.shadowBlur=lowGraphics()?0:12;poly([[-17,2],[-17,-9],[-8,-2],[0,-15],[8,-2],[17,-10],[17,3]],'#f3bd24');roundRect(-17,1,34,6,2,'#c98712');ellipse(0,-5,3,3,'#fff1a0');ctx.shadowBlur=0;ctx.restore()}
@@ -2562,7 +2563,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
   if(game.holeBlink>0)ctx.globalAlpha=Math.floor(now*10)%2?.25:1;bladeScale=game.growS||1;drawSwords(game.p);drawExtraWeapons(game.p);bladeScale=1;ctx.globalAlpha=1;drawWeaponCount(game.p);drawYouLabel(game.p);drawRemotePlayers();drawProjectiles();drawFlyingWeapons();drawSparkBurst();drawWarpFx();drawPortal();drawMeteors();drawBearShots();drawSlashes();
  for(let f of game.fx){ctx.globalAlpha=clamp(f.life/f.max,0,1);if(f.ring){ctx.strokeStyle=f.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.35-f.life/f.max),0,TAU);ctx.stroke()}else ellipse(f.x,f.y,f.r,f.r*.8,f.color)}ctx.globalAlpha=1;
  flushLabels();ctx.textAlign='center';ctx.font='900 15px system-ui';for(let f of game.float){ctx.globalAlpha=clamp(f.life,0,1);ctx.shadowColor='#173c50';ctx.shadowBlur=lowGraphics()?0:5;ctx.fillStyle=f.color;ctx.lineWidth=4;ctx.strokeStyle='#173c50';ctx.lineJoin='round';ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y)}ctx.shadowBlur=0;ctx.globalAlpha=1;worldTiltActive=false;ctx.restore();
- if(!lowGraphics())drawDayNight();
+ if(!graphicsLow)drawDayNight();
  if(!lowGraphics()){drawNightTorchLights();drawOtherTorchesAfterNight();drawCelestial()}
  if(game&&game.themeFlash>0){ctx.save();ctx.fillStyle=`rgba(255,110,40,${(game.themeFlash*.6).toFixed(3)})`;ctx.fillRect(0,0,w,h);ctx.restore()}
  drawEnemyArrows();
