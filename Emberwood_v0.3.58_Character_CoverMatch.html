@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emberwood v0.3.58 — Character Cover Match</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#101d16;color:#f6e3bd;font-family:system-ui,Tahoma,sans-serif}
+#load{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;background:radial-gradient(circle at 50% 45%,#35513b,#101d16 75%);text-align:center;gap:14px}
+#load h1{font-size:clamp(28px,6vw,52px);margin:0;color:#ffbb57;text-shadow:0 3px #653319}
+#load p{max-width:560px;line-height:1.7;margin:0;color:#f2dfb6}
+#load a{color:#ffcc74}
+#load .spark{font-size:60px;animation:bob 1.4s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-8px)}}
+</style>
+<script type="text/plain" id="emberwood-character-patch">
+/* Emberwood Character Cover Match v0.3.58
+ * Purely visual additions, all underlying v0.3.57 mechanics remain untouched.
+ * Existing renderer owns physics, hitboxes, actions, attack poses, health,
+ * unlocks, loot, shop, Chapter 1 quests, save data and animation cadence.
+ */
+(function(){
+  'use strict';
+  var E={version:'0.3.58-cover-match'};
+  function path(c,points,fill,outline,width){
+    c.beginPath();c.moveTo(points[0][0],points[0][1]);
+    for(var i=1;i<points.length;i++)c.lineTo(points[i][0],points[i][1]);
+    c.closePath();c.fillStyle=fill;c.fill();
+    if(outline){c.strokeStyle=outline;c.lineWidth=width||1.5;c.lineJoin='round';c.stroke();}
+  }
+  function oval(c,x,y,rx,ry,fill,stroke,w){
+    c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+    c.fillStyle=fill;c.fill();
+    if(stroke){c.strokeStyle=stroke;c.lineWidth=w||1;c.stroke();}
+  }
+  E.drawCape=function(c,p,t){
+    if(!c||!p)return;
+    var running=!!p.moving||p.pose==='run'||p.pose==='dash';
+    var phase=Number.isFinite(p.walkPhase)?p.walkPhase:t*11;
+    var wave=Math.sin(phase*.55)*3.5;
+    var force=running?1:.42;
+    var flash=(p.flash||0)>0;
+    c.save();
+    c.lineJoin='round';
+    var grad=c.createLinearGradient(-38,-49,5,-1);
+    grad.addColorStop(0,flash?'#fff':'#437d50');
+    grad.addColorStop(.48,flash?'#fff':'#276541');
+    grad.addColorStop(1,flash?'#fff':'#163f34');
+    c.beginPath();
+    c.moveTo(-10,-35);
+    c.bezierCurveTo(-20,-39,-31-force*10,-27+wave,-31-force*9,-8+wave);
+    c.quadraticCurveTo(-27-force*8,1+wave,-15,-4);
+    c.quadraticCurveTo(-7,-7,-6,-22);
+    c.closePath();
+    c.fillStyle=grad;c.fill();c.lineWidth=2;c.strokeStyle='#192e26';c.stroke();
+    c.beginPath();c.moveTo(-18,-31);c.quadraticCurveTo(-35-force*5,-17+wave,-29-force*9,-6+wave);
+    c.strokeStyle=flash?'#fff':'#c8a65f';c.lineWidth=1.5;c.stroke();
+    c.translate(-23-force*5,-14+wave*.6);
+    c.rotate(running?-.1:.03);
+    path(c,[[0,-11],[8,0],[0,11],[-8,0]],flash?'#fff':'#e2b15b','#623f26',1.5);
+    path(c,[[0,-6],[4,0],[0,6],[-4,0]],flash?'#fff':'#ef7f2e');
+    c.restore();
+  };
+  E.drawArmor=function(c,p,t){
+    if(!c||!p)return;
+    var flash=(p.flash||0)>0;
+    c.save();
+    var shine=flash?'#fff':'#e0bf7c';
+    // Enamel shoulder guards and reinforced straps, matching the concept art.
+    path(c,[[-16,-30],[-21,-29],[-24,-21],[-15,-19],[-10,-23]],flash?'#fff':'#6f8780','#292f2b',1.9);
+    path(c,[[14,-30],[19,-29],[22,-22],[14,-19],[9,-24]],flash?'#fff':'#677d75','#292f2b',1.9);
+    c.strokeStyle=shine;c.lineWidth=1.4;c.beginPath();
+    c.moveTo(-20,-24);c.lineTo(-14,-25);
+    c.moveTo(18,-25);c.lineTo(13,-25);
+    c.stroke();
+    path(c,[[-9,-32],[0,-28],[8,-32],[11,-26],[3,-20],[-5,-21]],flash?'#fff':'#3b322b','#1c211d',1.2);
+    path(c,[[0,-33],[5,-27],[0,-18],[-5,-27]],flash?'#fff':'#ffad45','#532b24',1.7);
+    path(c,[[0,-30],[2.3,-27],[0,-22],[-2.3,-27]],flash?'#fff':'#e7582b');
+    oval(c,-.6,-29,1,1.5,'#fff8cf');
+    // Leather belts & amber ornaments.
+    c.strokeStyle=flash?'#fff':'#8b5c37';c.lineWidth=2.2;c.beginPath();
+    c.moveTo(-13,-18);c.lineTo(11,-12);c.stroke();
+    oval(c,6,-16,2.1,2.1,flash?'#fff':'#edb45f','#593825',.7);
+    c.restore();
+  };
+  E.drawHairShine=function(c,p,t){
+    if(!c||!p)return;
+    if((p.flash||0)>0)return;
+    c.save();c.lineCap='round';
+    c.strokeStyle='#f5e9e9';c.lineWidth=1.4;c.beginPath();
+    c.moveTo(-17,-55);c.lineTo(-13,-62);
+    c.moveTo(-6,-60);c.lineTo(-3,-65);
+    c.moveTo(8,-58);c.lineTo(11,-64);
+    c.stroke();
+    if(p.pose==='victory'||p.pose==='special'){
+      var a=.5+Math.sin(t*4)*.25;
+      c.globalAlpha=a;
+      oval(c,17,-68,1.8,3.3,'#fff1bd');
+      oval(c,21,-63,1,1.7,'#ffd47b');
+    }
+    c.restore();
+  };
+  window.EmberwoodSkin=E;
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var load=document.getElementById('load');
+  var original='./Emberwood_v0.3.57_Chapter1_Quests_Engagement.html';
+  function fail(message){
+    load.innerHTML='<div style="font-size:60px">⚠️</div><h1>เปิด Emberwood ไม่สำเร็จ</h1><p>'+message+'</p><p><a href="'+original+'">เปิดเกมเวอร์ชันต้นฉบับ v0.3.57</a></p>';
+  }
+  fetch(original,{cache:'no-cache'}).then(function(response){
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    return response.text();
+  }).then(function(html){
+    if(!/function\s+drawPlayer\s*\(\s*c\s*,\s*p\s*,\s*t\s*\)\s*\{/.test(html)){
+      throw new Error('ไม่พบตัววาดผู้เล่นในไฟล์ต้นฉบับ ตรวจสอบเวอร์ชันไฟล์เกม');
+    }
+    var patched={palette:false,cape:false,armor:false,hair:false,zombie:false,slime:false};
+    // Preserve the original Canvas character and its smooth state animations.
+    // Only replace its color palette and layer in the concept's extra accessories.
+    var heroColors={
+      hair:'#d5c7d1', hairDark:'#685964', hairLight:'#fff1ed',
+      skin:'#f9dbc4', line:'#30241f',
+      coat:'#245a3d', coatLight:'#4c8a64',
+      red:'#e56729', redLight:'#ffab56', shirt:'#f5e4bd',
+      pants:'#302d36', boot:'#3a2a23', iris:'#d86b29'
+    };
+    html=html.replace(/const\s+HERO\s*=\s*Object\.freeze\(\{[^}]*\}\);/,function(block){
+      patched.palette=true;
+      return block.replace(/\b(hairDark|hairLight|hair|skin|line|coatLight|coat|redLight|red|shirt|pants|boot|iris)\s*:\s*'#[0-9a-fA-F]+'/g,function(found,key){
+        return key+':'+JSON.stringify(heroColors[key]);
+      });
+    });
+    html=html.replace(/drawScarfTails\(c,t,run,pose\);/,function(block){
+      patched.cape=true;return 'window.EmberwoodSkin.drawCape(c,p,t);'+block;
+    });
+    html=html.replace(/box\(c,-11,-35,22,6,3,flash\?'#fff':HERO\.red,HERO\.line,1\.6\);/,function(block){
+      patched.armor=true;return block+'window.EmberwoodSkin.drawArmor(c,p,t);';
+    });
+    html=html.replace(/drawHeroFace\(c,emotion\);drawHeroHair\(c,flash,emotion,t\);/,function(block){
+      patched.hair=true;return block+'window.EmberwoodSkin.drawHairShine(c,p,t);';
+    });
+    var zombieColors={
+      normal:'#89719d',runner:'#a385b9',brute:'#77628f',bomber:'#ae7287',
+      archer:'#9077a0',shield:'#806b9b',ghost:'#c0bad8',shaman:'#9381aa',
+      golden:'#d9b76c',armored:'#827698',priest:'#ada0be',miner:'#9a82a9',
+      lumberjack:'#8b7797',hiker:'#a28cb0',giant:'#9c82ad',horned:'#ad829e',
+      king:'#ae85b8',bomblord:'#bd7698',archchief:'#9e8bb0',
+      ghostlord:'#bbb8d7',elder:'#968ab4',emperor:'#a98aa2'
+    };
+    html=html.replace(/const\s+ZOMBIE_SKIN\s*=\s*\{[\s\S]*?\};/,function(block){
+      patched.zombie=true;
+      return block.replace(/\b([a-z]+)\s*:\s*'#[0-9a-fA-F]+'/g,function(found,key){
+        return Object.prototype.hasOwnProperty.call(zombieColors,key)?key+':'+JSON.stringify(zombieColors[key]):found;
+      });
+    });
+    // The regular slime remains emerald. The Slime King gets the violet crown
+    // silhouette from the reference art without changing collision or AI.
+    html=html.replace(/titan\?'#5aa84a':'#7cc85d'/g,function(){
+      patched.slime=true;return "titan?'#9360d8':'#84d85c'";
+    });
+    var skin=document.getElementById('emberwood-character-patch').textContent;
+    var injected='<scr'+'ipt>'+skin+'</scr'+'ipt>';
+    if(/<head\b[^>]*>/i.test(html))html=html.replace(/<head\b[^>]*>/i,function(m){return m+'\n'+injected;});
+    else html=injected+html;
+    console.info('[Emberwood Character Cover Match v0.3.58]',patched);
+    if(!patched.palette)console.warn('Hero palette not found in original version.');
+    // A document-write bootstrap keeps the same origin, URL, localStorage and
+    // relative resource paths rather than running the game inside a cross-origin iframe.
+    document.open();document.write(html);document.close();
+  }).catch(function(error){
+    console.error('Emberwood Character Edition failed',error);
+    fail('ไม่สามารถโหลดไฟล์เกมเดิมได้: '+String(error.message||error));
+  });
+})();
+</script>
+</head>
+<body>
+<div id="load">
+  <div class="spark">🔥</div>
+  <h1>EMBERWOOD</h1>
+  <p>Character Cover Match v0.3.58</p>
+  <p>กำลังโหลด Ember Ranger ผมสีเงิน ผ้าพันคอสีส้ม ชุดสีเขียว และสัตว์ประหลาดดีไซน์ใหม่ โดยเก็บระบบเกมและเควสต์เดิมไว้ครบ</p>
+</div>
+</body>
+</html>
