@@ -10,6 +10,7 @@
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
+    "@edgeone/pages-blob": "^0.0.19",
     "@netlify/blobs": "^11.1.8"
   }
 }
