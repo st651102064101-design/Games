@@ -367,11 +367,27 @@ body #activityHud{backdrop-filter:none!important}
 .menuAtmosphere::before{opacity:.64;background-image:radial-gradient(circle at 10px 22px,#fff 0 1.2px,transparent 2.6px),radial-gradient(circle at 89px 83px,#e1f7ffdd 0 1px,transparent 2px),radial-gradient(circle at 151px 42px,#fff9 0 1.1px,transparent 2px);background-size:190px 160px}
 .menuAtmosphere::after{opacity:.38;background-image:radial-gradient(circle at 22px 31px,#fff 0 1.7px,transparent 3px),radial-gradient(circle at 137px 109px,#f1fbff 0 1.2px,transparent 2.4px);background-size:190px 160px;animation-duration:29s;animation-direction:reverse}
 .menuGlow{position:absolute;z-index:1;inset:0;pointer-events:none;background:radial-gradient(ellipse 6% 11% at 83% 78%,#ffad3552,transparent 75%),radial-gradient(ellipse 4% 6% at 33% 35%,#ffdc8050,transparent 75%),radial-gradient(ellipse 4% 6% at 67% 35%,#ffdc8050,transparent 75%);animation:menuFireGlow 2.6s ease-in-out infinite alternate;will-change:opacity}
+.menuFire,.menuWater,.menuSmoke{position:absolute;z-index:2;pointer-events:none;overflow:hidden}
+.menuFire{left:80.3%;top:68.3%;width:5%;height:13%;overflow:visible;transform-origin:50% 88%;animation:fireDance .65s ease-in-out infinite alternate;will-change:transform,opacity}
+.menuFire:before,.menuFire:after{content:'';position:absolute;left:24%;bottom:12%;width:52%;height:63%;clip-path:polygon(50% 0,62% 31%,80% 19%,74% 51%,93% 43%,82% 83%,67% 100%,30% 100%,14% 82%,4% 53%,26% 59%,23% 34%,37% 44%);background:linear-gradient(to top,#ff700c,#ffbd20 43%,#fff4a5);opacity:.9}
+.menuFire:after{left:37%;width:27%;height:39%;background:linear-gradient(to top,#ffae1e,#fffbd0);animation:fireDance .42s ease-in-out infinite alternate;transform-origin:50% 100%}
+.menuWater{left:19%;top:67%;width:18%;height:10%;opacity:.7;background:repeating-linear-gradient(176deg,transparent 0 13px,#e1fcff90 14px 15px,transparent 16px 25px);clip-path:polygon(0 15%,92% 0,100% 72%,3% 100%);animation:waterGlint 2.4s ease-in-out infinite alternate;will-change:transform,opacity}
+.menuWaterfall{position:absolute;left:24.4%;top:54%;width:2.6%;height:14%;z-index:2;overflow:hidden;pointer-events:none;clip-path:polygon(0 0,100% 2%,95% 96%,5% 100%)}
+.menuWaterfall:before{content:'';position:absolute;inset:-100% 0 0;background:repeating-linear-gradient(180deg,transparent 0 12px,#dbfaffaa 14px 17px,transparent 22px 34px);animation:waterfallFlow 1.6s linear infinite;will-change:transform}
+.menuSmoke{left:92%;top:15%;width:7%;height:22%}
+.menuSmoke:before,.menuSmoke:after{content:'';position:absolute;bottom:0;left:30%;width:28%;height:28%;background:radial-gradient(circle,#f4fbffbd 0 27%,#e9f6ff75 50%,transparent 72%);animation:smokeRise 3.8s ease-out infinite;will-change:transform,opacity}
+.menuSmoke:after{left:48%;animation-delay:-1.9s}
+.menuAtmosphere::before{animation-duration:11s;opacity:.82}
+.menuAtmosphere::after{animation-duration:17s;opacity:.64}
+@keyframes fireDance{0%{transform:translate3d(-3%,0,0) scale(.85,.85);opacity:.7}100%{transform:translate3d(3%,-4%,0) scale(1.1,1.12);opacity:1}}
+@keyframes waterGlint{from{transform:translate3d(-3%,0,0);opacity:.28}to{transform:translate3d(4%,0,0);opacity:.8}}
+@keyframes waterfallFlow{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,34px,0)}}
+@keyframes smokeRise{0%{transform:translate3d(0,0,0) scale(.55);opacity:0}20%{opacity:.65}100%{transform:translate3d(-35%,-240%,0) scale(1.6);opacity:0}}
 @keyframes menuSnowFall{from{transform:translate3d(0,-160px,0)}to{transform:translate3d(190px,160px,0)}}
 @keyframes menuFireGlow{0%,100%{opacity:.42}38%{opacity:.9}63%{opacity:.58}}
 .mobileAtmosphere{display:none}
 @media(max-width:690px) and (orientation:portrait){.mobileAtmosphere{display:block;position:fixed;z-index:0}.mobileReferenceMenu{z-index:1}}
-@media(prefers-reduced-motion:reduce){.menuAtmosphere::before,.menuAtmosphere::after,.menuGlow{animation:none}.menuAtmosphere,.menuGlow{display:none}}
+@media(prefers-reduced-motion:reduce){.menuAtmosphere::before,.menuAtmosphere::after,.menuGlow,.menuFire,.menuFire:after,.menuWater,.menuWaterfall:before,.menuSmoke:before,.menuSmoke:after{animation:none}.menuAtmosphere,.menuGlow,.menuFire,.menuWater,.menuWaterfall,.menuSmoke{display:none}}
 .referenceHit{position:absolute;z-index:3;border:0;appearance:none;background:transparent;color:transparent;font-size:1px;border-radius:12px;cursor:pointer;touch-action:manipulation}
 .referenceHit:hover{outline:3px solid #b4faffc0;outline-offset:0;background:#c6f4ff0f;box-shadow:0 0 18px #a5f8ff80}
 .referenceHit:focus-visible{outline:4px solid #79f8ff}
@@ -617,6 +633,7 @@ body.cleanPlay #hud{display:none!important;visibility:hidden!important;pointer-e
   <div class="referenceStage" id="homeReference">
     <div class="referenceImage" id="refHomeImage" role="img" aria-label="SNOWWOOD snowy winter voxel world"></div>
     <div class="menuAtmosphere" aria-hidden="true"></div><div class="menuGlow" aria-hidden="true"></div>
+    <div class="menuWater" aria-hidden="true"></div><div class="menuWaterfall" aria-hidden="true"></div><div class="menuFire" aria-hidden="true"></div><div class="menuSmoke" aria-hidden="true"></div>
     <button class="referenceHit hitPlay" id="startBtn" aria-label="Play — เลือกโลก"><span class="srVisuallyHidden">Play</span></button>
     <button class="referenceHit hitContinue" id="continueBtn" aria-label="Continue — เล่นต่อ"><span class="srVisuallyHidden">Continue</span></button>
     <button class="referenceHit hitWorlds" id="homeWorldsBtn" aria-label="Worlds — เลือกโลก"><span class="srVisuallyHidden">Worlds</span></button>
