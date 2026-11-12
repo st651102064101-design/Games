@@ -46,9 +46,9 @@
 </div><div class="bottom-meta"><span>CAT vs DOG — ZEBRA PORTAL COVER-MATCH ART v2.3</span><span>•</span><span>เล่นได้ทั้งคอมและมือถือ</span><span>•</span><a href="https://github.com/Relin404/Cat-vs-Dog" target="_blank" rel="noopener noreferrer">ต้นฉบับ GitHub</a></div></div>
 <script>
 (()=>{'use strict';
-const W=1280,H=720,GROUND=588,WALL={x:615,y:348,w:50,h:240},G=660,MAX_HP=3;
+const W=1280,H=720,WORLD_W=1580,CAT_X=63,DOG_X=1340,GROUND=588,WALL={x:(WORLD_W-50)/2,y:348,w:50,h:240},G=660,MAX_HP=3;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=1.10,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
+const VIEW_ZOOM=1.10,VIEW_MAX_X=WORLD_W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
 // Keep the active character prominent, with the ground low in the frame.
 const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
 const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
@@ -73,7 +73,7 @@ function burst(x,y,type,count=18){const colors=type==='hit'?['#fff2ab','#ffa466'
 function toast(msg,seconds=1.55){const el=$('toast');el.textContent=msg;el.classList.add('on');s.toastTimer=seconds}
 function hideToast(){$('toast').classList.remove('on');s.toastTimer=0}
 function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';if(screen!=='play')s.drag=null;updateHud()}
-function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:1037,y:472}}
+function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:DOG_X-3,y:472}}
 
 function reset(newScreen='play'){
  s.items={cat:{double:1,power:1,stink:1,heal:1,wind:1},dog:{double:1,power:1,stink:1,heal:1,wind:1}};s.selected=null;s.noWind=false;s.doubleRemaining=0;s.doubleSecond=false;s.weak={cat:false,dog:false};s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
@@ -207,7 +207,7 @@ function hitPlayer(target){
 function miss(type){
  if(!s.ball)return;
  const attacker=s.ball.from,defender=attacker==='cat'?'dog':'cat',x=s.ball.x,y=s.ball.y;
- burst(clamp(x,0,W),clamp(y,40,GROUND),type,type==='wall'?27:17);s.groundFx.push({x:clamp(x,0,W),y:Math.min(GROUND,y),age:0,kind:type});
+ burst(clamp(x,0,WORLD_W),clamp(y,40,GROUND),type,type==='wall'?27:17);s.groundFx.push({x:clamp(x,0,WORLD_W),y:Math.min(GROUND,y),age:0,kind:type});
  tone(type==='wall'?155:220,.16,'triangle',.04);s.ball=null;
  beginReaction(type==='wall'?'wall':'miss',attacker,defender,defender);
 }
@@ -276,10 +276,10 @@ function step(dt){
      b.vy+=G*h;b.vx+=(b.windless?0:s.wind)*h*.08;b.x+=b.vx*h;b.y+=b.vy*h;
      b.rotation+=12*h;b.trail.push({x:b.x,y:b.y});if(b.trail.length>14)b.trail.shift();
      const x=b.x,y=b.y,r=b.r;
-     const target=b.from==='cat'?{x:1051,y:449,w:150,h:145,name:'dog'}:{x:87,y:454,w:152,h:140,name:'cat'};
+     const target=b.from==='cat'?{x:DOG_X+11,y:449,w:150,h:145,name:'dog'}:{x:87,y:454,w:152,h:140,name:'cat'};
      if(x+r>target.x&&x-r<target.x+target.w&&y+r>target.y&&y-r<target.y+target.h){hitPlayer(target.name);break}
      if(x+r>WALL.x&&x-r<WALL.x+WALL.w&&y+r>WALL.y&&y-r<GROUND){miss('wall');break}
-     if(y+r>=GROUND||x<-80||x>W+80||y>H+100){miss('miss');break}
+     if(y+r>=GROUND||x<-80||x>WORLD_W+80||y>H+100){miss('miss');break}
     }
    }
   }
@@ -364,7 +364,7 @@ function sky(){
  poly([[-56,-6],[56,-6],[39,18],[-40,18]],'#e4a24e','#8f673c',3);roundedRect(-33,-10,66,11,4,'#ffdb94');
  for(let i=0;i<3;i++)ellipse(-21+i*20,-6,6,3,'#f7f0d3');ctx.restore();
 }
-function drawBackground(){sky()}
+function drawBackground(){ctx.save();ctx.scale(WORLD_W/W,1);sky();ctx.restore()}
 function drawWall(){
  ctx.save();ellipse(WALL.x+WALL.w/2,GROUND+5,86,12,'#3e5a4966');
  roundedRect(WALL.x,WALL.y,WALL.w,GROUND-WALL.y+8,3,'#e4d69f');
@@ -485,7 +485,7 @@ function updateRigMotion(team,dt){
 // Forward-kinematics: the held object, guide and launched projectile use one paw location.
 function throwHandWorld(team){
  const p=rigMotion[team]?.pose||RIG_DEFAULT;
- const cat=team==='cat',x=cat?63:1040,y=435,size=cat?1.08:1.00;
+ const cat=team==='cat',x=cat?CAT_X:DOG_X,y=435,size=cat?1.08:1.00;
  const sx=cat?137:36,sy=88,ang=cat?p.rightArm:p.leftArm;
  const hx=sx-Math.sin(ang)*59,hy=sy+Math.cos(ang)*59;
  const xx=(hx-85)*(1+p.squash),yy=(hy-88)*(1-p.squash*.58);
@@ -705,16 +705,12 @@ function renderLegacyPortrait(team,x,y,size=1){
  moodEffects(team,x+size*85,y+size*4+p.lift*size,mood);
 }
 function drawActor(team){
- // The opponent is never visible during aiming; reveal expressions only during impacts or reaction shots.
- if((s.screen==='play'||s.screen==='pause')&&team!==s.turn&&!s.ball&&!s.reaction&&!s.finish)return;
- if(s.reaction&&team!==s.reaction.focus)return;
- if(s.finish&&team!==s.finish.focus)return;
- if(s.ball&&team!==s.turn&&Math.abs(s.ball.x-spawnFor(team).x)>155)return;
+ // Canvas clipping naturally hides only characters outside the camera view.
  const isCat=team==='cat',m=moodOf(team);
- const x=isCat?63:1040,y=435;
+ const x=isCat?CAT_X:DOG_X,y=435;
  renderCoverMatchedCharacter(team,x,y,isCat?1.08:1.00);
  if(false&&s.screen==='play'&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&s.turn===team){
-  const px=isCat?166:1125;ctx.fillStyle='rgba(255,244,171,.13)';ctx.beginPath();
+  const px=isCat?CAT_X+103:DOG_X+85;ctx.fillStyle='rgba(255,244,171,.13)';ctx.beginPath();
   ctx.ellipse(px,GROUND-3,105,15,0,0,2*Math.PI);ctx.fill();
   const floatY=Math.sin(s.clock*4)*4;
   roundedRect(px-61,393+floatY,122,23,13,'#2c5148c9');
@@ -735,7 +731,7 @@ function drawProjectile(b,alpha=1){
  }else{const asset=sprites[b.from==='cat'?'can':'bone'][0];if(imgReady(asset))ctx.drawImage(asset,-24,-24,48,48);else if(b.from==='cat')drawCan(0,0,1.1);else drawBone(0,0,1.1)}
  ctx.restore()
 }
-function drawTrajectory(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot()||idleVisual(s.turn))return;const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;const vx=dir*Math.cos(a)*s.power+(s.noWind?0:s.wind),vy=-Math.sin(a)*s.power;ctx.save();for(let i=1;i<=4;i++){let t=i*.045;let x=p.x+vx*t,y=p.y+vy*t+.5*G*t*t;if(y>=GROUND||x<0||x>W)break;if(x>WALL.x&&x<WALL.x+WALL.w&&y>WALL.y)break;ctx.globalAlpha=(1-i/6)*.8;ellipse(x,y,Math.max(2.3,5-i*.3),Math.max(2.3,5-i*.3),'#fff7d5')}ctx.restore();let ax=p.x+vx*.066,ay=p.y+vy*.066+.5*G*.066*.066;line(p.x,p.y,ax,ay,'#ffffffc5',4);const tx=ax-p.x,ty=ay-p.y,an=Math.atan2(ty,tx);poly([[ax,ay],[ax-17*Math.cos(an-.48),ay-17*Math.sin(an-.48)],[ax-17*Math.cos(an+.48),ay-17*Math.sin(an+.48)]],'#fff8d4');}
+function drawTrajectory(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot()||idleVisual(s.turn))return;const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;const vx=dir*Math.cos(a)*s.power+(s.noWind?0:s.wind),vy=-Math.sin(a)*s.power;ctx.save();for(let i=1;i<=4;i++){let t=i*.045;let x=p.x+vx*t,y=p.y+vy*t+.5*G*t*t;if(y>=GROUND||x<0||x>WORLD_W)break;if(x>WALL.x&&x<WALL.x+WALL.w&&y>WALL.y)break;ctx.globalAlpha=(1-i/6)*.8;ellipse(x,y,Math.max(2.3,5-i*.3),Math.max(2.3,5-i*.3),'#fff7d5')}ctx.restore();let ax=p.x+vx*.066,ay=p.y+vy*.066+.5*G*.066*.066;line(p.x,p.y,ax,ay,'#ffffffc5',4);const tx=ax-p.x,ty=ay-p.y,an=Math.atan2(ty,tx);poly([[ax,ay],[ax-17*Math.cos(an-.48),ay-17*Math.sin(an-.48)],[ax-17*Math.cos(an+.48),ay-17*Math.sin(an+.48)]],'#fff8d4');}
 function drawParticles(){for(const p of s.particles){ctx.globalAlpha=Math.min(1,p.life/.25);ellipse(p.x,p.y,p.r,p.r,p.color)}ctx.globalAlpha=1;for(const f of s.floats){ctx.globalAlpha=Math.min(1,f.life/.5);ctx.textAlign='center';ctx.font='900 24px system-ui';ctx.lineWidth=4;ctx.strokeStyle='#5d1f40';ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle='#ffb8ad';ctx.fillText(f.text,f.x,f.y)}ctx.globalAlpha=1}
 function drawDrag(){if(!s.drag||s.ball||s.throwSeq||s.reaction||s.finish)return;ctx.save();const{start,end}=s.drag;ctx.lineCap='round';ctx.setLineDash([9,7]);line(start.x,start.y,end.x,end.y,'#17253dcc',8);line(start.x,start.y,end.x,end.y,'#fff9db',4);ctx.setLineDash([]);ellipse(start.x,start.y,8,8,'#ffcf53');ellipse(end.x,end.y,7,7,'#ff7755');ctx.restore()}
 function draw(dt){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}drawParticles();drawGroundFx();drawDrag();ctx.restore();if(s.flash>0){ctx.fillStyle=`rgba(255,252,213,${s.flash*1.6})`;ctx.fillRect(0,0,W,H)}if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,W,H)}}
@@ -756,7 +752,7 @@ function updateDragAim(dt){
  s.aimMotion=current+(target-current)*(1-Math.exp(-Math.max(0,dt)*13));
 }
 function point(e){const r=canvas.getBoundingClientRect();const zoom=s.screen==='play'||s.screen==='pause'?VIEW_ZOOM:1;
- return {x:clamp(s.camX+(e.clientX-r.left)*W/r.width/zoom,0,W),y:clamp(s.camY+(e.clientY-r.top)*H/r.height/zoom,0,H)};
+ return {x:clamp(s.camX+(e.clientX-r.left)*W/r.width/zoom,0,WORLD_W),y:clamp(s.camY+(e.clientY-r.top)*H/r.height/zoom,0,H)};
 }
 function aimingFromDrag(a,b){let dx=b.x-a.x,dy=b.y-a.y;let d=Math.hypot(dx,dy);if(d<15)return;const direction=s.turn==='cat'?1:-1;dx=Math.abs(dx)*direction;const ang=clamp(Math.atan2(Math.max(25,-dy),Math.max(5,Math.abs(dx)))*180/Math.PI,14,79);s.angle=ang;s.power=clamp(280+d*2.75,350,1010);updateHud()}
 canvas.addEventListener('pointerdown',e=>{if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;if(e.button!==undefined&&e.button!==0)return;e.preventDefault();audioOn();try{canvas.setPointerCapture(e.pointerId)}catch(_){ } const p=point(e);s.drag={start:p,end:p};});
@@ -770,7 +766,7 @@ function resize(){const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getB
 // draw() sets transform per frame based on actual canvas pixels to preserve consistent scaling.
 draw=function(dt){const xx=canvas.width/W,yy=canvas.height/H;ctx.setTransform(xx,0,0,yy,0,0);ctx.clearRect(0,0,W,H);ctx.save();if(s.screen==='play'||s.screen==='pause'){ctx.translate(-s.camX*VIEW_ZOOM,-s.camY*VIEW_ZOOM);ctx.scale(VIEW_ZOOM,VIEW_ZOOM)}if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}drawParticles();drawGroundFx();drawDrag();ctx.restore();if(s.flash>0){ctx.fillStyle=`rgba(255,252,213,${s.flash*1.6})`;ctx.fillRect(0,0,W,H)}if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,W,H)}};
 new ResizeObserver(resize).observe(canvas);resize();window.__catdogTest=()=>({screen:s.screen,turn:s.turn,round:s.round,hp:{...s.hp},ball:!!s.ball,throwStage:s.throwSeq?.stage||null,finish:!!s.finish,reaction:s.reaction?{kind:s.reaction.kind,time:s.reaction.time,stage:s.reaction.stages[s.reaction.index]?.label,index:s.reaction.index,total:s.reaction.stages.length,focus:s.reaction.focus,waitingForCamera:s.reaction.waitingForCamera}:null,moods:{cat:moodOf('cat'),dog:moodOf('dog')},camera:[Math.round(s.camX),Math.round(s.camY)],bumps:{cat:s.bumps.cat.n,dog:s.bumps.dog.n},fps:fpsStats.last,turnReady:s.turnReady,ballPos:s.ball?{x:s.ball.x,y:s.ball.y,age:s.ball.age}:null,lastShot:s.lastShot||null,hand:{cat:throwHandWorld('cat'),dog:throwHandWorld('dog')},hitStop:s.hitStop,rig:{cat:rigMotion.cat?.pose,dog:rigMotion.dog?.pose},art:{cat:ZP_ART.cat.complete&&ZP_ART.cat.naturalWidth>0,dog:ZP_ART.dog.complete&&ZP_ART.dog.naturalWidth>0}});
-window.__catdogDev={forceResult:(kind='miss')=>{if(s.screen!=='play')return; s.ball={x:s.turn==='cat'?1040:240,y:475,vx:0,vy:0,r:18,rotation:0,from:s.turn,trail:[],age:0};if(kind==='hit'||kind==='body'){if(kind==='body')s.ball.y=558;hitPlayer(s.turn==='cat'?'dog':'cat')}else miss(kind==='wall'?'wall':'miss');}};
+window.__catdogDev={forceResult:(kind='miss')=>{if(s.screen!=='play')return; s.ball={x:s.turn==='cat'?DOG_X:240,y:475,vx:0,vy:0,r:18,rotation:0,from:s.turn,trail:[],age:0};if(kind==='hit'||kind==='body'){if(kind==='body')s.ball.y=558;hitPlayer(s.turn==='cat'?'dog':'cat')}else miss(kind==='wall'?'wall':'miss');}};
 // Optional idle art keeps gameplay usable if the image has not loaded.
 const IDLE_ATLAS=new Image();
 IDLE_ATLAS.src='Cat_Dog_Idle_Atlas.png';
@@ -927,9 +923,9 @@ throwHandWorld=function(team){
  if(cat&&s.turn===team&&(s.drag||(s.aimMotion||0)>.001)&&s.screen==='play'&&!s.throwSeq){
   const tr=characterTransform(team,'aim',0,f),localX=(-105+px*210/192)*tr.scaleX,localY=(-216+y*245/256)*tr.scaleY;
   const c=Math.cos(tr.lean),sn=Math.sin(tr.lean);
-  return {x:63+(tr.x+localX*c-localY*sn)*size,y:435+(tr.y+localX*sn+localY*c)*size};
+  return {x:CAT_X+(tr.x+localX*c-localY*sn)*size,y:435+(tr.y+localX*sn+localY*c)*size};
  }
- return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+y*245/256)*size};
+ return {x:(cat?CAT_X:DOG_X)+(-20+px*210/192)*size,y:435+(-65+y*245/256)*size};
 };
 // Ready/windup frames already contain the exact Z disc in the paw.
 drawHeldWeapon=function(){};

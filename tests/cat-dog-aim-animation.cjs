@@ -5,7 +5,7 @@ const html = fs.readFileSync('Cat_vs_Dog_ZebraPortal2026_CoverMatch_v2.2.html','
 function section(start,end){const a=html.indexOf(start),b=html.indexOf(end,a);assert(a>=0&&b>a,`Missing ${start}`);return html.slice(a,b)}
 const script=section('function dragAimTarget(', 'function point(')+section('function characterTransform(', 'function renderCoverMatchedCharacter(')+section('throwHandWorld=function(team){','// Ready/windup frames');
 const s={screen:'play',turn:'cat',clock:0,angle:48,drag:null,aimMotion:0};
-const ctx={s,Math,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),rigMotion:{cat:null,dog:null},actorFrame:()=>({pose:2,nextPose:2,blend:0}),moodOf:()=> 'aim',throwHandWorld(){}};
+const ctx={s,Math,DOG_X:1340,CAT_X:63,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),rigMotion:{cat:null,dog:null},actorFrame:()=>({pose:2,nextPose:2,blend:0}),moodOf:()=> 'aim',throwHandWorld(){}};
 vm.createContext(ctx);vm.runInContext(script,ctx);
 assert.equal(ctx.dragAimTarget(),0);
 const resting=ctx.throwHandWorld('cat');
