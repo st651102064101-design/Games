@@ -617,28 +617,28 @@ function renderSkinStore(){
  selectShopTab('skins');
  const m=loadSave(),equipped=safeSkinId(m.skinEquipped);
  skinPreviewId=safeSkinId(skinPreviewId);
- // Skin purchases use the actual saved coin balance even in 'god' player-name mode.
- $('shopWallet').textContent=m.coins;
- {const _w=$('walletCoins');if(_w)_w.textContent=m.coins}
+ // God mode uses the same unlimited balance for both shop tabs.
+ $('shopWallet').textContent=isGod()?'∞':m.coins;
+ {const _w=$('walletCoins');if(_w)_w.textContent=isGod()?'∞':m.coins}
  $('skinPreviewName').textContent=(lang==='en'?characterById(skinPreviewId).name:characterById(skinPreviewId).th)+' · '+rarityDisplayName(characterById(skinPreviewId).rarity);
  $('skinPreviewDetails').textContent=lang==='en'?(characterById(skinPreviewId).price?characterById(skinPreviewId).price+' coins':'Free')+' · Cosmetic only':characterById(skinPreviewId).th+' · '+(characterById(skinPreviewId).price?characterById(skinPreviewId).price+' เหรียญ':'ฟรี')+' · ของตกแต่ง ไม่มีโบนัสพลังโจมตี';
  $('shopNote').textContent=lang==='en'?'2 free skins · 13 coin skins · Buy once to keep forever':'ฟรี 2 ตัว · ใช้เหรียญซื้อ 13 ตัว · ซื้อครั้งเดียวเป็นเจ้าของถาวร';
  $('shopList').innerHTML=CHARACTER_SKINS.map(c=>{
   const isOwned=characterOwned(m,c.id),active=equipped===c.id,cost=c.price;
-  const text=active&&isOwned?(lang==='en'?'✓ Equipped':'✓ ใช้อยู่'):isOwned?(lang==='en'?'Equip':'สวมใส่'):m.coins<cost?(lang==='en'?'Need ':'ขาด ')+(cost-m.coins):lang==='en'?'Buy '+cost+' '+SKIN_COIN_SVG:'ซื้อ '+SKIN_COIN_SVG+' '+cost;
+  const text=active&&isOwned?(lang==='en'?'✓ Equipped':'✓ ใช้อยู่'):isOwned?(lang==='en'?'Equip':'สวมใส่'):!isGod()&&m.coins<cost?(lang==='en'?'Need ':'ขาด ')+(cost-m.coins):lang==='en'?'Buy '+cost+' '+SKIN_COIN_SVG:'ซื้อ '+SKIN_COIN_SVG+' '+cost;
   return '<div class="skinCard '+(skinPreviewId===c.id?'is-preview':'')+'" data-skin-preview="'+c.id+'">'+
    '<img src="'+skinImage(c.id)+'" alt="'+c.name+'">'+
    '<div class="skinCardText"><b>'+(lang==='en'?c.name:c.th)+'</b><small>'+rarityDisplayName(c.rarity)+' · '+(cost?SKIN_COIN_SVG+' '+cost+(lang==='en'?' coins':' เหรียญ'):(lang==='en'?'FREE':'ฟรี'))+'</small></div>'+
-   '<button type="button" data-skin-action="'+c.id+'" '+((active&&isOwned)||(!isOwned&&m.coins<cost)?'disabled':'')+' class="'+(active&&isOwned?'is-equipped':'')+'">'+text+'</button></div>';
+   '<button type="button" data-skin-action="'+c.id+'" '+((active&&isOwned)||(!isOwned&&!isGod()&&m.coins<cost)?'disabled':'')+' class="'+(active&&isOwned?'is-equipped':'')+'">'+text+'</button></div>';
  }).join('');
  skinPreviewRender(skinPreviewId);
 }
 function buyOrEquipSkin(id){
  const skin=CHARACTER_SKINS.find(c=>c.id===id);if(!skin)return;
  const m=loadSave(),owned=characterOwned(m,id);
- if(!owned&&m.coins<skin.price)return;
+ if(!owned&&!isGod()&&m.coins<skin.price)return;
  const skinOwned=Array.from(new Set([...(Array.isArray(m.skinOwned)?m.skinOwned:[]),id])).filter(x=>CHARACTER_SKINS.some(c=>c.id===x&&c.id!=='scout'));
- const coins=owned?m.coins:m.coins-skin.price;
+ const coins=owned||isGod()?m.coins:m.coins-skin.price;
  writeMeta({coins,skinOwned,skinEquipped:id});
  if(game){game.p.skin=id;game.coins=coins}
  skinPreviewId=id;renderShop();
