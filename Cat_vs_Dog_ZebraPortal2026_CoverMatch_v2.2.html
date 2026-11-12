@@ -47,7 +47,7 @@
 (()=>{'use strict';
 const W=1280,H=720,GROUND=588,WALL={x:615,y:348,w:50,h:240},G=660,MAX_HP=3;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=1.10,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
+const VIEW_ZOOM=1.00,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
 // Keep the active character prominent, with the ground low in the frame.
 const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
 const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
@@ -72,7 +72,7 @@ function burst(x,y,type,count=18){const colors=type==='hit'?['#fff2ab','#ffa466'
 function toast(msg,seconds=1.55){const el=$('toast');el.textContent=msg;el.classList.add('on');s.toastTimer=seconds}
 function hideToast(){$('toast').classList.remove('on');s.toastTimer=0}
 function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';if(screen!=='play')s.drag=null;updateHud()}
-function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:1037,y:472}}
+function spawnFor(team){return team==='cat'?{x:225,y:472}:{x:1057,y:472}}
 
 function reset(newScreen='play'){
  s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
@@ -217,7 +217,7 @@ function endGame(){
 
 function botThrow(){
  if(s.screen!=='play'||!s.turnReady||s.ball||s.reaction||!activeBot())return;
- let a=rand(42,54);let dist=Math.abs(spawnFor('dog').x-145);
+ let a=rand(42,54);let dist=Math.abs(spawnFor('dog').x-125);
  let desired=Math.sqrt(G*dist/Math.sin(a*Math.PI/90));
  s.angle=a;s.power=clamp(desired*rand(.90,1.075),380,1010);
  updateHud();launch();
@@ -269,7 +269,7 @@ function step(dt){
      b.vy+=G*h;b.vx+=s.wind*h*.08;b.x+=b.vx*h;b.y+=b.vy*h;
      b.rotation+=12*h;b.trail.push({x:b.x,y:b.y});if(b.trail.length>14)b.trail.shift();
      const x=b.x,y=b.y,r=b.r;
-     const target=b.from==='cat'?{x:1051,y:449,w:150,h:145,name:'dog'}:{x:87,y:454,w:152,h:140,name:'cat'};
+     const target=b.from==='cat'?{x:1071,y:449,w:150,h:145,name:'dog'}:{x:67,y:454,w:152,h:140,name:'cat'};
      if(x+r>target.x&&x-r<target.x+target.w&&y+r>target.y&&y-r<target.y+target.h){hitPlayer(target.name);break}
      if(x+r>WALL.x&&x-r<WALL.x+WALL.w&&y+r>WALL.y&&y-r<GROUND){miss('wall');break}
      if(y+r>=GROUND||x<-80||x>W+80||y>H+100){miss('miss');break}
@@ -698,13 +698,8 @@ function renderLegacyPortrait(team,x,y,size=1){
  moodEffects(team,x+size*85,y+size*4+p.lift*size,mood);
 }
 function drawActor(team){
- // The opponent is never visible during aiming; reveal expressions only during impacts or reaction shots.
- if((s.screen==='play'||s.screen==='pause')&&team!==s.turn&&!s.ball&&!s.reaction&&!s.finish)return;
- if(s.reaction&&team!==s.reaction.focus)return;
- if(s.finish&&team!==s.finish.focus)return;
- if(s.ball&&team!==s.turn&&Math.abs(s.ball.x-spawnFor(team).x)>155)return;
  const isCat=team==='cat',m=moodOf(team);
- const x=isCat?63:1040,y=435;
+ const x=isCat?43:1060,y=435;
  renderCoverMatchedCharacter(team,x,y,isCat?1.08:1.00);
  if(false&&s.screen==='play'&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&s.turn===team){
   const px=isCat?166:1125;ctx.fillStyle='rgba(255,244,171,.13)';ctx.beginPath();
@@ -718,9 +713,27 @@ function drawActor(team){
 function drawCan(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(.23);roundedRect(-14,-18,28,34,5,'#b3c1cf');roundedRect(-10,-16,20,30,3,'#718a9e');roundedRect(-13,-20,26,7,4,'#d9e3e7');roundedRect(-6,-11,11,18,2,'#d26667');roundedRect(-11,15,22,4,2,'#d9e3e7');ctx.restore()}
 function drawBone(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(-.4);ctx.strokeStyle='#8f7762';ctx.lineWidth=20;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-13,9);ctx.lineTo(13,-9);ctx.stroke();ctx.strokeStyle='#f9efd6';ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(-13,9);ctx.lineTo(13,-9);ctx.stroke();for(const p of [[-19,2],[-7,16],[7,-16],[19,-3]])ellipse(p[0],p[1],10,10,'#faefdc');ctx.restore()}
 function drawProjectile(b,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.translate(b.x,b.y);ctx.rotate(b.rotation);const asset=sprites[b.from==='cat'?'can':'bone'][0];if(imgReady(asset))ctx.drawImage(asset,-24,-24,48,48);else if(b.from==='cat')drawCan(0,0,1.1);else drawBone(0,0,1.1);ctx.restore()}
-function drawTrajectory(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;const vx=dir*Math.cos(a)*s.power+s.wind,vy=-Math.sin(a)*s.power;ctx.save();for(let i=1;i<=4;i++){let t=i*.045;let x=p.x+vx*t,y=p.y+vy*t+.5*G*t*t;if(y>=GROUND||x<0||x>W)break;if(x>WALL.x&&x<WALL.x+WALL.w&&y>WALL.y)break;ctx.globalAlpha=(1-i/6)*.8;ellipse(x,y,Math.max(2.3,5-i*.3),Math.max(2.3,5-i*.3),'#fff7d5')}ctx.restore();let ax=p.x+vx*.066,ay=p.y+vy*.066+.5*G*.066*.066;line(p.x,p.y,ax,ay,'#ffffffc5',4);const tx=ax-p.x,ty=ay-p.y,an=Math.atan2(ty,tx);poly([[ax,ay],[ax-17*Math.cos(an-.48),ay-17*Math.sin(an-.48)],[ax-17*Math.cos(an+.48),ay-17*Math.sin(an+.48)]],'#fff8d4');}
+function drawTrajectory(){
+ if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;
+ const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;
+ const vx=dir*Math.cos(a)*s.power+s.wind,vy=-Math.sin(a)*s.power;
+ const pointAt=t=>({x:p.x+vx*t,y:p.y+vy*t+.5*G*t*t});
+ const joinTime=.12,join=pointAt(joinTime);
+ ctx.save();ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(p.x,p.y);
+ for(let t=.01;t<joinTime;t+=.01){const q=pointAt(t);ctx.lineTo(q.x,q.y)}
+ ctx.lineTo(join.x,join.y);ctx.strokeStyle='#fff9df';ctx.lineWidth=4;ctx.stroke();
+ ctx.beginPath();ctx.moveTo(join.x,join.y);ctx.setLineDash([9,7]);ctx.strokeStyle='#fff9df';ctx.lineWidth=3.5;
+ for(let t=joinTime+.01;t<=1.8;t+=.01){const q=pointAt(t);if(q.y>=GROUND||q.x<0||q.x>W||(q.x>WALL.x&&q.x<WALL.x+WALL.w&&q.y>WALL.y))break;ctx.lineTo(q.x,q.y)}
+ ctx.stroke();ctx.setLineDash([]);
+ ellipse(p.x,p.y,5,5,'#ffde8a');
+ const an=Math.atan2(vy+G*joinTime,vx);
+ poly([[join.x,join.y],[join.x-13*Math.cos(an-.48),join.y-13*Math.sin(an-.48)],[join.x-13*Math.cos(an+.48),join.y-13*Math.sin(an+.48)]],'#fff8d4');
+ ctx.restore();
+}
 function drawParticles(){for(const p of s.particles){ctx.globalAlpha=Math.min(1,p.life/.25);ellipse(p.x,p.y,p.r,p.r,p.color)}ctx.globalAlpha=1;for(const f of s.floats){ctx.globalAlpha=Math.min(1,f.life/.5);ctx.textAlign='center';ctx.font='900 24px system-ui';ctx.lineWidth=4;ctx.strokeStyle='#5d1f40';ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle='#ffb8ad';ctx.fillText(f.text,f.x,f.y)}ctx.globalAlpha=1}
-function drawDrag(){if(!s.drag||s.ball||s.throwSeq||s.reaction||s.finish)return;ctx.save();const{start,end}=s.drag;ctx.setLineDash([9,8]);line(start.x,start.y,end.x,end.y,'#ffffffb5',3);ctx.setLineDash([]);ellipse(start.x,start.y,10,10,'#ffde8a');ellipse(end.x,end.y,8,8,'#ff8e8e');ctx.restore()}
+function drawDrag(){} // A single connected guide is drawn by drawTrajectory.
+
 function draw(dt){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}drawParticles();drawGroundFx();drawDrag();ctx.restore();if(s.flash>0){ctx.fillStyle=`rgba(255,252,213,${s.flash*1.6})`;ctx.fillRect(0,0,W,H)}if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,W,H)}}
 const fpsStats={elapsed:0,frames:0,last:60};
 function loop(ms){
@@ -783,6 +796,8 @@ function renderCoverMatchedCharacter(team,x,y,size=1){
  ctx.save();ctx.translate(x,y);ctx.scale(size,size);
  ellipse(85,151,77,10,'#20324355');drawZebraPortal(team,0,0);
  let lift=Math.sin(s.clock*2.5)*1.3,lean=0;
+ const aiming=s.turn===team&&s.screen==='play'&&s.turnReady&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&!activeBot();
+ if(aiming){lift+=Math.sin(s.clock*5)*2;lean=(team==='cat'?1:-1)*(.025+Math.sin(s.clock*4)*.012);}
  if(mood==='hurt'){lean=Math.sin(elapsed*25)*.04*Math.exp(-elapsed*4);}
  if(mood==='dizzy')lean=Math.sin(elapsed*5)*.065;
  if(mood==='laugh')lift=-Math.max(0,Math.sin(elapsed*Math.PI*8))*4;
@@ -797,7 +812,11 @@ throwHandWorld=function(team){
  const paws={2:[148,121],3:[91,100],4:[135,98],5:[155,108],6:[157,107],7:[134,179]};
  const point=paws[f.pose]||paws[2];
  const px=cat?point[0]:192-point[0];
- return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+point[1]*245/256)*size};
+ const aiming=s.turn===team&&s.screen==='play'&&s.turnReady&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&!activeBot();
+ const lean=aiming?(cat?1:-1)*(.025+Math.sin(s.clock*4)*.012):0;
+ const lift=Math.sin(s.clock*2.5)*1.3+(aiming?Math.sin(s.clock*5)*2:0);
+ const dx=-105+px*210/192,dy=-216+point[1]*245/256;
+ return {x:(cat?43:1060)+(85+dx*Math.cos(lean)-dy*Math.sin(lean))*size,y:435+(151+lift+dx*Math.sin(lean)+dy*Math.cos(lean))*size};
 };
 // Ready/windup frames already contain the exact Z disc in the paw.
 drawHeldWeapon=function(){};
