@@ -3500,12 +3500,20 @@ function updateClashes(dt){
    const maxReach=a.reach+bladeLen({type:a.type})*(game.growS||1)+b.reach+bladeLen({type:b.type})+14;
    if(d<maxReach&&d>15)contact={a,b,x:(p.x+r.x)*.5,y:(p.y+r.y)*.5};
   }
-  if(!contact){r.clashMeter=0;continue}
+  if(!contact&&r.clashContactUntil>now){
+   const a=own[0],b=other[0];
+   const reach=a.reach+bladeLen({type:a.type})*(game.growS||1)+b.reach+bladeLen({type:b.type})+14;
+   if(d<reach&&d>15)contact={a,b,x:(p.x+r.x)*.5,y:(p.y+r.y)*.5};
+  }
+  if(!contact){r.clashMeter=0;r.clashVelocity=0;continue}
+  r.clashContactUntil=now+.2;
   const ownCount=game.weapons.reduce((n,w)=>n+(!combatSpec(w).gun?1:0),0);
   const otherCount=Math.max(0,Math.floor(r.weaponTotal??r.bl?.length??0));
   if(!ownCount||!otherCount)continue;
   const angularVelocity=Math.max(spinSpeed(),Number(r.w)||0);
-  const lossRate=clamp(angularVelocity/TAU*2.2,8,190);
+  // Preserve the initial clash's momentum as swords break, otherwise the last blades linger for many seconds.
+  r.clashVelocity=Math.max(r.clashVelocity||0,angularVelocity);
+  const lossRate=clamp(r.clashVelocity/TAU*2.2,8,190);
   r.clashMeter=Math.min(32,(r.clashMeter||0)+Math.min(dt,.10)*lossRate);
   const batch=Math.min(24,ownCount,otherCount,Math.floor(r.clashMeter));
   if(batch<1)continue;
