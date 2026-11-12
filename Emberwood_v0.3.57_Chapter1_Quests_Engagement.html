@@ -4426,6 +4426,89 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       c.restore();
     }
 
+
+    // Rendering-only Dawn Sequence. The game never pauses or blocks input for this transition.
+    const DAWN_SEQUENCE_MS=2550;
+    let dawnSequence=null;
+    function smoothDay01(value){
+      const x=clamp(value,0,1);
+      return x*x*(3-2*x);
+    }
+    function drawDawnSequence(c,nowMs){
+      if(!dawnSequence)return;
+      const elapsed=nowMs-dawnSequence.start;
+      if(elapsed<0||elapsed>=DAWN_SEQUENCE_MS)return;
+      const p=clamp(elapsed/DAWN_SEQUENCE_MS,0,1);
+      const w=view.width,h=view.height,arrive=smoothDay01((p-.04)/.70);
+      c.save();
+      // Dawn glows up from the horizon and slowly brightens the whole forest.
+      const warm=c.createLinearGradient(0,h*.98,0,h*.10);
+      warm.addColorStop(0,'rgba(255,191,87,.22)');
+      warm.addColorStop(.45,'rgba(255,195,112,.13)');
+      warm.addColorStop(1,'rgba(255,248,212,0)');
+      c.globalAlpha=arrive;
+      c.fillStyle=warm;c.fillRect(0,0,w,h);
+      // A slowly rising sun has a soft corona and painted rays, not a flat emoji.
+      const sunX=w*.79,sunY=h*(.60-.39*arrive),sunR=Math.min(39,Math.max(19,w*.061));
+      const sunFade=arrive*(1-smoothDay01((p-.78)/.22));
+      if(sunFade>.002){
+        c.globalAlpha=sunFade*.8;
+        const halo=c.createRadialGradient(sunX,sunY,3,sunX,sunY,sunR*5);
+        halo.addColorStop(0,'rgba(255,251,220,.48)');
+        halo.addColorStop(.32,'rgba(255,203,121,.17)');
+        halo.addColorStop(1,'rgba(255,203,121,0)');
+        c.fillStyle=halo;c.beginPath();c.arc(sunX,sunY,sunR*5,0,Math.PI*2);c.fill();
+        c.strokeStyle='#ffecc1';c.lineCap='round';c.lineWidth=2;
+        if(!reducedMotion)for(let i=0;i<10;i++){
+          const a=i*Math.PI/5+.16,s=Math.sin(a),cs=Math.cos(a);
+          c.globalAlpha=sunFade*(.22+.13*Math.sin(p*13+i));
+          c.beginPath();c.moveTo(sunX+cs*sunR*1.45,sunY+s*sunR*1.45);
+          c.lineTo(sunX+cs*sunR*(1.9+i%3*.23),sunY+s*sunR*(1.9+i%3*.23));c.stroke();
+        }
+        c.globalAlpha=sunFade;
+        c.fillStyle='#fff2c7';c.beginPath();c.arc(sunX,sunY,sunR,0,Math.PI*2);c.fill();
+        c.fillStyle='#ffe5a3';c.beginPath();c.arc(sunX,sunY,sunR*.72,0,Math.PI*2);c.fill();
+      }
+      // Thin moving dawn fog and two distant bird silhouettes.
+      if(!reducedMotion){
+        c.globalAlpha=(1-smoothDay01((p-.1)/.8))*.15;
+        c.fillStyle='#fff1d7';
+        for(let i=0;i<4;i++){
+          c.beginPath();
+          c.ellipse(w*(.13+i*.21)+p*38,h*(.59+i*.065),w*.19,12+i*4,-.09,0,Math.PI*2);
+          c.fill();
+        }
+        const birds=smoothDay01((p-.40)/.15)*(1-smoothDay01((p-.76)/.17));
+        c.strokeStyle='#635b4c';c.lineWidth=1.7;c.lineCap='round';
+        c.globalAlpha=birds*.68;
+        for(let i=0;i<2;i++){
+          const x=w*(.32+i*.10)+p*w*.07,y=h*(.28+i*.042)-p*11;
+          c.beginPath();c.moveTo(x-9,y-3);c.quadraticCurveTo(x-4,y-8,x,y);
+          c.quadraticCurveTo(x+4,y-8,x+9,y-3);c.stroke();
+        }
+      }
+      // Compact noninteractive chapter banner: never opens a dialog or captures input.
+      const bannerIn=smoothDay01((p-.17)/.16);
+      const bannerOut=1-smoothDay01((p-.70)/.20);
+      const visible=bannerIn*bannerOut;
+      if(visible>.002){
+        const barW=Math.min(w-26,350),barH=66,cy=Math.max(100,Math.min(h*.26,218));
+        c.globalAlpha=visible*.88;
+        c.fillStyle='rgba(24,35,33,.69)';
+        c.strokeStyle='rgba(255,230,162,.68)';c.lineWidth=1.5;
+        c.beginPath();c.roundRect(w/2-barW/2,cy-barH/2,barW,barH,15);c.fill();c.stroke();
+        c.textAlign='center';c.textBaseline='middle';
+        c.shadowColor='rgba(0,0,0,.44)';c.shadowBlur=5;
+        const titleSize=Math.min(25,Math.max(18,w*.059));
+        c.font='800 '+titleSize+'px "Noto Sans Thai","Segoe UI",Tahoma,sans-serif';
+        c.fillStyle='#fff6d9';
+        c.fillText('ผ่านคืนที่ '+dawnSequence.night+' แล้ว!',w/2,cy-12,barW-18);
+        c.font='600 '+Math.max(12,titleSize*.58)+'px "Noto Sans Thai","Segoe UI",Tahoma,sans-serif';
+        c.fillStyle='#ffe29a';
+        c.fillText('รุ่งอรุณวันใหม่ · เตรียมรับคืน '+(dawnSequence.night+1),w/2,cy+16,barW-16);
+      }
+      c.restore();
+    }
     /** Replace a complete rendering snapshot; the caller's objects are copied. */
     function setSnapshot(snapshot){
       if(!snapshot||!snapshot.hud||!snapshot.player||!snapshot.fire)throw new TypeError('Snapshot requires hud, player and fire. See CLAUDE_LOGIC_HANDOFF.md.');
@@ -4436,6 +4519,15 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       }
       lastSnapshotAt=now;
       previousModel=model;model=clone(snapshot);
+      // Trigger only on the live night-to-day edge. Loading a daytime save
+      // should never replay a long scene or interrupt the player.
+      const wasNight=previousModel?.campaign?.phase==='running';
+      const becameDay=model.campaign?.phase==='intermission';
+      if(wasNight&&becameDay){
+        dawnSequence={start:now,night:previousModel.campaign.day||model.campaign.day||1};
+      }else if(!becameDay||!previousModel){
+        dawnSequence=null;
+      }
       smoothModel=makeSmoothSnapshot(model,previousModel);
       updateProjection();
       // HUD numbers need ~20 updates/sec, not 250 DOM rewrites/sec.
@@ -4525,7 +4617,37 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
       for(const p of model.projectiles||[])if(onscreen(p.x,p.y,90,100))drawProjectile(ctx,p);
       for(const e of model.effects||[])if(onscreen(e.x,e.y,(e.radius||50)+65,(e.radius||50)+85))drawEffect(ctx,e,t);
       for(const d of model.damageTexts||[])if(onscreen(d.x,d.y,80,100))drawDamage(ctx,d);
-      ctx.restore();const isRest=model.campaign?.phase==='intermission';drawScene(ctx,isRest?'daylight':model.scene,t);if(!isRest){const vignette=ctx.createRadialGradient(view.width*.5,view.height*.48,Math.min(view.width,view.height)*.22,view.width*.5,view.height*.48,Math.hypot(view.width,view.height)*.58);vignette.addColorStop(0,'#03100700');vignette.addColorStop(.60,'#08092255');vignette.addColorStop(1,'#020310fa');ctx.fillStyle=vignette;ctx.fillRect(0,0,view.width,view.height);const edge=ctx.createLinearGradient(0,0,0,view.height);edge.addColorStop(0,'#07081a7c');edge.addColorStop(.4,'#070a2045');edge.addColorStop(.73,'#0609195c');edge.addColorStop(1,'#020411ed');ctx.fillStyle=edge;ctx.fillRect(0,0,view.width,view.height);}else{const sunHaze=ctx.createLinearGradient(0,0,0,view.height);sunHaze.addColorStop(0,'#e2fae51a');sunHaze.addColorStop(1,'#faffd700');ctx.fillStyle=sunHaze;ctx.fillRect(0,0,view.width,view.height);}
+      ctx.restore();
+      const isRest=model.campaign?.phase==='intermission';
+      const age=dawnSequence?ms-dawnSequence.start:Infinity;
+      const transitioning=!!(isRest&&dawnSequence&&age>=0&&age<DAWN_SEQUENCE_MS);
+      const lightening=transitioning?smoothDay01(age/1900):1;
+      const nightOpacity=isRest?1-lightening:1;
+      // Crossfade the actual dark-night renderer rather than instantly swapping palettes.
+      if(nightOpacity>.001){
+        ctx.save();ctx.globalAlpha=nightOpacity;
+        drawScene(ctx,model.scene,t);
+        const vignette=ctx.createRadialGradient(view.width*.5,view.height*.48,
+          Math.min(view.width,view.height)*.22,view.width*.5,view.height*.48,
+          Math.hypot(view.width,view.height)*.58);
+        vignette.addColorStop(0,'#03100700');
+        vignette.addColorStop(.60,'#08092255');
+        vignette.addColorStop(1,'#020310fa');
+        ctx.fillStyle=vignette;ctx.fillRect(0,0,view.width,view.height);
+        const edge=ctx.createLinearGradient(0,0,0,view.height);
+        edge.addColorStop(0,'#07081a7c');edge.addColorStop(.4,'#070a2045');
+        edge.addColorStop(.73,'#0609195c');edge.addColorStop(1,'#020411ed');
+        ctx.fillStyle=edge;ctx.fillRect(0,0,view.width,view.height);
+        ctx.restore();
+      }
+      if(isRest){
+        ctx.save();ctx.globalAlpha=lightening;
+        const haze=ctx.createLinearGradient(0,0,0,view.height);
+        haze.addColorStop(0,'#e2fae51a');haze.addColorStop(1,'#faffd700');
+        ctx.fillStyle=haze;ctx.fillRect(0,0,view.width,view.height);
+        ctx.restore();
+      }
+      if(transitioning)drawDawnSequence(ctx,ms);
       // Only the HP bar is drawn above the hero. No nickname and no alternating
       // name/HP animation; the health bar remains visible throughout gameplay.
       drawEnemyEdgeArrows(ctx,model,t);
@@ -5144,7 +5266,7 @@ body.profile-setup #shopFirstGuide { visibility:hidden!important; pointer-events
     const TAU=Math.PI*2,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
     const copy=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
     const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59.1',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59','0.3.59.1'];
+    const TYPES=['cannon','archer','flame','lightning','ice'],WEAPONS=['axe','spear','bow','sword','staff','hammer','dagger','magic','gun','shield'],VERSION='0.3.59.2',SAVE_VERSIONS=['2.0.0','2.1.0','2.2.0','2.3.0','3.0.0','3.1.0','3.1.1','3.1.2','3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','3.4.6','3.4.7','3.4.11','3.4.12','3.4.13','3.4.14','3.4.15','3.4.16','3.4.17','3.4.18','3.4.21','3.4.22','3.4.23','3.4.24','3.4.25','3.4.26','3.4.27','3.4.28','3.4.29','3.4.30','3.4.31','3.4.32','3.4.33','3.4.34','3.4.35','3.4.36','3.4.37','3.4.38','3.4.39','3.4.40','3.4.41','3.4.42','3.4.43','0.3.44','0.3.45','0.3.46','0.3.47','0.3.48','0.3.49','0.3.50','0.3.51','0.3.52','0.3.53','0.3.54','0.3.55','0.3.56','0.3.57','0.3.58','0.3.59','0.3.59.1','0.3.59.2'];
     const WEAPON_NAMES={axe:'ขวานวงเหวี่ยง',spear:'หอกทะลวง',bow:'ธนูนักล่า',sword:'ดาบผู้กล้า',staff:'คทาเวทมนตร์',hammer:'ค้อนยักษ์',dagger:'มีดสั้นคู่',magic:'คัมภีร์สายฟ้า',gun:'ปืนพก',shield:'โล่ผู้พิทักษ์'};
     // ASSUMPTION (3.0): axe, spear and bow stay the starting weapons because every existing save has them;
     // the reference hero's sword arrives on day 5 and the other six follow every 10 days.
@@ -7516,7 +7638,7 @@ if(!['3.1.3','3.1.4','3.2.0','3.3.0','3.3.1','3.4.0','3.4.1','3.4.2','3.4.3','3.
         else if(event.type==='milestone:open')UI.openMilestone(event.request);
         else if(event.type==='milestone:close')UI.closeMilestone();
         else if(event.type==='lightning:strike')UI.showLightningStrike?.(event);
-        else if(event.type==='phase:day')UI.showPhaseNotice('day');
+        else if(event.type==='phase:day'){/* Canvas dawn animation replaces the old day banner. */}
         else if(event.type==='phase:night')UI.showPhaseNotice('night');
         else if(event.type==='tutorial:notice')featureNotice(event.id,event.message);
         else if(event.type==='tier'){UI.showTierUp?.(event);featureNotice(event.tier<=1?'orbitFirst':'orbitUpgrade',event.tier<=1?'ขวานหมุนปลดตามด่าน ใช้อาวุธหลักจัดการตัวเกราะหนา':'อาวุธหมุนเพิ่มระดับแล้ว! จำนวนและวงหมุนโจมตีได้มากขึ้น');}
