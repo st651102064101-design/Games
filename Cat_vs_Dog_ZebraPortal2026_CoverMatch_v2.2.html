@@ -23,6 +23,7 @@
 .cover-faces img:last-child{filter:drop-shadow(0 0 11px #ffb46a66)}
 .cover-faces b{font-size:23px;color:#ffdc86;font-weight:950;text-shadow:0 0 16px #ff8c3599}
 @media(max-width:680px){.cover-faces img{width:clamp(64px,22vw,115px);height:95px}.cover-faces b{font-size:16px}}
+ .skill-bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:12;max-width:52%;overflow-x:auto;padding:5px;pointer-events:auto;background:#14253bdf;border:1px solid #8fdce777;border-radius:16px}.skill{min-width:64px;min-height:56px;border:2px solid var(--c);border-radius:15px;background:linear-gradient(150deg,#263e58,#101a30);color:white;font-weight:800;display:grid;place-items:center;gap:0;padding:3px;position:relative}.skill .icon{font-size:21px;line-height:23px}.skill small{font-size:9px;white-space:nowrap}.skill b{position:absolute;right:3px;top:1px;font-size:9px;background:#0b1725;border-radius:9px;padding:1px 4px}.skill.selected{box-shadow:0 0 0 3px var(--c),0 0 15px var(--c)}.skill:disabled{opacity:.4;filter:grayscale(.65)}.skill:nth-child(2){border-radius:6px 16px}.skill:nth-child(3){border-radius:18px 6px}.skill:nth-child(4){border-radius:9px}.skill:nth-child(5){border-radius:18px 18px 8px 8px}.skill-info{position:absolute;bottom:84px;left:50%;transform:translateX(-50%);background:#10243de8;color:#fff;padding:5px 10px;border-radius:9px;font-size:12px;z-index:12;pointer-events:none;max-width:70%;text-align:center}.skill-info:empty{display:none}@media(max-width:680px){.skill-bar{bottom:54px;max-width:95%;gap:3px}.skill{min-width:51px;min-height:47px}.skill .icon{font-size:18px}.skill small{font-size:8px}.skill-info{bottom:110px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -34,7 +35,7 @@
   <div class="center-top"><div class="round" id="roundText">ROUND 01</div><div class="turn-pill" id="turnText">🐱 ตาแมว</div><div class="wind-pill" id="windText">🍃 ลมสงบ</div></div>
   <div class="life life-dog"><div class="life-title"><span>🐶 DOG</span><span class="tag">HP <span id="dogHp">3</span>/3</span></div><div class="health-track"><div class="health-fill" id="dogFill"></div></div><div class="hearts" id="dogHearts">♥ ♥ ♥</div></div>
  </div>
- <div class="aim-panel"><div class="aim-head"><span id="aimText">↗ เล็งจากฝั่งตัวเอง</span><span class="power" id="powerText">พลัง 65%</span></div><div class="meter"><div id="powerFill"></div></div><div class="hint">ลากเมาส์ / แตะลากเพื่อขว้าง · ← → ปรับมุม · ↑ ↓ ปรับแรง · SPACE ขว้าง · T หัวเราะเยาะ</div></div>
+ <div id="skillInfo" class="skill-info" aria-live="polite"></div><div id="skillBar" class="skill-bar" aria-label="ไอเทมสกิล"></div><div class="aim-panel"><div class="aim-head"><span id="aimText">↗ เล็งจากฝั่งตัวเอง</span><span class="power" id="powerText">พลัง 65%</span></div><div class="meter"><div id="powerFill"></div></div><div class="hint">ลากเมาส์ / แตะลากเพื่อขว้าง · ← → ปรับมุม · ↑ ↓ ปรับแรง · SPACE ขว้าง · T หัวเราะเยาะ</div></div>
  <button class="mobile-fire" id="fireButton" type="button">🎯 ขว้างเลย!</button>
  <div class="controlbar"><button class="small-btn" id="tauntButton" type="button" title="หัวเราะเยาะ (T)" aria-label="หัวเราะเยาะ">😝</button><button class="small-btn" id="soundButton" type="button" title="เปิด/ปิดเสียง">🔊</button><button class="small-btn" id="pauseButton" type="button" title="หยุดเกม">⏸</button><button class="small-btn" id="resetButton" type="button" title="เริ่มใหม่">↺</button></div>
 </div>
@@ -47,7 +48,7 @@
 (()=>{'use strict';
 const W=1280,H=720,GROUND=588,WALL={x:615,y:348,w:50,h:240},G=660,MAX_HP=3;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=1.00,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
+const VIEW_ZOOM=2.20,VIEW_MAX_X=W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
 // Keep the active character prominent, with the ground low in the frame.
 const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
 const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
@@ -72,10 +73,10 @@ function burst(x,y,type,count=18){const colors=type==='hit'?['#fff2ab','#ffa466'
 function toast(msg,seconds=1.55){const el=$('toast');el.textContent=msg;el.classList.add('on');s.toastTimer=seconds}
 function hideToast(){$('toast').classList.remove('on');s.toastTimer=0}
 function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';if(screen!=='play')s.drag=null;updateHud()}
-function spawnFor(team){return team==='cat'?{x:225,y:472}:{x:1057,y:472}}
+function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:1037,y:472}}
 
 function reset(newScreen='play'){
- s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
+ s.items={cat:{double:1,power:1,stink:1,heal:1,wind:1},dog:{double:1,power:1,stink:1,heal:1,wind:1}};s.selected=null;s.noWind=false;s.doubleRemaining=0;s.doubleSecond=false;s.weak={cat:false,dog:false};s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
  s.ball=null;s.reaction=null;s.throwSeq=null;s.finish=null;s.hitStop=0;s.groundFx=[];s.turnReady=true;s.botTimer=0;s.shotTimer=0;s.shake=0;s.particles=[];s.floats=[];
  s.drag=null;s.clock=0;s.tauntUsed=false;s.winTeam=null;s.emote={cat:{kind:'idle',until:0},dog:{kind:'idle',until:0}};
  s.bumps={cat:{n:0,until:0},dog:{n:0,until:0}};rigMotion.cat=null;rigMotion.dog=null;s.camX=AIM_CAM_X('cat');s.camY=AIM_CAM_Y;
@@ -83,7 +84,7 @@ function reset(newScreen='play'){
  hideToast();showScreen(newScreen);updateHud();
 }
 function setTurn(t){
- s.turn=t;s.turnReady=false;s.angle=48;s.power=755;
+ s.turn=t;s.turnReady=false;s.angle=48;s.power=755;s.selected=null;s.noWind=false;s.doubleRemaining=0;s.doubleSecond=false;
  s.wind=(Math.random()-.5)*36;s.tauntUsed=false;
  s.botTimer=s.mode==='bot'&&t==='dog' ? 1.05:0;
  if(s.bumps[t].n&&s.clock>s.bumps[t].until){s.bumps[t].n=0}
@@ -95,8 +96,8 @@ function activeBot(){return s.mode==='bot'&&s.turn==='dog'}
 function updateHud(){
  $('catHp').textContent=s.hp.cat;$('dogHp').textContent=s.hp.dog;
  $('catFill').style.width=(s.hp.cat/3*100)+'%';$('dogFill').style.width=(s.hp.dog/3*100)+'%';
- $('catHearts').textContent='♥ '.repeat(s.hp.cat)+'♡ '.repeat(3-s.hp.cat);
- $('dogHearts').textContent='♥ '.repeat(s.hp.dog)+'♡ '.repeat(3-s.hp.dog);
+ $('catHearts').textContent='♥ '.repeat(s.hp.cat)+'♡ '.repeat(3-s.hp.cat)+(s.weak?.cat?'  🐟 อ่อนแอ +1':'');
+ $('dogHearts').textContent='♥ '.repeat(s.hp.dog)+'♡ '.repeat(3-s.hp.dog)+(s.weak?.dog?'  🐟 อ่อนแอ +1':'');
  const r=s.reaction; const label=r?r.stages[r.index]?.label:' ';
  $('turnText').textContent=s.finish?'🏆 ฉลองชัย':r?'🎬 '+label:s.throwSeq?'🎯 กำลังขว้าง':!s.turnReady?'🎥 กล้องกำลังเข้าตัวละคร':(s.turn==='cat'?'🐱 ตาแมว':'🐶 ตาหมา'+(activeBot()?' · BOT':''));
  $('roundText').textContent='ROUND '+String(s.round).padStart(2,'0');
@@ -106,7 +107,7 @@ function updateHud(){
  const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();
  $('fireButton').disabled=disabled;
  $('tauntButton').disabled=disabled||s.tauntUsed;
- $('windText').textContent=Math.abs(s.wind)<4?'🍃 ลมสงบ':`🍃 ลม${s.wind>0?'→':'←'} ${Math.round(Math.abs(s.wind))}`;
+ renderSkills(); $('windText').textContent=s.noWind?'🛡️ ลม 0 · ลูกถัดไป':Math.abs(s.wind)<4?'🍃 ลมสงบ':`🍃 ลม${s.wind>0?'→':'←'} ${Math.round(Math.abs(s.wind))}`;
 }
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))}function rand(a,b){return a+(b-a)*Math.random()}
 
@@ -131,12 +132,12 @@ function shoot(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.react
 function launch(){
  if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish)return;
  // Projectile is spawned only after animated paw/arm release: prevents visual desynchronization.
- s.throwSeq={team:s.turn,stage:'anticipation',elapsed:0,angle:s.angle,power:s.power,emitted:false};
+ const inv=s.items[s.turn];let skill=s.selected;if(skill){inv[skill]--;if(skill==='double')s.doubleRemaining=1;}const windless=s.noWind;if(windless)inv.wind--;s.selected=null;s.noWind=false; s.throwSeq={team:s.turn,stage:'anticipation',elapsed:0,angle:s.angle,power:s.power,emitted:false,skill,windless};
  s.drag=null;setMood(s.turn,'anticipation',.24);updateHud();
 }
 function emitProjectile(seq){
  const pos=throwHandWorld(seq.team),d=seq.team==='cat'?1:-1,theta=seq.angle*Math.PI/180;
- s.ball={x:pos.x,y:pos.y,vx:d*Math.cos(theta)*seq.power+s.wind,vy:-Math.sin(theta)*seq.power,r:18,rotation:0,from:seq.team,trail:[],age:0};
+ s.ball={x:pos.x,y:pos.y,vx:d*Math.cos(theta)*seq.power+(seq.windless?0:s.wind),vy:-Math.sin(theta)*seq.power,r:seq.skill==='power'?25:18,rotation:0,from:seq.team,trail:[],age:0,skill:seq.skill,windless:seq.windless};
  seq.emitted=true;s.lastShot={x:pos.x,y:pos.y,hand:{...pos},clock:s.clock};
  tone(seq.team==='cat'?710:370,.17,'sawtooth',.035);
 }
@@ -191,10 +192,10 @@ function beginReaction(kind,attacker,defender,zone='head'){
 }
 function hitPlayer(target){
  const attacker=s.ball.from,fx=s.ball.x,fy=s.ball.y;
- s.hp[target]=Math.max(0,s.hp[target]-1);s.shake=9;s.flash=.17;s.hitStop=.065;
+ const shot=s.ball.skill;let damage=(shot==='power'?2:1)+(s.weak[target]?1:0);s.weak[target]=false;if(shot==='stink')s.weak[target]=true;s.hp[target]=Math.max(0,s.hp[target]-damage);s.shake=9;s.flash=.17;s.hitStop=.065;
  burst(fx,fy,'hit',37);s.groundFx.push({x:fx,y:Math.min(GROUND-2,fy+60),age:0,kind:'hit'});
  for(let i=0;i<9;i++)s.floats.push({x:fx+rand(-38,38),y:fy+rand(-24,17),text:i%3===0?'★':'✦',life:rand(.65,1.35)});
- s.floats.push({x:fx,y:fy-28,text:'-1 HP',life:1.4});s.ball=null;
+ s.floats.push({x:fx,y:fy-28,text:'-'+damage+' HP',life:1.4});s.ball=null;
  if(s.hp[target]===0)s.winTeam=attacker;
  beginReaction('hit',attacker,target,fy<532?'head':'body');
 }
@@ -217,7 +218,7 @@ function endGame(){
 
 function botThrow(){
  if(s.screen!=='play'||!s.turnReady||s.ball||s.reaction||!activeBot())return;
- let a=rand(42,54);let dist=Math.abs(spawnFor('dog').x-125);
+ if(!s.doubleSecond&&s.items.dog){if(s.hp.dog<=1&&s.items.dog.heal&&s.hp.dog<MAX_HP){s.items.dog.heal--;s.hp.dog++;toast('🐶 BOT ฟื้น 1 HP',1.5);nextTurn();return}let choices=['power','stink','double'].filter(k=>s.items.dog[k]);if(choices.length&&Math.random()<.5)s.selected=choices[Math.floor(Math.random()*choices.length)];if(s.items.dog.wind&&Math.abs(s.wind)>10&&Math.random()<.45)s.noWind=true}let a=rand(42,54);let dist=Math.abs(spawnFor('dog').x-145);
  let desired=Math.sqrt(G*dist/Math.sin(a*Math.PI/90));
  s.angle=a;s.power=clamp(desired*rand(.90,1.075),380,1010);
  updateHud();launch();
@@ -255,7 +256,7 @@ function step(dt){
        setMood(s.winTeam,'victory',3.2);
        const loser=s.winTeam==='cat'?'dog':'cat';setMood(loser,'defeat',3.1);
        s.finish={time:0,duration:3.0,focus:s.winTeam};
-      }else nextTurn();
+      }else if(s.doubleRemaining>0){s.doubleRemaining=0;s.doubleSecond=true;s.turnReady=false;s.botTimer=activeBot()?1.05:0;toast('🎯 ปาครั้งที่ 2/2',1.8)}else nextTurn();
       updateHud();
     }else enterReactionStage(r);
    }
@@ -266,10 +267,10 @@ function step(dt){
     const b=s.ball;let remaining=dt;
     while(remaining>0&&s.ball){
      const h=Math.min(1/120,remaining);remaining-=h;b.age+=h;
-     b.vy+=G*h;b.vx+=s.wind*h*.08;b.x+=b.vx*h;b.y+=b.vy*h;
+     b.vy+=G*h;b.vx+=(b.windless?0:s.wind)*h*.08;b.x+=b.vx*h;b.y+=b.vy*h;
      b.rotation+=12*h;b.trail.push({x:b.x,y:b.y});if(b.trail.length>14)b.trail.shift();
      const x=b.x,y=b.y,r=b.r;
-     const target=b.from==='cat'?{x:1071,y:449,w:150,h:145,name:'dog'}:{x:67,y:454,w:152,h:140,name:'cat'};
+     const target=b.from==='cat'?{x:1051,y:449,w:150,h:145,name:'dog'}:{x:87,y:454,w:152,h:140,name:'cat'};
      if(x+r>target.x&&x-r<target.x+target.w&&y+r>target.y&&y-r<target.y+target.h){hitPlayer(target.name);break}
      if(x+r>WALL.x&&x-r<WALL.x+WALL.w&&y+r>WALL.y&&y-r<GROUND){miss('wall');break}
      if(y+r>=GROUND||x<-80||x>W+80||y>H+100){miss('miss');break}
@@ -698,8 +699,13 @@ function renderLegacyPortrait(team,x,y,size=1){
  moodEffects(team,x+size*85,y+size*4+p.lift*size,mood);
 }
 function drawActor(team){
+ // The opponent is never visible during aiming; reveal expressions only during impacts or reaction shots.
+ if((s.screen==='play'||s.screen==='pause')&&team!==s.turn&&!s.ball&&!s.reaction&&!s.finish)return;
+ if(s.reaction&&team!==s.reaction.focus)return;
+ if(s.finish&&team!==s.finish.focus)return;
+ if(s.ball&&team!==s.turn&&Math.abs(s.ball.x-spawnFor(team).x)>155)return;
  const isCat=team==='cat',m=moodOf(team);
- const x=isCat?43:1060,y=435;
+ const x=isCat?63:1040,y=435;
  renderCoverMatchedCharacter(team,x,y,isCat?1.08:1.00);
  if(false&&s.screen==='play'&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&s.turn===team){
   const px=isCat?166:1125;ctx.fillStyle='rgba(255,244,171,.13)';ctx.beginPath();
@@ -713,27 +719,9 @@ function drawActor(team){
 function drawCan(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(.23);roundedRect(-14,-18,28,34,5,'#b3c1cf');roundedRect(-10,-16,20,30,3,'#718a9e');roundedRect(-13,-20,26,7,4,'#d9e3e7');roundedRect(-6,-11,11,18,2,'#d26667');roundedRect(-11,15,22,4,2,'#d9e3e7');ctx.restore()}
 function drawBone(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.rotate(-.4);ctx.strokeStyle='#8f7762';ctx.lineWidth=20;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-13,9);ctx.lineTo(13,-9);ctx.stroke();ctx.strokeStyle='#f9efd6';ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(-13,9);ctx.lineTo(13,-9);ctx.stroke();for(const p of [[-19,2],[-7,16],[7,-16],[19,-3]])ellipse(p[0],p[1],10,10,'#faefdc');ctx.restore()}
 function drawProjectile(b,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.translate(b.x,b.y);ctx.rotate(b.rotation);const asset=sprites[b.from==='cat'?'can':'bone'][0];if(imgReady(asset))ctx.drawImage(asset,-24,-24,48,48);else if(b.from==='cat')drawCan(0,0,1.1);else drawBone(0,0,1.1);ctx.restore()}
-function drawTrajectory(){
- if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;
- const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;
- const vx=dir*Math.cos(a)*s.power+s.wind,vy=-Math.sin(a)*s.power;
- const pointAt=t=>({x:p.x+vx*t,y:p.y+vy*t+.5*G*t*t});
- const joinTime=.12,join=pointAt(joinTime);
- ctx.save();ctx.lineCap='round';
- ctx.beginPath();ctx.moveTo(p.x,p.y);
- for(let t=.01;t<joinTime;t+=.01){const q=pointAt(t);ctx.lineTo(q.x,q.y)}
- ctx.lineTo(join.x,join.y);ctx.strokeStyle='#fff9df';ctx.lineWidth=4;ctx.stroke();
- ctx.beginPath();ctx.moveTo(join.x,join.y);ctx.setLineDash([9,7]);ctx.strokeStyle='#fff9df';ctx.lineWidth=3.5;
- for(let t=joinTime+.01;t<=1.8;t+=.01){const q=pointAt(t);if(q.y>=GROUND||q.x<0||q.x>W||(q.x>WALL.x&&q.x<WALL.x+WALL.w&&q.y>WALL.y))break;ctx.lineTo(q.x,q.y)}
- ctx.stroke();ctx.setLineDash([]);
- ellipse(p.x,p.y,5,5,'#ffde8a');
- const an=Math.atan2(vy+G*joinTime,vx);
- poly([[join.x,join.y],[join.x-13*Math.cos(an-.48),join.y-13*Math.sin(an-.48)],[join.x-13*Math.cos(an+.48),join.y-13*Math.sin(an+.48)]],'#fff8d4');
- ctx.restore();
-}
+function drawTrajectory(){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;const p=throwHandWorld(s.turn),dir=s.turn==='cat'?1:-1,a=s.angle*Math.PI/180;const vx=dir*Math.cos(a)*s.power+s.wind,vy=-Math.sin(a)*s.power;ctx.save();for(let i=1;i<=4;i++){let t=i*.045;let x=p.x+vx*t,y=p.y+vy*t+.5*G*t*t;if(y>=GROUND||x<0||x>W)break;if(x>WALL.x&&x<WALL.x+WALL.w&&y>WALL.y)break;ctx.globalAlpha=(1-i/6)*.8;ellipse(x,y,Math.max(2.3,5-i*.3),Math.max(2.3,5-i*.3),'#fff7d5')}ctx.restore();let ax=p.x+vx*.066,ay=p.y+vy*.066+.5*G*.066*.066;line(p.x,p.y,ax,ay,'#ffffffc5',4);const tx=ax-p.x,ty=ay-p.y,an=Math.atan2(ty,tx);poly([[ax,ay],[ax-17*Math.cos(an-.48),ay-17*Math.sin(an-.48)],[ax-17*Math.cos(an+.48),ay-17*Math.sin(an+.48)]],'#fff8d4');}
 function drawParticles(){for(const p of s.particles){ctx.globalAlpha=Math.min(1,p.life/.25);ellipse(p.x,p.y,p.r,p.r,p.color)}ctx.globalAlpha=1;for(const f of s.floats){ctx.globalAlpha=Math.min(1,f.life/.5);ctx.textAlign='center';ctx.font='900 24px system-ui';ctx.lineWidth=4;ctx.strokeStyle='#5d1f40';ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle='#ffb8ad';ctx.fillText(f.text,f.x,f.y)}ctx.globalAlpha=1}
-function drawDrag(){} // A single connected guide is drawn by drawTrajectory.
-
+function drawDrag(){if(!s.drag||s.ball||s.throwSeq||s.reaction||s.finish)return;ctx.save();const{start,end}=s.drag;ctx.lineCap='round';ctx.setLineDash([9,7]);line(start.x,start.y,end.x,end.y,'#17253dcc',8);line(start.x,start.y,end.x,end.y,'#fff9db',4);ctx.setLineDash([]);ellipse(start.x,start.y,8,8,'#ffcf53');ellipse(end.x,end.y,7,7,'#ff7755');ctx.restore()}
 function draw(dt){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}drawParticles();drawGroundFx();drawDrag();ctx.restore();if(s.flash>0){ctx.fillStyle=`rgba(255,252,213,${s.flash*1.6})`;ctx.fillRect(0,0,W,H)}if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,W,H)}}
 const fpsStats={elapsed:0,frames:0,last:60};
 function loop(ms){
@@ -796,8 +784,6 @@ function renderCoverMatchedCharacter(team,x,y,size=1){
  ctx.save();ctx.translate(x,y);ctx.scale(size,size);
  ellipse(85,151,77,10,'#20324355');drawZebraPortal(team,0,0);
  let lift=Math.sin(s.clock*2.5)*1.3,lean=0;
- const aiming=s.turn===team&&s.screen==='play'&&s.turnReady&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&!activeBot();
- if(aiming){lift+=Math.sin(s.clock*5)*2;lean=(team==='cat'?1:-1)*(.025+Math.sin(s.clock*4)*.012);}
  if(mood==='hurt'){lean=Math.sin(elapsed*25)*.04*Math.exp(-elapsed*4);}
  if(mood==='dizzy')lean=Math.sin(elapsed*5)*.065;
  if(mood==='laugh')lift=-Math.max(0,Math.sin(elapsed*Math.PI*8))*4;
@@ -812,11 +798,7 @@ throwHandWorld=function(team){
  const paws={2:[148,121],3:[91,100],4:[135,98],5:[155,108],6:[157,107],7:[134,179]};
  const point=paws[f.pose]||paws[2];
  const px=cat?point[0]:192-point[0];
- const aiming=s.turn===team&&s.screen==='play'&&s.turnReady&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&!activeBot();
- const lean=aiming?(cat?1:-1)*(.025+Math.sin(s.clock*4)*.012):0;
- const lift=Math.sin(s.clock*2.5)*1.3+(aiming?Math.sin(s.clock*5)*2:0);
- const dx=-105+px*210/192,dy=-216+point[1]*245/256;
- return {x:(cat?43:1060)+(85+dx*Math.cos(lean)-dy*Math.sin(lean))*size,y:435+(151+lift+dx*Math.sin(lean)+dy*Math.cos(lean))*size};
+ return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+point[1]*245/256)*size};
 };
 // Ready/windup frames already contain the exact Z disc in the paw.
 drawHeldWeapon=function(){};
@@ -827,8 +809,13 @@ function drawZDisc(team,x,y,r=18){
  strokeEllipse(0,0,r*.70,r*.70,neon,3);
  ctx.fillStyle=neon;ctx.font='900 '+(r*1.15)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Z',0,1);ctx.restore();
 }
-drawProjectile=function(b,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.translate(b.x,b.y);ctx.rotate(b.rotation);drawZDisc(b.from,0,0,19);ctx.restore();};
+drawProjectile=function(b,alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.translate(b.x,b.y);ctx.rotate(b.rotation);if(b.skill==='stink'){ctx.font='34px system-ui';ctx.textAlign='center';ctx.fillText('🐟',0,10)}else{if(b.skill==='power'){ctx.shadowColor='#ff9d32';ctx.shadowBlur=22;ctx.scale(1.4,1.4)}drawZDisc(b.from,0,0,19)}ctx.restore();};
 window.__catdogAnimationTest={frame:characterFrame,clips:CHARACTER_CLIPS,ready:()=>CHARACTER_ATLAS.complete&&CHARACTER_ATLAS.naturalWidth>0};
+
+
+const SKILLS=[['double','🔁','ปาเบิ้ล','#59dcff','ปาได้ 2 ครั้งในเทิร์นเดียว'],['power','💥','ปาพลัง','#ff7863','กระสุนใหญ่ โจมตี 2 HP'],['stink','🐟','เหม็น','#c4d94d','ติดอ่อนแอ โดนครั้งหน้า +1 HP'],['heal','🩹','ฟื้นฟู','#69e9a1','ฟื้น 1 HP และจบเทิร์น'],['wind','🛡️','ตัดลม','#c59cff','ตัดผลลมของกระสุนลูกถัดไป']];
+function renderSkills(){const bar=$('skillBar');if(!bar||!s.items)return;const inv=s.items[s.turn];const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();bar.innerHTML=SKILLS.map(([id,icon,label,color,desc])=>{let chosen=id==='wind'?s.noWind:s.selected===id;let locked=disabled||!inv[id]||(id==='heal'&&s.hp[s.turn]>=MAX_HP)||(s.doubleSecond&&id!=='wind');return '<button type="button" class="skill '+(chosen?'selected':'')+'" style="--c:'+color+'" data-skill="'+id+'" title="'+desc+'" aria-label="'+label+': '+desc+'" '+(locked?'disabled':'')+'><span class="icon">'+icon+'</span><small>'+label+'</small><b>'+inv[id]+'</b></button>'}).join('');bar.querySelectorAll('button').forEach(b=>{b.onclick=()=>chooseSkill(b.dataset.skill);b.onmouseenter=()=>{$('skillInfo').textContent=SKILLS.find(x=>x[0]===b.dataset.skill)[4]};b.onmouseleave=()=>{$('skillInfo').textContent=''}})}
+function chooseSkill(id){if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot()||!s.items[s.turn][id])return;if(id==='heal'){if(s.hp[s.turn]>=MAX_HP)return;if(!confirm('ฟื้น 1 HP และจบเทิร์น ใช้เลยหรือไม่?'))return;s.items[s.turn].heal--;s.hp[s.turn]=Math.min(MAX_HP,s.hp[s.turn]+1);toast('💚 ฟื้น 1 HP',1.3);nextTurn();return}if(id==='wind')s.noWind=!s.noWind;else if(!s.doubleSecond)s.selected=s.selected===id?null:id;updateHud()}
 
 reset('menu');setMode('bot');showScreen('menu');requestAnimationFrame(loop);
 })();
