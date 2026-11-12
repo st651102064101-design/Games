@@ -78,7 +78,7 @@ function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:1037,y:472}}
 function reset(newScreen='play'){
  s.items={cat:{double:1,power:1,stink:1,heal:1,wind:1},dog:{double:1,power:1,stink:1,heal:1,wind:1}};s.selected=null;s.noWind=false;s.doubleRemaining=0;s.doubleSecond=false;s.weak={cat:false,dog:false};s.hp.cat=MAX_HP;s.hp.dog=MAX_HP;s.turn='cat';s.round=1;s.angle=48;s.power=745;s.wind=0;
  s.ball=null;s.reaction=null;s.pendingMissLaugh=null;s.throwSeq=null;s.finish=null;s.hitStop=0;s.groundFx=[];s.turnReady=true;s.botTimer=0;s.shotTimer=0;s.shake=0;s.particles=[];s.floats=[];
- s.drag=null;s.clock=0;s.idleSince=0;s.tauntUsed=false;s.winTeam=null;s.emote={cat:{kind:'idle',until:0},dog:{kind:'idle',until:0}};
+ s.drag=null;s.aimMotion=0;s.clock=0;s.idleSince=0;s.tauntUsed=false;s.winTeam=null;s.emote={cat:{kind:'idle',until:0},dog:{kind:'idle',until:0}};
  s.bumps={cat:{n:0,until:0},dog:{n:0,until:0}};rigMotion.cat=null;rigMotion.dog=null;s.camX=AIM_CAM_X('cat');s.camY=AIM_CAM_Y;
  s.ambient=Array.from({length:20},(_,i)=>({x:rand(0,W),y:rand(85,GROUND-45),speed:rand(4,18),r:rand(2,4),phase:rand(0,7)}));
  hideToast();showScreen(newScreen);updateHud();
@@ -744,7 +744,16 @@ function loop(ms){
  let raw=s.last?(ms-s.last)/1000:1/60;let dt=Math.min(Math.max(raw,0),.060);s.last=ms;
  fpsStats.elapsed+=raw;fpsStats.frames++;
  if(fpsStats.elapsed>=.65){fpsStats.last=Math.round(fpsStats.frames/fpsStats.elapsed);$('fpsCounter').textContent='FPS '+fpsStats.last;fpsStats.elapsed=0;fpsStats.frames=0}
- step(dt);updateCamera(dt);draw(dt);requestAnimationFrame(loop)
+ updateDragAim(dt);step(dt);updateCamera(dt);draw(dt);requestAnimationFrame(loop)
+}
+function dragAimTarget(){
+ if(s.screen!=='play'||s.turn!=='cat'||!s.drag)return 0;
+ const {start,end}=s.drag,d=Math.hypot(end.x-start.x,end.y-start.y);
+ return .12+.88*clamp((d-12)/220,0,1);
+}
+function updateDragAim(dt){
+ const target=dragAimTarget(),current=s.aimMotion||0;
+ s.aimMotion=current+(target-current)*(1-Math.exp(-Math.max(0,dt)*13));
 }
 function point(e){const r=canvas.getBoundingClientRect();const zoom=s.screen==='play'||s.screen==='pause'?VIEW_ZOOM:1;
  return {x:clamp(s.camX+(e.clientX-r.left)*W/r.width/zoom,0,W),y:clamp(s.camY+(e.clientY-r.top)*H/r.height/zoom,0,H)};
@@ -861,6 +870,7 @@ function characterFrame(team,mood,elapsed){
 function actorFrame(team){
  const mood=moodOf(team),rig=rigMotion[team];
  if(s.throwSeq?.team===team)return characterFrame(team,'throw',s.throwSeq.totalElapsed||0);
+ if(team==='cat'&&s.turn===team&&s.drag&&s.screen==='play')return characterFrame(team,'aim',0);
  const elapsed=Math.max(0,s.clock-(rig?.start||0));
  // Vary the pause and blink rhythm independently for each character.
  if(mood==='idle'){
@@ -872,27 +882,33 @@ function actorFrame(team){
  }
  return characterFrame(team,mood,elapsed);
 }
-function renderCoverMatchedCharacter(team,x,y,size=1){
- if(!CHARACTER_ATLAS.complete||!CHARACTER_ATLAS.naturalWidth)return;
- const mood=moodOf(team),f=actorFrame(team),elapsed=s.clock-(rigMotion[team]?.start||0);
- const cw=CHARACTER_ATLAS.naturalWidth/8,ch=CHARACTER_ATLAS.naturalHeight/4;
- ctx.save();ctx.translate(x,y);ctx.scale(size,size);
- ellipse(85,151,77,10,'#20324355');drawZebraPortal(team,0,0);
- let lift=Math.sin(s.clock*2.5)*1.3,lean=0;
- if(mood==='hurt'){lean=Math.sin(elapsed*25)*.04*Math.exp(-elapsed*4);}
+function characterTransform(team,mood,elapsed,f){
+ let lift=Math.sin(s.clock*2.5)*1.3,lean=0,x=85,scaleX=1,scaleY=1;
+ if(mood==='hurt')lean=Math.sin(elapsed*25)*.04*Math.exp(-elapsed*4);
  if(mood==='dizzy')lean=Math.sin(elapsed*5)*.065;
  if(mood==='laugh')lift=-Math.max(0,Math.sin(elapsed*Math.PI*8))*4;
  if(mood==='victory'&&f.pose===14)lift=-16;
- // Small overlapping body motions keep the feet planted during idle and aiming.
  if(mood==='idle'||mood==='aim'){
-  const cat=team==='cat',t=s.clock+(cat?.8:2.6);
-  const breath=Math.sin(t*(cat?1.55:1.85));
-  const shift=Math.sin(t*(cat?.54:.68)+.9);
+  const cat=team==='cat',t=s.clock+(cat?.8:2.6),breath=Math.sin(t*(cat?1.55:1.85)),shift=Math.sin(t*(cat?.54:.68)+.9);
   const earPulse=Math.pow(Math.max(0,Math.sin(t*(cat?1.17:.91)+2.2)),18);
-  lift+=breath*.8;lean+=shift*.012+(cat?1:-1)*earPulse*.008;
-  ctx.translate(85+shift*.8,151+lift);ctx.rotate(lean);
-  ctx.scale(1+breath*.006,1-breath*.009);
- }else{ctx.translate(85,151+lift);ctx.rotate(lean)}
+  lift+=breath*.8;lean+=shift*.012+(cat?1:-1)*earPulse*.008;x+=shift*.8;
+  scaleX=1+breath*.006;scaleY=1-breath*.009;
+  if(cat&&mood==='aim'&&s.turn===team){
+   const tension=clamp(s.aimMotion||0,0,1),aim=(clamp(s.angle,14,79)-46)/65;
+   x-=5*tension;lift+=4*tension;lean-=tension*(.12+.05*aim);
+   scaleX*=1+.045*tension;scaleY*=1-.055*tension;
+  }
+ }
+ return {x,y:151+lift,lean,scaleX,scaleY};
+}
+function renderCoverMatchedCharacter(team,x,y,size=1){
+ if(!CHARACTER_ATLAS.complete||!CHARACTER_ATLAS.naturalWidth)return;
+ const mood=team==='cat'&&s.turn===team&&s.drag&&s.screen==='play'?'aim':moodOf(team),f=actorFrame(team),elapsed=s.clock-(rigMotion[team]?.start||0);
+ const cw=CHARACTER_ATLAS.naturalWidth/8,ch=CHARACTER_ATLAS.naturalHeight/4;
+ ctx.save();ctx.translate(x,y);ctx.scale(size,size);
+ ellipse(85,151,77,10,'#20324355');drawZebraPortal(team,0,0);
+ const transform=characterTransform(team,mood,elapsed,f);
+ ctx.translate(transform.x,transform.y);ctx.rotate(transform.lean);ctx.scale(transform.scaleX,transform.scaleY);
  const baseAlpha=ctx.globalAlpha, idle=idleVisual(team),idleOpacity=idle?idle.opacity:0;
  const drawFrame=(col,row,alpha)=>{ctx.globalAlpha=alpha;ctx.drawImage(CHARACTER_ATLAS,col*cw,row*ch,cw,ch,-105,-216,210,245)};
  drawFrame(f.col,f.row,baseAlpha*(1-f.blend)*(1-idleOpacity));
@@ -908,6 +924,11 @@ throwHandWorld=function(team){
  const point=paws[f.pose]||paws[2],next=paws[f.nextPose]||point;
  const x=point[0]+(next[0]-point[0])*f.blend,y=point[1]+(next[1]-point[1])*f.blend;
  const px=cat?x:192-x;
+ if(cat&&s.turn===team&&(s.drag||(s.aimMotion||0)>.001)&&s.screen==='play'&&!s.throwSeq){
+  const tr=characterTransform(team,'aim',0,f),localX=(-105+px*210/192)*tr.scaleX,localY=(-216+y*245/256)*tr.scaleY;
+  const c=Math.cos(tr.lean),sn=Math.sin(tr.lean);
+  return {x:63+(tr.x+localX*c-localY*sn)*size,y:435+(tr.y+localX*sn+localY*c)*size};
+ }
  return {x:(cat?63:1040)+(-20+px*210/192)*size,y:435+(-65+y*245/256)*size};
 };
 // Ready/windup frames already contain the exact Z disc in the paw.
