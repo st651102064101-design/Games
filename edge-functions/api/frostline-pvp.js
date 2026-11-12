@@ -1,0 +1,81 @@
+/**
+ * Frostline EdgeOne Makers cross-device PvP fallback.
+ * Route /api/frostline-pvp, uses zero-config @edgeone/pages-blob with strong reads.
+ * P2P remains primary; this is a best-effort, non-authoritative relay.
+ */
+import {getStore} from '@edgeone/pages-blob';
+const ROOM='arena-v3-6/',STORE='frostline-public-pvp',LIVE=14000,MAX=32;
+const validId=id=>typeof id==='string'&&/^f[a-z0-9]{8,36}$/.test(id);
+const num=(v,f,min,max)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):f;
+const ok=(obj,status=200)=>Response.json(obj,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+const cleanName=v=>String(v||'นักล่า').replace(/[<>\u0000-\u001f]/g,'').slice(0,25);
+const getData=(store,key)=>store.get(key,{type:'json',consistency:'strong'}).catch(()=>null);
+export async function onRequest({request}){
+ const origin=request.headers.get('origin');
+ if(origin&&origin!==new URL(request.url).origin)return ok({ok:false,error:'Origin not allowed'},403);
+ if(!['POST','GET'].includes(request.method))return ok({ok:false,error:'Method not allowed'},405);
+ try{
+  const store=getStore({name:STORE,consistency:'strong'}),now=Date.now();
+  if(request.method==='GET'){
+   const result=await store.list({prefix:ROOM,consistency:'strong'});
+   const vals=await Promise.all(result.blobs.slice(0,64).map(x=>getData(store,x.key)));
+   return ok({ok:true,transport:'edgeone-blob',count:vals.filter(v=>v?.alive&&validId(v.id)&&now-v.updatedAt>=0&&now-v.updatedAt<LIVE).length,serverTime:now});
+  }
+  if(!(request.headers.get('content-type')||'').startsWith('application/json'))return ok({ok:false,error:'JSON required'},415);
+  const raw=await request.text();if(raw.length>18000)return ok({ok:false,error:'Payload too large'},413);
+  let body;try{body=JSON.parse(raw)}catch{return ok({ok:false,error:'Invalid JSON'},400)}
+  if(!body||!validId(body.id))return ok({ok:false,error:'Invalid player ID'},400);
+  const key=ROOM+body.id;
+  if(body.kind==='leave'){await store.delete(key);return ok({ok:true,left:true})}
+  if(body.kind!=='state'||!body.alive||!Array.isArray(body.samples)||!body.samples.length)
+   return ok({ok:false,error:'State samples required'},400);
+  const samples=body.samples.slice(-14).map(s=>({
+   t:num(s?.t,now,0,4e12),x:num(s?.x,0,-10125,10125),y:num(s?.y,0,-10125,10125),
+   vx:num(s?.vx,0,-1200,1200),vy:num(s?.vy,0,-1200,1200),
+   s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,60),h:num(s?.h,100,0,10000),
+   em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
+  })).sort((a,b)=>a.t-b.t);
+  const weapon=v=>/^ars(0[1-9]|[12][0-9]|30)$/.test(v)?v:'ars01';
+  const blades=Array.isArray(body.blades)?body.blades.slice(0,24).map(b=>({
+   id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),
+   reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,0,600),
+   speed:num(b?.speed,6,1,20),count:num(b?.count,1,1,24),type:weapon(b?.type),
+   rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
+  })):[];
+  const me={
+   kind:'state',id:body.id,alive:true,name:cleanName(body.name),
+   seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,125,1,10000),
+   samples,blades,look:{
+    boots:num(body.look?.boots,1,1,8),bag:num(body.look?.bag,1,1,8),armor:num(body.look?.armor,1,1,8),
+    furArmor:body.look?.furArmor===true,leatherPack:body.look?.leatherPack===true,
+    level:num(body.look?.level,1,1,1000),weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel',
+    skin:String(body.look?.skin||'scout').slice(0,24)
+   },
+   shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({
+    id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),
+    a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,
+    t:num(b.t,now,now-5000,now+1000)
+   })):[],
+   clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&validId(c.to)).map(c=>({
+    id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'ars01').slice(0,20),
+    x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),t:num(c.t,now,now-5000,now+1000)
+   })):[],updatedAt:now
+  };
+  await store.setJSON(key,me);
+  const listing=await store.list({prefix:ROOM,consistency:'strong'});
+  const entries=listing.blobs.filter(b=>b.key!==key).slice(0,64);
+  const values=await Promise.all(entries.map(b=>getData(store,b.key)));
+  const active=[],stale=[];
+  for(let i=0;i<values.length;i++){
+   const v=values[i];if(!v||!validId(v.id))continue;
+   const age=now-v.updatedAt;
+   if(age>=0&&age<LIVE&&v.alive)active.push(v);
+   else if(age>90000&&stale.length<3)stale.push(entries[i].key);
+  }
+  if(stale.length)await Promise.allSettled(stale.map(key=>store.delete(key)));
+  return ok({ok:true,transport:'edgeone-blob',players:active.slice(0,MAX-1),count:active.length+1,serverTime:now});
+ }catch(err){
+  console.warn('[Frostline EdgeOne] relay failed',err);
+  return ok({ok:false,error:'Relay temporarily unavailable'},503);
+ }
+}
