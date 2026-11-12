@@ -285,6 +285,14 @@ body.low-graphics .warpHero,body.low-graphics .warpFinger{animation-duration:3s}
 @media(max-width:380px){.howToCard{border-radius:21px}.howToStepText span{font-size:11px}.howToBottom{grid-template-columns:86px 1fr}}
 @media(prefers-reduced-motion:reduce){.howToPagePane.howToEnterNext,.howToPagePane.howToEnterPrev{animation:none!important}.howToDot{transition:none!important}}
 </style>
+<!-- Keep the wildlife button and online player list in separate, responsive HUD lanes. -->
+<style id="frostline-hud-spacing">
+#onlineInfo{top:calc(119px + env(safe-area-inset-top,0px));right:12px;max-width:min(230px,48vw);line-height:1.5;max-height:min(40vh,300px)}
+@media(max-width:680px){
+ #wildlifeBtn{top:calc(64px + env(safe-area-inset-top,0px));right:10px}
+ #onlineInfo{top:calc(113px + env(safe-area-inset-top,0px));right:10px;max-width:min(180px,47vw);font-size:10px;line-height:1.35}
+}
+</style>
 </head>
 <body>
 <canvas id="game" aria-label="สนามเกมเอาตัวรอด Frostline"></canvas><div id="tiltStatus" hidden aria-live="off"></div>
@@ -1473,17 +1481,47 @@ function addBounceFloat(text,color){const p=game.p;game.float.push({x:p.x,y:p.y-
 
 // ===== Practice bots: 5 roaming fighters, named Bot 1..5 =====
 const BOT_LOOK={boots:1,bag:1,armor:1,furArmor:false,leatherPack:false,level:1};
-function spawnBot(i){const p=game.p,a=rand(0,TAU),d=rand(450,2300);return {id:'bot'+i,name:'Bot '+(i+1),x:clamp(p.x+Math.cos(a)*d,-half+80,half-80),y:clamp(p.y+Math.sin(a)*d,-half+80,half-80),tx:0,ty:0,retarget:0,hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),items:2+Math.floor(rand(0,7)),fleeing:false,blades:4}}
-// Fill the 50-player arena with local AI, replacing bots as real peers arrive.
+// Reduced arena AI: 24 bots maximum (previously 49), spaced around the map.
+const MAX_LOCAL_BOTS=24, BOT_MIN_SPAWN_GAP=530, BOT_PLAYER_SPAWN_GAP=760, BOT_SEPARATION=150;
+function botSpawnPoint(exclude=null){
+ if(!game)return null;
+ for(let attempt=0;attempt<160;attempt++){
+  const p=game.p,a=rand(0,TAU),distance=rand(950,6000);
+  const pos=attempt<105?worldSpot(p.x+Math.cos(a)*distance,p.y+Math.sin(a)*distance,240):randomWorldSpot(240);
+  if(!insideCoast(pos.x,pos.y,180)||inWater(pos.x,pos.y,-65))continue;
+  if(d2(pos.x-p.x,pos.y-p.y)<BOT_PLAYER_SPAWN_GAP**2)continue;
+  if(game.bots?.some(b=>b!==exclude&&b.dead<=0&&d2(b.x-pos.x,b.y-pos.y)<BOT_MIN_SPAWN_GAP**2))continue;
+  if(game.holes?.some(h=>Math.hypot(h.x-pos.x,h.y-pos.y)<h.r+150))continue;
+  if(game.obsGrid&&obsNear(pos.x,pos.y).some(o=>d2(o.x-pos.x,o.y-pos.y)<135**2))continue;
+  return pos;
+ }
+ return null; // Never pile bots together just to reach the population target.
+}
+function spawnBot(i){
+ const pos=botSpawnPoint();
+ if(!pos)return null;
+ return {id:'bot'+i,name:'Bot '+(i+1),x:pos.x,y:pos.y,
+  tx:pos.x,ty:pos.y,retarget:rand(.6,2.8),
+  hp:120,maxHp:120,dead:0,hitCd:0,walk:0,dir:1,s:rand(0,TAU),
+  items:2+Math.floor(rand(0,7)),fleeing:false,blades:4};
+}
+// Real online peers replace local bots rather than making the arena crowded.
 function reconcileBots(){
  if(!game)return;
  const ts=performance.now();let humans=0;
  for(const r of peers.values())if(Number.isFinite(r.last)&&ts-r.last<6500)humans++;
- const target=Math.max(0,49-Math.min(49,humans)),bots=game.bots;
- while(bots.length<target)bots.push(spawnBot(game.nextBotId++));
+ const target=Math.max(0,MAX_LOCAL_BOTS-Math.min(MAX_LOCAL_BOTS,humans)),bots=game.bots;
+ while(bots.length<target){
+  const bot=spawnBot(game.nextBotId++);
+  if(!bot)break;
+  bots.push(bot);
+ }
  while(bots.length>target){
   let choice=0,best=-Infinity;
-  for(let i=0;i<bots.length;i++){const b=bots[i],score=(b.dead>0?1e12:0)+(b.x-game.p.x)**2+(b.y-game.p.y)**2;if(score>best){best=score;choice=i}}
+  for(let i=0;i<bots.length;i++){
+   const b=bots[i],score=(b.dead>0?1e12:0)+d2(b.x-game.p.x,b.y-game.p.y);
+   if(score>best){best=score;choice=i}
+  }
   bots.splice(choice,1);
  }
 }
@@ -1525,6 +1563,7 @@ function tryBotWarp(b,threat){
   const dest={x:clamp(b.x+Math.cos(angle)*distance,-half+65,half-65),y:clamp(b.y+Math.sin(angle)*distance,-half+65,half-65)};
   resolveObs(dest,18);dest.x=clamp(dest.x,-half+65,half-65);dest.y=clamp(dest.y,-half+65,half-65);keepInWorld(dest,90);
   if((dest.x-b.x)**2+(dest.y-b.y)**2<80**2)continue;
+  if(game.bots.some(other=>other!==b&&other.dead<=0&&d2(other.x-dest.x,other.y-dest.y)<BOT_SEPARATION**2))continue;
   if((game.holes||[]).some(h=>Math.hypot(dest.x-h.x,dest.y-h.y)<h.r+38))continue;
   const blocked=obsNear(dest.x,dest.y).some(o=>{const hx=OBS_W*.5,hy=OBS_H*.5,cx=clamp(dest.x,o.x-hx,o.x+hx),cy=clamp(dest.y,o.y-hy-22,o.y+hy);return (dest.x-cx)**2+(dest.y-cy)**2<18**2});
   if(blocked)continue;
@@ -1536,7 +1575,7 @@ function tryBotWarp(b,threat){
  return false;
 }
 function updateBots(dt){const g=game,p=g.p;if(performance.now()>=(g.nextBotBalance||0)){g.nextBotBalance=performance.now()+1000;reconcileBots()}for(const b of g.bots||[]){
- b.inv=Math.max(0,(b.inv||0)-dt);b.warpCd=Math.max(0,(b.warpCd||0)-dt);if(b.dead>0){b.warp=null;b.dead-=dt;if(b.dead<=0){const a=rand(0,TAU),d=rand(600,1000);b.x=clamp(p.x+Math.cos(a)*d,-half+80,half-80);b.y=clamp(p.y+Math.sin(a)*d,-half+80,half-80);b.hp=b.maxHp;b.hits=0;b.dead=0;b.inv=0;b.warpCd=0}continue}
+ b.inv=Math.max(0,(b.inv||0)-dt);b.warpCd=Math.max(0,(b.warpCd||0)-dt);if(b.dead>0){b.warp=null;b.dead-=dt;if(b.dead<=0){const spawn=botSpawnPoint(b);if(!spawn){b.dead=.8;continue}b.x=spawn.x;b.y=spawn.y;b.tx=b.x;b.ty=b.y;b.retarget=1;b.hp=b.maxHp;b.hits=0;b.dead=0;b.inv=0;b.warpCd=0}continue}
  if(b.warp){const d=b.warp,elapsed=now-d.t0;if(elapsed>=d.out){b.x=d.x1;b.y=d.y1}b.inv=Math.max(b.inv,.1);if(elapsed>=d.out+d.inDur){b.warp=null;resolveObs(b,18)}continue}
  b.warpThink=(b.warpThink||0)-dt;if(b.warpThink<=0){b.warpThink=.35+Math.random()*.25;if((b.warpCd||0)<=0&&tryBotWarp(b,botWarpThreat(b)))continue}
  b.fleeing=false;const fear=Math.hypot(p.x-b.x,p.y-b.y);if((g.weapons.length>b.items||b.blades<2)&&fear<520){b.fleeing=true;const ex=b.x-p.x,ey=b.y-p.y,ed=Math.hypot(ex,ey)||1;b.tx=clamp(b.x+ex/ed*320,-half+80,half-80);b.ty=clamp(b.y+ey/ed*320,-half+80,half-80);b.retarget=.6}else if(fear<380){b.tx=p.x;b.ty=p.y;b.retarget=.3}
@@ -1557,8 +1596,21 @@ function pushBodies(p){const R=34;const bodies=[];for(const r of peers.values())
  for(const q of bodies){const ox=p.x-q.x,oy=p.y-q.y,d=Math.hypot(ox,oy);if(d<R){const nx=d>1e-6?ox/d:1,ny=d>1e-6?oy/d:0;p.x=q.x+nx*R;p.y=q.y+ny*R}}}
 // Dash/warp trail: a streak from the start point to the new spot, with a fading afterimage
 function drawWarpFx(){warpFx=warpFx.filter(f=>now-f.t0<.38);for(const f of warpFx){const k=Math.max(0,1-(now-f.t0)/.38);ctx.save();ctx.lineCap='round';ctx.globalAlpha=k*.7;ctx.strokeStyle='#e6fbff';ctx.lineWidth=12*k+2;ctx.beginPath();ctx.moveTo(f.x0,f.y0-10);ctx.lineTo(f.x1,f.y1-10);ctx.stroke();ctx.globalAlpha=k*.3;ctx.strokeStyle='#8fe3ff';ctx.lineWidth=28*k+4;ctx.stroke();ctx.globalAlpha=k*.4;ctx.fillStyle='#bfeeff';ctx.beginPath();ctx.arc(f.x0,f.y0-10,18*(0.6+0.4*k),0,TAU);ctx.fill();ctx.restore()}}
-// Bots do not overlap each other: pairs closer than 34 units are pushed apart
-function separateBots(){const L=(game.bots||[]).filter(b=>!b.dead);for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],c=L[j],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy),R=34;if(d<R){const nx=d>1e-6?dx/d:1,ny=d>1e-6?dy/d:0,k=(R-d)/2;a.x-=nx*k;a.y-=ny*k;c.x+=nx*k;c.y+=ny*k}}}
+// Prevent living bots clustering around one player after spawning or chasing.
+function separateBots(){
+ const L=(game.bots||[]).filter(b=>b.dead<=0&&!b.warp),changed=new Set();
+ for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){
+  const a=L[i],b=L[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+  if(d>=BOT_SEPARATION)continue;
+  const angle=d>1e-6?0:(i*1.618+j*2.399);
+  const nx=d>1e-6?dx/d:Math.cos(angle),ny=d>1e-6?dy/d:Math.sin(angle);
+  // Limit positional correction per 30Hz step to avoid visible teleporting.
+  const amount=Math.min(14,(BOT_SEPARATION-d)*.5);
+  a.x-=nx*amount;a.y-=ny*amount;b.x+=nx*amount;b.y+=ny*amount;
+  changed.add(a);changed.add(b);
+ }
+ for(const b of changed){keepInWorld(b,90);if(game.obsGrid)resolveObs(b,18)}
+}
 // Door portals: one opens where the double-tap started, one at the destination
 function drawPortal(){const D=game.dash;if(!D)return;const el=now-D.t0;ctx.save();ctx.lineCap='round';
  if(el<D.out){const k=el/D.out;ctx.globalAlpha=1-k*.5;ctx.strokeStyle='#e6fbff';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(D.x0,D.y0,14+k*34,8+k*18,0,0,TAU);ctx.stroke()}
