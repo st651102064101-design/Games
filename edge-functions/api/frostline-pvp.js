@@ -16,7 +16,7 @@ function npcFields(body,now){
 function cleanPose(p){
  const d=p?.dash,h=p?.hurt;
  return {dash:d&&Number.isFinite(d.age)?{x0:num(d.x0,0,-10125,10125),y0:num(d.y0,0,-10125,10125),x1:num(d.x1,0,-10125,10125),y1:num(d.y1,0,-10125,10125),out:num(d.out,.2,.1,1),inDur:num(d.inDur,.25,.1,1),age:num(d.age,0,0,2)}:null,
- hurt:h&&Number.isFinite(h.age)?{serial:num(h.serial,0,0,1e12),kind:h.kind==='clash'?'clash':'hurt',x:num(h.x,0,-10125,10125),y:num(h.y,0,-10125,10125),age:num(h.age,0,0,2),nx:num(h.nx,1,-1,1),force:num(h.force,0,0,1000)}:null};
+ hurt:h&&Number.isFinite(h.age)?{serial:num(h.serial,0,0,1e12),kind:h.kind==='clash'?'clash':'hurt',zone:['head','shoulder','torso','legs'].includes(h.zone)?h.zone:'torso',x:num(h.x,0,-10125,10125),y:num(h.y,0,-10125,10125),age:num(h.age,0,0,2),nx:num(h.nx,1,-1,1),force:num(h.force,0,0,1000)}:null};
 }
 /**
  * Frostline EdgeOne Makers cross-device PvP fallback.
