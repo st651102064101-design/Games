@@ -13,7 +13,7 @@
 - Bots favor weapons when poorly equipped, healing when hurt and XP for growth. Their levels are uncapped; equipment beyond the visible limit becomes experience rather than invisible combat power.
 - One elected player simulates shared bots. Other browsers receive stable NPC IDs, generations, equipment, level, position, warp and death. Damage actions and kill awards are deduplicated; actions from a previous NPC life are rejected.
 - The shop sells sequential permanent durability tiers, with 100–800 durability. Every tier adds an ordinary 100-point impact. Ground weapon base durability stays 100. In-round purchases apply on the next run and survive autosaving.
-- Both networking transports separate adjacent durability tiers into four bands. The HUD distinguishes real players from bots. State messages always identify their band, including messages without equipment metadata.
+- Both networking transports use one public room regardless of upgrade tier. The HUD distinguishes real players from bots. State messages always identify their band, including messages without equipment metadata.
 - Relay state rejects an older run or lower sequence already stored for the same player. Clients reject older equipment metadata. Both deployment adapters validate shared NPC data, durability, wear and pose fields.
 - End-of-run time uses time actually played in the round. Results show the last known threat or successful extraction. A local `frostline_last_run` record stores round outcome and basic counters for balancing; nothing is sent to an analytics service.
 

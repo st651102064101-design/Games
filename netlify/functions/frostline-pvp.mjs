@@ -80,7 +80,7 @@ export default async function handler(request) {
   let body;
   try { body = JSON.parse(raw); } catch { return respond({error:'Invalid JSON'},400); }
   if (!body || !ID_RE.test(body.id||'')) return respond({error:'Invalid player ID'},400);
-  const matchBand=num(body.matchBand,0,0,3)|0,roomPrefix=ROOM+'band-'+matchBand+'/';const key=roomPrefix+body.id;
+  const matchBand=0,roomPrefix=ROOM+'band-0/';const key=roomPrefix+body.id;
   try {
     const store = storage();
     if (body.kind === 'leave') {

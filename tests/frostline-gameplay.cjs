@@ -153,13 +153,13 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  // A second isolated browser context exercises the HTTP relay, not BroadcastChannel.
  const context2=await browser.newContext({viewport:{width:960,height:760}});
  await context2.addInitScript(()=>{Object.defineProperty(navigator,'onLine',{get:()=>false});for(const key of ['frostline_guide_complete','frostline_warp_guide_v2','frostline_howto_illustrated_v2'])localStorage.setItem(key,'1');localStorage.setItem('frostline_name','Observer');localStorage.setItem('frostline_audio_v1','{"master":0,"music":0}');});
- const observer=await context2.newPage();observer.on('pageerror',e=>errors.push(e.message));await observer.goto(url);await observer.locator('#playBtn').click();await calm(observer);
+ const observer=await context2.newPage();observer.on('pageerror',e=>errors.push(e.message));await observer.goto(url);await run(observer,'writeMeta({durabilityTier:8,weaponTier:8});');await observer.locator('#playBtn').click();await calm(observer);
  await run(page,'newGame();');await calm(page);
  await run(page,"PLAYER_NAME='Hero';game.p.x=80;game.p.y=0;game.dog.x=120;game.dog.y=20;cameraTilt=cameraTiltTarget=0;userZoom=DEFAULT_ZOOM;paused=false;game.p.inv=999;sendMyState(1);syncCloud();");
  await run(observer,'paused=false;game.p.inv=999;sendMyState(1);syncCloud();');
  await observer.waitForFunction(()=>window.__gameEval("[...peers.values()].some(r=>r.name==='Hero'&&r.dog)"),null,{timeout:8000});
  const heroId=await run(page,'CLIENT_ID');
- check('another browser receives the remote pet via the actual HTTP relay sanitizer');
+ assert.equal(await run(observer,'game.matchBand'),0);assert.equal(await run(page,'game.matchBand'),0);check('a later-joining upgraded browser shares the same public room, player name and pet through HTTP');
  const context3=await browser.newContext({viewport:{width:960,height:760},storageState:await context2.storageState()});
  await context3.addInitScript(()=>Object.defineProperty(navigator,'onLine',{get:()=>false}));
  const spectator=await context3.newPage();spectator.on('pageerror',e=>errors.push(e.message));await spectator.goto(url);await spectator.locator('#playBtn').click();await calm(spectator);

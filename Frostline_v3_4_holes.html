@@ -569,7 +569,7 @@ const CLIENT_ID='f'+Math.random().toString(36).slice(2,10)+Date.now().toString(3
 let PLAYER_NAME='player'+String(1000+Math.floor(Math.random()*9000));try{const sv=localStorage.getItem('frostline_name');if(sv&&sv.trim())PLAYER_NAME=sv.trim().slice(0,14)}catch{}
 let peers=new Map(),onlineRoom=null,backupRoom=null,sendStateFn=null,sendKillFn=null,backupStateFn=null,backupKillFn=null,network='offline',lastNetworkSend=0,pvpKills=0,localChannel=null,nextNetworkRetry=0,seenKills=new Set();
 // Optional Netlify server presence fallback: works across devices and network types.
-let cloudReady=false,cloudInFlight=false,cloudNextSync=0,cloudRetryMs=5000,cloudError='',cloudLastSuccess=0;
+let cloudReady=false,cloudInFlight=false,cloudNextSync=0,cloudRetryMs=1500,cloudError='',cloudLastSuccess=0;
 let stateSequence=0;
 
 const emptyInv=()=>({meat:0,hide:0,bone:0,claw:0,frost:0});
@@ -838,7 +838,7 @@ function resolveWeaponOffer(accept){
 }
 
 function selectMatchRoom(band){
- const room='frostline-public-arena-v3-6-band-'+band;if(ROOM_ID===room)return;
+ const room='frostline-public-arena-v3-6-band-0';if(ROOM_ID===room)return;
  try{onlineRoom?.leave();backupRoom?.leave();localChannel?.close();}catch{}
  onlineRoom=backupRoom=localChannel=null;sendStateFn=backupStateFn=sendKillFn=backupKillFn=null;peers.clear();network='offline';ROOM_ID=room;lastNetworkSend=0;lastMetaAt=0;cloudNextSync=0;mySamples=[];cloudSentT=0;
 }
@@ -847,8 +847,8 @@ function newGame(){
  audioInitialize();setWind(true);playSound('ui');
  let saved=loadSave();saved.upd={sword:1,boots:1,bag:1,armor:1};saved.craft=emptyCraft();shots.length=0;recentShots.length=0;clashes.length=0;seenCombat.clear();saved.weapons=[{id:CLIENT_ID+'starter'+Date.now(),type:'ars01',rarity:'common',damage:8,reach:90,rate:1,crit:5,element:'normal'}];game={elapsed:0,stage:1,phase:1,coins:saved.coins,kills:0,level:1,xp:0,nextXP:25,pendingLevels:0,perks:{},hitCounter:0,spawning:0,spawnInterval:1.6,mobs:[],drops:[],corpses:[],fx:[],float:[],hitFlash:0,shake:0,transition:0,announceTimer:0,announceText:'',swordAngle:-Math.PI*.35,swordPhase:-Math.PI*.35,upd:saved.upd,inv:saved.inv,craft:saved.craft,weapon:saved.weapon,weapons:saved.weapons,weaponSpawnTimer:999999,bossDefeated:false,bossSpawned:false,stageKills:0,pickupTimer:10,radar:false,worldZone:'',p:{...sharedPlayerSpawn(),dir:1,mx:0,my:0,hp:(125+(saved.upd.armor-1)*8)*PLAYER_HEALTH_MULTIPLIER,maxHp:(125+(saved.upd.armor-1)*8)*PLAYER_HEALTH_MULTIPLIER,inv:0,walk:0},uid:0,holes:[],holeCd:0};
  userZoom=DEFAULT_ZOOM;cameraTilt=cameraTiltTarget=0;viewGrow=1;
- game.weaponTier=saved.weaponTier||1;game.durabilityTier=saved.durabilityTier||1;game.matchBand=Math.floor((Math.max(game.weaponTier,game.durabilityTier)-1)/2);selectMatchRoom(game.matchBand);game.joinedAt=Date.now();game.life={phase:'alive',at:Date.now(),serial:0};
- const others=[...peers.values()].filter(r=>performance.now()-r.last<6500&&Number.isFinite(r.roomEpoch)).map(r=>r.roomEpoch);
+ game.weaponTier=saved.weaponTier||1;game.durabilityTier=saved.durabilityTier||1;game.matchBand=0;selectMatchRoom(game.matchBand);game.joinedAt=Date.now();game.life={phase:'alive',at:Date.now(),serial:0};
+ const others=[...peers.values()].filter(r=>performance.now()-r.last<14000&&Number.isFinite(r.roomEpoch)).map(r=>r.roomEpoch);
  game.roomEpoch=others.length?Math.min(game.joinedAt,...others):game.joinedAt;
  game.elapsed=Math.max(0,(Date.now()-game.roomEpoch)/1000);game.roundTime=0;game.phaseClock=0;game.missionStats={kills:0,items:0,air:0,bosses:0};game.missionClaimed=new Set();game.nextEvent=35;game.telemetry={hits:0,damage:0,choices:0,offers:0,events:0};
  const phaseNow=phaseAt(0);game.stage=phaseNow.stage;game.phase=phaseNow.phase;
@@ -1100,7 +1100,7 @@ const SHARED_DROP_TYPES=new Set(['weapon','ability','coin','plus','speed','xp',.
 function lootAuthorityId(){
  if(!game)return CLIENT_ID;
  const candidates=[{id:CLIENT_ID,joinedAt:game.joinedAt||Date.now()}];
- for(const r of peers.values())if(r.init&&r.life?.phase!=='dead'&&performance.now()-r.last<6500&&Number.isFinite(r.joinedAt))candidates.push({id:r.id,joinedAt:r.joinedAt});
+ for(const r of peers.values())if(r.init&&r.life?.phase!=='dead'&&performance.now()-r.last<14000&&Number.isFinite(r.joinedAt))candidates.push({id:r.id,joinedAt:r.joinedAt});
  candidates.sort((a,b)=>a.joinedAt-b.joinedAt||a.id.localeCompare(b.id));
  return candidates[0].id;
 }
@@ -1340,7 +1340,7 @@ function drawEmotionsOverlay(){
  for(const b of game.bots||[]){if(count>=max)break;
   // Let the little 🥺 bubble finish even after a bot has been eliminated.
   if((!b.dead||b.dead>3.6)&&isVisible(b.x,b.y,130)&&drawEmotionBubble(b))count++}
- for(const r of peers.values()){if(count>=max)break;if(r.init&&peerIsAlive(r)&&performance.now()-r.last<6500&&isVisible(r.x,r.y,130)&&drawEmotionBubble(r))count++}
+ for(const r of peers.values()){if(count>=max)break;if(r.init&&peerIsAlive(r)&&performance.now()-r.last<14000&&isVisible(r.x,r.y,130)&&drawEmotionBubble(r))count++}
 }
 
 function recordPlayerKill(){
@@ -2413,7 +2413,7 @@ function bladeBodyContact(cx,cy,angle,reach,type,scale,px,py,radius,angularStep=
 function bladeSegments(){
  const segs=[];
  for(const r of peers.values()){
-  if(!r.init||!peerIsAlive(r)||performance.now()-r.last>6500)continue;
+  if(!r.init||!peerIsAlive(r)||performance.now()-r.last>14000)continue;
   for(const b of remoteBlades(r))if(!combatSpec({type:b.type}).gun)
    segs.push({x:r.x,y:r.y,a:b.a,reach:b.reach,speed:b.speed||r.w||5.5,type:b.type,scale:r.growS||1,damage:b.damage||12,owner:r.id,name:r.name});
  }
@@ -3545,7 +3545,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  if(game.dog&&isVisible(game.dog.x,game.dog.y,100))arr.push({kind:'dog',y:game.dog.y+1,obj:game.dog});
  for(const b of game.bots||[])if((!b.dead||b.dead>4.7)&&isVisible(b.x,b.y,120))arr.push({kind:'bot',y:b.y+18,obj:b});
  for(const r of peers.values()){
-  if(!r.init||performance.now()-r.last>6500)continue;
+  if(!r.init||performance.now()-r.last>14000)continue;
   if(isVisible(r.x,r.y,260))arr.push({kind:'remote',y:r.y+18,obj:r});
   if(r.dog&&isVisible(r.dog.x,r.dog.y,100))arr.push({kind:'dog',y:r.dog.y+1,obj:r.dog});
  }
@@ -4659,19 +4659,19 @@ function updateOnlineInfo(force=false){
  const el=$('onlineInfo');
  if(!game||mode==='menu'){el.hidden=true;return}
  const now=performance.now(),pos=game.p;
- const people=[...peers.values()].filter(r=>Number.isFinite(r.x)&&Number.isFinite(r.y)&&now-r.last<6500&&r.life?.phase!=='dead')
-   .map(r=>({name:String(r.name||'ผู้เล่น').replace(/\s+/g,' ').trim().slice(0,25)||'ผู้เล่น',distance:Math.hypot(r.x-pos.x,r.y-pos.y)}))
+ const people=[...peers.values()].filter(r=>Number.isFinite(r.x)&&Number.isFinite(r.y)&&now-r.last<14000&&r.life?.phase!=='dead')
+   .map(r=>({name:String(r.name||'ผู้เล่น').replace(/\s+/g,' ').trim().slice(0,25)||'ผู้เล่น',distance:Math.hypot(r.x-pos.x,r.y-pos.y),arrow:['→','↘','↓','↙','←','↖','↑','↗'][(Math.round(Math.atan2(r.y-pos.y,r.x-pos.x)/Math.PI*4)+8)%8]}))
    .sort((a,b)=>a.distance-b.distance||a.name.localeCompare(b.name,'th'));
  if(!people.length){
   el.hidden=false;
-  el.textContent=cloudReady?(lang==='en'?'Online · matched equipment tiers':'ออนไลน์ · จับคู่ตามขั้นอุปกรณ์'):
+  el.textContent=cloudReady?(lang==='en'?'Public room · waiting for players':'ห้องรวมออนไลน์ · กำลังรอผู้เล่น'):
     (network==='p2p'||network==='ready'?
     (lang==='en'?'Looking for nearby players…':'กำลังค้นหาผู้เล่น…'):
     (lang==='en'?'No online relay yet':'ยังเชื่อมต่อออนไลน์ไม่ได้'));
   return;
  }
  el.hidden=false;
- el.textContent=(lang==='en'?'Players':'ผู้เล่นอื่น')+' '+people.length+' · '+(lang==='en'?'Bots':'บอต')+' '+game.bots.filter(b=>!b.dead).length+'\n'+people.map((r,i)=>(i+1)+'. '+r.name).join('\n');
+ el.textContent=(lang==='en'?'Players':'ผู้เล่นอื่น')+' '+people.length+' · '+(lang==='en'?'Bots':'บอต')+' '+game.bots.filter(b=>!b.dead).length+'\n'+people.map((r,i)=>(i+1)+'. '+r.name+' '+r.arrow+' '+Math.round(r.distance)).join('\n');
 }
 function publishNet(kind,payload){
  const event={kind,id:CLIENT_ID,...payload};
@@ -4697,7 +4697,7 @@ function sampleBuf(buf,rt){const n=buf.length;if(!n)return null;if(rt<=buf[0].t)
 function remoteBlades(r){return peerIsAlive(r)&&r.bl?r.bl.filter(b=>!r.clashHidden||!(r.clashHidden.get(b.id)>now)).map(b=>({id:b.id,a:r.s*b.m+b.o,reach:b.reach,damage:b.damage,type:b.type,rarity:b.rarity,durability:b.durability,wear:b.wear,fire:b.fire,speed:b.speed||r.w||5.5,count:b.count||r.bl.length||1})):[]}
 function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_ID||typeof event.id!=='string'||event.id.length>100)return;
  if(event.kind==='kill'){if(event.to===CLIENT_ID){playSound('pvpKill');if(event.killId&&seenKills.has(event.killId))return;if(event.killId){seenKills.add(event.killId);if(seenKills.size>250)seenKills.clear()}pvpKills++;addCoins(5);recordPlayerKill();if(game)note(`⚔️ กำจัดผู้เล่นแล้ว! +5 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3H14"/></svg> · รวม ${pvpKills}`);updateOnlineInfo()}return}
- if(event.kind!=='state')return;if(game&&Number(event.matchBand||0)!==Number(game.matchBand||0))return;
+ if(event.kind!=='state')return;
  if(game)receivePhysicsState(event);
  if(game&&['playing','dying'].includes(mode)){receiveShots(event);if(mode==='playing')receiveClashes(event);}
  if(event.alive===false){const r=peers.get(event.id);if(r){r.life={phase:'dead'};r.deathT0=r.deathT0??now;r.last=performance.now();}updateOnlineInfo();return}
@@ -4755,12 +4755,12 @@ function sendMyState(dt){if(!game||!['playing','dying'].includes(mode))return;la
 // Cross-device HTTP relay: posts every sample since the last success, so remote players still get a smooth path.
 async function syncCloud(){if(!game||!['playing','dying','dead'].includes(mode)||cloudInFlight||!/^https?:$/.test(location.protocol))return;cloudInFlight=true;const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),5000);
  const fresh=mySamples.filter(s=>s.t>cloudSentT),batch=(fresh.length?fresh:mySamples.slice(-1)).slice(-14);if(!batch.length){cloudInFlight=false;clearTimeout(timer);cloudNextSync=performance.now()+100;return}
- try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500),...ownMeta(),lootEvents:lootRecentEvents()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=5000;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?400:1100);updateOnlineInfo();}
- catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(30000,cloudRetryMs*1.5);updateOnlineInfo();}
+ try{const response=await fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'state',id:CLIENT_ID,seq:++stateSequence,alive:true,samples:batch,shots:recentShots.filter(b=>Date.now()-b.t<1800),clashes:clashes.filter(c=>Date.now()-c.t<4500),...ownMeta(),lootEvents:lootRecentEvents()}),cache:'no-store',signal:ctrl.signal});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(!data.ok||!Array.isArray(data.players))throw new Error('Invalid server response');cloudSentT=batch[batch.length-1].t;cloudReady=true;cloudError='';cloudRetryMs=1500;cloudLastSuccess=performance.now();for(const remote of data.players)handleNet({...remote,kind:'state'});cloudNextSync=performance.now()+(peers.size?400:1100);updateOnlineInfo();}
+ catch(error){cloudReady=false;cloudError=String(error?.message||error).slice(0,80);cloudNextSync=performance.now()+cloudRetryMs;cloudRetryMs=Math.min(8000,cloudRetryMs*1.5);updateOnlineInfo();}
  finally{clearTimeout(timer);cloudInFlight=false;if(mode==='dead'&&mySamples.some(s=>s.t>cloudSentT)&&!game.finalSyncRetried){game.finalSyncRetried=true;syncCloud();}}
 }
 function updatePeers(dt){const ts=performance.now(),wall=nowMs();for(const [id,r] of peers){
- if(ts-r.last>6500){peers.delete(id);if(network==='p2p'&&peers.size===0)network='ready';updateOnlineInfo();continue}
+ if(ts-r.last>14000){peers.delete(id);if(network==='p2p'&&peers.size===0)network='ready';updateOnlineInfo();continue}
  if(r.dog){const d=r.dog,k=1-Math.exp(-dt*12);d.x=lerp(d.x,d.tx,k);d.y=lerp(d.y,d.ty,k);}
  // Playback delay follows how often packets really arrive (about 125 ms over WebRTC, more over the HTTP relay).
  r.delay+=(clamp(r.gap*1.5+55,110,700)-r.delay)*(1-Math.exp(-dt*1.2));
@@ -4773,7 +4773,7 @@ function updatePeers(dt){const ts=performance.now(),wall=nowMs();for(const [id,r
 }
 }
 function drawRemotePlayers(only=null){const ts=performance.now();for(const r of only?[only]:peers.values()){
- if(ts-r.last>6500||!r.init||r.life?.phase==='dead'&&now-(r.deathT0??now)>1.3)continue;
+ if(ts-r.last>14000||!r.init||r.life?.phase==='dead'&&now-(r.deathT0??now)>1.3)continue;
  if(!isVisible(r.x,r.y,260))continue;
  drawHeroPose(r,r.look,r);if(r.dash)drawPortal(r.dash);
  drawDogReviveAura(r,r.reviveFx,r.dog);
@@ -4858,7 +4858,7 @@ translateUI();
 window.addEventListener('pagehide',()=>{try{onlineRoom?.leave()}catch{}try{backupRoom?.leave()}catch{}try{localChannel?.close()}catch{}if(/^https?:$/.test(location.protocol))try{fetch('/api/frostline-pvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'leave',id:CLIENT_ID,matchBand:game?.matchBand||0}),keepalive:true}).catch(()=>{})}catch{}});
 
 // Read-only health check for automated smoke tests; does not alter gameplay.
-Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.4-pvp-contact-balance',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,botCount:game?.bots?.length||0,playerName:PLAYER_NAME,pvpKills})});
+Object.defineProperty(window,'frostlineInfo',{get:()=>({version:'3.4-public-room',arsenal:ARSENAL.map(w=>({id:w.id,name:w.name,damage:w.base,gun:w.gun})),projectiles:shots.length,mode,stage:game?.stage||0,phase:game?.phase||0,mobs:game?.mobs.length||0,drops:game?.drops.length||0,coins:game?.coins||0,playerHP:game?.p.hp||0,level:game?.level||0,elapsed:game?.elapsed||0,inventory:game?{...game.inv}:{},weapon:game?.weapon||'',upgrades:game?{...game.upd}:{},perks:game?{...game.perks}:{},weapons:game?.weapons.length||0,extraWeapons:game?game.weapons.slice(0,MAX_ACTIVE_EXTRA).map(w=>({...w})):[],pendingLevels:game?.pendingLevels||0,online:network,cloudReady,cloudError,cloudLastSuccess,peerCount:peers.size,botCount:game?.bots?.length||0,playerName:PLAYER_NAME,pvpKills})});
 })()
 </script>
 </body>

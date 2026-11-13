@@ -74,7 +74,7 @@ export async function onRequest({request}){
   const raw=await request.text();if(raw.length>196608)return ok({ok:false,error:'Payload too large'},413);
   let body;try{body=JSON.parse(raw)}catch{return ok({ok:false,error:'Invalid JSON'},400)}
   if(!body||!validId(body.id))return ok({ok:false,error:'Invalid player ID'},400);
-  const matchBand=num(body.matchBand,0,0,3)|0,roomPrefix=ROOM+'band-'+matchBand+'/';const key=roomPrefix+body.id;
+  const matchBand=0,roomPrefix=ROOM+'band-0/';const key=roomPrefix+body.id;
   if(body.kind==='leave'){await store.delete(key);return ok({ok:true,left:true})}
   if(body.kind!=='state'||!body.alive||!Array.isArray(body.samples)||!body.samples.length)
    return ok({ok:false,error:'State samples required'},400);

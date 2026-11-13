@@ -28,8 +28,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   await request({...body,seq:10,npcs:[{id:'bot1',generation:2,name:'Shared bot',x:30,y:40,hp:180,maxHp:240,blades:6,level:7,bladeLayout:[{id:'bot1:2:4',base:1,o:.95,v:-2}],warp:{x0:0,y0:0,x1:100,y1:100,age:.1}}],blades:[{id:'tier8',type:'ars11',durability:800,wear:7}]});
   await request({...body,seq:9,dog:null});
   saved=[...data.values()].find(v=>v.id===body.id);assert.equal(saved.seq,10);assert.equal(saved.npcs[0].generation,2);assert.equal(saved.npcs[0].bladeLayout[0].id,'bot1:2:4');assert.equal(saved.npcs[0].bladeLayout[0].o,.95);assert.equal(saved.npcs[0].warp.x1,100);assert.equal(saved.blades[0].durability,800);assert.equal(saved.blades[0].wear,7);
-  const separate=await request({...body,id:'fbandtest01',matchBand:3});assert.equal(separate.players.length,0,'different upgrade bands must not exchange state');
-  const sameBand=await request({...body,id:'fbandtest02',matchBand:3});assert.equal(sameBand.players.length,1);assert.equal(sameBand.players[0].id,'fbandtest01');
+  const separate=await request({...body,id:'fbandtest01',matchBand:3});assert.ok(separate.players.some(p=>p.id==='fabcdefgh2'),'different upgrade tiers share the public room');
+  const sameBand=await request({...body,id:'fbandtest02',matchBand:3});assert.ok(sameBand.players.some(p=>p.id==='fbandtest01'));assert.ok(sameBand.players.every(p=>p.matchBand===0));
   await request({kind:'leave',id:'fbandtest01',matchBand:3});assert.equal([...data.values()].some(v=>v.id==='fbandtest01'),false);
   console.log('PASS:',file,'pet/lifecycle/scale forwarding, validation, death retention and presence');
  }

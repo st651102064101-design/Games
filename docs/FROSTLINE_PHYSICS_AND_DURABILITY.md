@@ -32,7 +32,7 @@ The weapon shop now sells a **permanent durability tier** instead of new firearm
 | 7 | 700 | 839 |
 | 8 | 800 | Maximum |
 
-An ordinary equal-strength contact or bullet costs 100 durability. Consequently, a base sword absorbs one bullet; an upgraded sword can absorb additional hits before breaking. HP remains protected while the defending sword absorbs the hit. Increasing maximum durability preserves damage already taken. Purchases are checked against the current saved balance and applied one tier at a time; tiers survive a new round. Purchases during play take effect next round; each tier adds one ordinary 100-durability impact. Players are grouped into four adjacent-tier bands (1–2, 3–4, 5–6, 7–8) in both P2P and HTTP. No gun or extra weapon is awarded by an upgrade.
+An ordinary equal-strength contact or bullet costs 100 durability. Consequently, a base sword absorbs one bullet; an upgraded sword can absorb additional hits before breaking. HP remains protected while the defending sword absorbs the hit. Increasing maximum durability preserves damage already taken. Purchases are checked against the current saved balance and applied one tier at a time; tiers survive a new round. Purchases during play take effect next round; each tier adds one ordinary 100-durability impact. All upgrade tiers now share one public room in both P2P and HTTP. No gun or extra weapon is awarded by an upgrade.
 
 Ground labels show the common base value. The shop shows the permanent effective maximum. A small condition mark appears on damaged orbiting weapons. Network weapon metadata includes maximum durability and wear, and both relay implementations validate them.
 
