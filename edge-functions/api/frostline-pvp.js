@@ -1,6 +1,6 @@
 function npcFields(body,now){
  const boundedId=v=>typeof v==='string'?v.slice(0,100):'';
- return {npcs:Array.isArray(body.npcs)?body.npcs.slice(0,24).filter(b=>b&&/^bot\d+$/.test(b.id)).map(b=>({id:b.id,name:String(b.name||b.id).slice(0,25),generation:num(b.generation,0,0,1e9),x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),s:num(b.s,0,-1e9,1e9),hp:num(b.hp,240,0,1e6),maxHp:num(b.maxHp,240,1,1e6),blades:num(b.blades,4,0,10000),level:num(b.level,1,1,10000),dead:num(b.dead,0,0,6),dir:b.dir<0?-1:1,walk:num(b.walk,0,-1e9,1e9),mx:num(b.mx,0,-1200,1200),my:num(b.my,0,-1200,1200),warp:cleanPose({dash:b.warp}).dash})):null,
+ return {npcs:Array.isArray(body.npcs)?body.npcs.slice(0,24).filter(b=>b&&/^bot\d+$/.test(b.id)).map(b=>({id:b.id,name:String(b.name||b.id).slice(0,25),generation:num(b.generation,0,0,1e9),x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),s:num(b.s,0,-1e9,1e9),hp:num(b.hp,240,0,1e6),maxHp:num(b.maxHp,240,1,1e6),blades:num(b.blades,4,0,10000),level:num(b.level,1,1,10000),dead:num(b.dead,0,0,6),dir:b.dir<0?-1:1,walk:num(b.walk,0,-1e9,1e9),mx:num(b.mx,0,-1200,1200),my:num(b.my,0,-1200,1200),hurt:cleanPose({hurt:b.hurt}).hurt,warp:cleanPose({dash:b.warp}).dash})):null,
  npcActions:Array.isArray(body.npcActions)?body.npcActions.slice(-48).filter(e=>e&&typeof e.id==='string'&&e.id.startsWith(body.id+'n')&&/^bot\d+$/.test(e.bot)).map(e=>({id:boundedId(e.id),bot:e.bot,generation:num(e.generation,0,0,1e9),damage:num(e.damage,0,0,6000),loss:num(e.loss,0,0,60),t:num(e.t,now,now-6000,now+1000)})):[],
  npcAwards:Array.isArray(body.npcAwards)?body.npcAwards.slice(-48).filter(e=>e&&typeof e.id==='string'&&e.id.startsWith(body.id+'a')).map(e=>({id:boundedId(e.id),to:boundedId(e.to),t:num(e.t,now,now-6000,now+1000)})):[]};
 }
@@ -72,14 +72,14 @@ export async function onRequest({request}){
   const samples=body.samples.slice(-14).map(s=>({
    t:num(s?.t,now,0,4e12),x:num(s?.x,0,-10125,10125),y:num(s?.y,0,-10125,10125),
    vx:num(s?.vx,0,-1200,1200),vy:num(s?.vy,0,-1200,1200),
-   s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,620),h:num(s?.h,100,0,10000),
+   s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,-620,620),h:num(s?.h,100,0,10000),
    em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
   })).sort((a,b)=>a.t-b.t);
   const weapon=v=>/^ars(0[1-9]|[12][0-9]|30)$/.test(v)?v:'ars01';
   const blades=Array.isArray(body.blades)?body.blades.slice(0,60).map(b=>({
    id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),
    reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,0,600),
-   durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
+   durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,-620,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
    rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
   })):[];
   let me={matchBand,

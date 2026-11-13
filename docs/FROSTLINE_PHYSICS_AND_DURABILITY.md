@@ -67,3 +67,9 @@ The oldest active player now simulates and publishes shared bots. Followers inte
 - relay forwarding/validation of exact loss IDs, wear, durability, 60 weapons, flying objects and pose state.
 
 The tests use local isolated storage. They do not establish successful deployment or live production multiplayer performance.
+
+## Weight and recovery animation pass
+
+Clashes now briefly reverse actual orbit drive, then restore it over half a second. Artwork, swept blade tests and network phase samples use that phase; signed angular velocities are accepted by both relays. NPC snapshots also carry their impact pose. Detached blades inherit tangential velocity, owner movement and orientation, with mass-dependent separation speed instead of identical radial ejection. Death follows the final impact direction and retains damped movement briefly with obstacle resolution. Hit poses scale with impulse, and revive poses rotate from the ground through a compressed kneeling transition.
+
+This is the first implementation pass on the proposed 60 animation improvements. Full planted-foot contacts, per-blade joints, 3D tumbling, cloth collision, new animal gait sets and full-body ragdoll constraints are not implemented by this pass. It retains the existing Canvas 2.5D architecture. Network behavior is verified locally; production latency and human animation review remain separate checks.
