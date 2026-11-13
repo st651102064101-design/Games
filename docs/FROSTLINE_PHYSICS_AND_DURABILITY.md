@@ -87,3 +87,9 @@ Player body separation now searches nearby legal arcs, checking both obstacle re
 Impact contacts select head, shoulder, torso or legs in the existing 2.5D coordinate system. The hurt pose adjusts its dip/rotation accordingly, and both relays preserve the zone. These are stylized regional reactions, not anatomical limb constraints.
 
 `frostline_combat_runs` in local storage retains at most twenty summaries with round duration, level, health, armor, weapon count, durability tier, measured damage/hit counts by melee/bear/projectile source, guard contacts and absorbed bullets. No analytics service receives these records. These counters cover the instrumented combat paths; they do not capture every environmental loss, heal or authoritative outgoing-damage event. They provide evidence for later live balance work without changing starting health again.
+
+## Planted-foot gait pass
+
+Humanoid motion now retains separate world-space foot anchors during the stance portion of the distance-driven gait. Swinging feet move toward a velocity-dependent target. The existing bounded leg solver follows those targets; excessive separation resets an anchor rather than stretching the limb. Idle feet settle back under the body. This is a bounded 2.5D gait approximation, not complete 3D foot placement, stair traversal or joint collision.
+
+The remaining animation proposal is not fully implemented: independent per-blade articulated recoil, material-specific fracture, multi-axis rigid-body piles, full ragdoll constraints, per-species gait libraries and cloth self-collision remain architectural/content work. Live deployment, network-latency validation and human balance playtesting are also outstanding; automated test completion does not replace them.

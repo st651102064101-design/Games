@@ -2105,7 +2105,9 @@ function drawGroundedPlayer(p,look){
  for(const side of [-1,1]){
   const phase=m.gait+(side<0?0:Math.PI),stride=clamp(Math.hypot(m.vx,m.vy)/220,0,1),hip=side*8;
   const ground=groundSurface(p.x+hip,p.y+22),root=m.ground?.height||0;
-  const leg=twoBoneLeg(hip,5,hip+Math.sin(phase)*4*stride,25+m.lift+root-ground.height-Math.max(0,Math.cos(phase))*4*stride);
+  const foot=m.feet?.[side],planted=foot?.stance;
+  const tx=planted?clamp(foot.x-p.x,hip-12,hip+12):hip+Math.sin(phase)*4*stride,ty=planted?clamp(foot.y-p.y,17,30):25-Math.max(0,Math.cos(phase))*4*stride;
+  const leg=twoBoneLeg(hip,5,tx,ty+m.lift+root-ground.height);
   const pieces=[{a:leg.hip,b:leg.knee,sy:126,h:10},{a:leg.knee,b:leg.foot,sy:136,h:12}];
   for(const piece of pieces){ctx.save();ctx.translate(piece.a.x,piece.a.y);ctx.rotate(Math.atan2(piece.b.y-piece.a.y,piece.b.x-piece.a.x)-Math.PI/2);
    const length=Math.hypot(piece.b.x-piece.a.x,piece.b.y-piece.a.y);ctx.drawImage(p.legArt,side<0?46:64,piece.sy,18,piece.h,-9,0,18,length);ctx.restore();}
@@ -2603,6 +2605,14 @@ function updateActorMotion(a,dt,mass=1){
  m.vx=lerp(m.vx,vx,k);m.vy=lerp(m.vy,vy,k);
  const speed=Math.hypot(m.vx,m.vy),stride=clamp(speed/220,0,1),ground=groundSurface(a.x,a.y);
  m.distance=(m.distance||0)+Math.hypot(dx,dy);m.gait=(m.gait||0)+Math.hypot(dx,dy)*.055;const phase=m.gait;
+ m.feet=m.feet||{};
+ for(const side of [-1,1]){const f=m.feet[side]||(m.feet[side]={x:a.x+side*8,y:a.y+25,stance:false}),stance=Math.cos(phase+(side<0?0:Math.PI))<=0;
+  if(speed<8){f.x=lerp(f.x,a.x+side*8,k);f.y=lerp(f.y,a.y+25,k);f.stance=false;continue;}
+  if(stance&&!f.stance){f.x=a.x+side*8;f.y=a.y+25;}
+  f.stance=stance;
+  if(!stance){f.x=lerp(f.x,a.x+side*8+m.vx*.035,k);f.y=lerp(f.y,a.y+25+m.vy*.035,k);}
+  if(Math.hypot(f.x-a.x-side*8,f.y-a.y-25)>18){f.x=a.x+side*8;f.y=a.y+25;}
+ }
  if(m.distance>24&&speed>12){m.distance%=24;addSurfaceMark(a,dt,ground);}
  m.ground=ground;
  const lean=clamp(m.vx/1500+acc/14000,-.22,.22);
