@@ -53,3 +53,9 @@ Production deployment, real-device latency and subjective animation quality stil
 Bear contacts now classify head, torso, or a specific front/rear leg side in bear-local coordinates. Head hits recoil the head group with attached head wounds; torso hits briefly compress the body; leg hits reduce the affected paw's gait and tuck it before recovery. Responses decay, do not add permanent slowdown, and do not change hit damage. Both relays preserve region/side/front metadata. Old transient hurt poses stop being sent after three seconds.
 
 Bear corpses now retain their wounds, fold their paws, lower the body and droop/close the head/eyes over a 1.6-second collapse/fade rather than using the generic fast spinning corpse. Remote corpse age is corrected by the death event timestamp. This is authored 2.5D articulation, not a 3D ragdoll.
+
+## Upright view and crown correction
+
+Bears now render with world-facing foot positions and vertically raised legs, torso, neck and head, matching the character scene's upright 2.5D convention. Facing changes head/foot placement and gaze rather than rotating the entire sprite like a top-down icon. Ground combat coordinates and attack calculations are unchanged. Regional head/paw reactions and attached wounds remain supported.
+
+The crown renders as a separate upright overlay after body/head transforms are restored. Its screen axes do not rotate with heading or recoil. It is hidden during corpse collapse. A four-heading rendering regression checks the crown transform, and a screenshot covers brown/polar bosses in each direction.

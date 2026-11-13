@@ -1545,24 +1545,48 @@ function drawBearCorpse(c){
  if(isNaturalBear(c)){const fall=clamp(progress/.5,0,1),side=c.hurt?.side||1;ctx.rotate(side*Math.sin(fall*Math.PI/2)*.32);ctx.scale(1+fall*.04,1-fall*.32);ctx.translate(-c.x,-c.y);drawNaturalBear({...c,bearAttack:null,deathProgress:fall,hp:1,maxHp:1,walk:0});}
  else{ctx.rotate(progress*1.35);ctx.translate(-c.x,-c.y);drawBear({...c,bearAttack:null,flash:0,walk:0,hp:1,maxHp:1});}ctx.restore();
 }
+// World heading places feet/head on the ground plane; height always rises on screen.
+function bearSpritePoint(m,x,y,z=0){const a=m.facing||0;return {x:Math.cos(a)*x-Math.sin(a)*y,y:Math.sin(a)*x+Math.cos(a)*y-z};}
 function drawNaturalBear(m){
- if(m.stale)return;const injury=bearInjuryPose(m),death=m.deathProgress||0;const a=m.bearAttack,t=bearAttackElapsed(m),pose=a?bearAttackPose(m,t):null,active=a&&t>=a.windup&&t<a.windup+a.active;
- ctx.save();ctx.translate(m.x,m.y);uprightCameraSprite();ctx.rotate(m.facing||0);
- const hurt=m.hurt?Math.exp(-Math.max(0,now-m.hurt.t0)*12)*Math.sin(Math.max(0,now-m.hurt.t0)*25)*clamp(m.hurt.force/90,0,1):0;ctx.translate(-hurt*4,0);ctx.rotate(hurt*.1);ctx.scale(1,1-injury.crouch);
- const coat=m.beast==='polar'?'#dce7e4':m.elite?'#54443b':'#78614c',light=m.beast==='polar'?'#f6f7ee':'#a18365';
- ellipse(-2,6,37,22,'#16354344');
- for(const side of [-1,1])for(const front of [-1,1]){const phase=(m.walk||0)+(side*front>0?0:Math.PI),injured=side===injury.side&&(front===1)===injury.front,step=Math.sin(phase)*4*(injured?1-injury.limp*.8:1);let x=front*19+step-death*front*8,y=side*(18-death*5);if(injured){x-=injury.limp*5;y-=side*injury.limp*4;}
-  if((a?.kind==='swat'&&front===1&&side===a.side)||(a?.kind==='press'&&front===1)){x=pose.x;y=pose.y;}
-  ellipse(x,y,front>0?12:10,8,coat);for(let k=-1;k<=1;k++)line(x+6,y+k*3,x+11,y+k*3,1.8,'#ddd4bf');}
- ellipse(-5,0,34,23,coat);ellipse(11,-3,22,22,light);ctx.save();bearHeadTransform({head:injury.head+death*.18});ellipse(28,0,21,17,coat);ellipse(23,-14,6,7,light);ellipse(23,14,6,7,light);
- const bite=a?.kind==='bite'?Math.sin(clamp((t-a.windup)/a.active,0,1)*Math.PI)*9:0;
- ellipse(43,0,13,9+bite,light);ellipse(51,0,4,5,'#302d30');if(bite>1){line(40,-bite,49,-bite,2,'#f7ead8');line(40,bite,49,bite,2,'#f7ead8');ellipse(43,0,6,bite,'#502a2d');}if(death>.5){line(31,-10,35,-10,2,'#171f25');line(31,10,35,10,2,'#171f25');}else{ellipse(33,-10,2.2,2,'#171f25');ellipse(33,10,2.2,2,'#171f25');}ctx.restore();
- if(a&&(a.kind==='swat'||a.kind==='press'))for(const side of a.kind==='press'?[-1,1]:[a.side]){const x=pose.x,y=a.kind==='press'?side*16:pose.y;ellipse(x,y,11,8,coat);for(let k=-1;k<=1;k++)line(x+6,y+k*3,x+12,y+k*3,2,'#e4dac4');}
- for(const w of m.wounds||[]){const age=now-w.t0;ctx.save();if(w.x>25)bearHeadTransform({head:injury.head+death*.18});ctx.translate(w.x,w.y);ctx.rotate(w.a);ctx.globalAlpha=clamp(1-age/30,.2,1);line(-w.size,-2,w.size,2,3,'#782d39');line(-w.size+1,-1,w.size-1,1,1,'#dc6c70');if(age<3)ellipse(w.size*.5,3+Math.min(5,age*2),2,3,'#a23746');ctx.restore();}
- if(a&&t<a.windup){ctx.strokeStyle='#efc78b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(28,0,32,-.8,.8);ctx.stroke();}
- if(active&&a.kind==='swat'){ctx.strokeStyle='#eee3cc99';ctx.lineWidth=2;ctx.beginPath();ctx.arc(22,0,30,-.75,1);ctx.stroke();}
- if(m.boss||m.titan){ctx.save();ctx.translate(-3,-18);drawCrown();ctx.restore();}ctx.restore();
- if(m.hp<m.maxHp){const width=m.boss?68:48;roundRect(m.x-width/2,m.y-47,width,5,2,'#243a46');roundRect(m.x-width/2,m.y-47,width*clamp(m.hp/m.maxHp,0,1),5,2,'#ce797e');}
+ if(m.stale)return;const injury=bearInjuryPose(m),death=m.deathProgress||0,a=m.bearAttack,t=bearAttackElapsed(m),pose=a?bearAttackPose(m,t):null;
+ const active=a&&t>=a.windup&&t<a.windup+a.active,coat=m.beast==='polar'?'#dce7e4':m.elite?'#54443b':'#78614c',light=m.beast==='polar'?'#f6f7ee':'#a18365';
+ const head=bearSpritePoint(m,28,0,35-death*8),torso=bearSpritePoint(m,-5,0,25),headTurn=injury.head+death*.18;
+ ctx.save();ctx.translate(m.x,m.y);uprightCameraSprite();
+ ellipse(0,5,37,16,'#16354344');
+ const hurt=m.hurt?Math.exp(-Math.max(0,now-m.hurt.t0)*12)*Math.sin(Math.max(0,now-m.hurt.t0)*25)*clamp(m.hurt.force/90,0,1):0;
+ ctx.save();ctx.translate(-hurt*3,injury.crouch*15);
+ const feet=[];
+ for(const side of [-1,1])for(const front of [-1,1]){
+  const phase=(m.walk||0)+(side*front>0?0:Math.PI),injured=side===injury.side&&(front===1)===injury.front;
+  const step=Math.sin(phase)*4*(injured?1-injury.limp*.8:1),lift=Math.max(0,Math.cos(phase))*3;
+  let x=front*19+step-death*front*8,y=side*(17-death*5),z=lift;
+  if(injured){x-=injury.limp*5;z+=injury.limp*4;}
+  if(a&&front===1&&(a.kind==='press'||a.kind==='swat'&&side===a.side)){x=pose.x;y=a.kind==='press'?side*16:pose.y;z=10;}
+  feet.push({foot:bearSpritePoint(m,x,y,z),hip:bearSpritePoint(m,front*18,side*12,22-death*10),front});
+ }
+ feet.sort((a,b)=>a.foot.y-b.foot.y);
+ const paw=f=>{line(f.hip.x,f.hip.y,f.foot.x,f.foot.y-3,13,coat);ellipse(f.foot.x+2,f.foot.y,10,6,coat);for(let k=-1;k<=1;k++)line(f.foot.x+5+k*3,f.foot.y-1,f.foot.x+6+k*3,f.foot.y+3,1.6,'#ded5c5');};
+ for(const f of feet)paw(f);
+ ellipse(torso.x,torso.y,27+Math.abs(Math.cos(m.facing||0))*7,26-death*5,coat);ellipse(torso.x-7,torso.y-7,16,18,light);
+ const neck=bearSpritePoint(m,14,0,29);ellipse(neck.x,neck.y,21,23,coat);
+ ctx.save();ctx.translate(head.x,head.y);ctx.rotate(headTurn);
+ ellipse(-14,-15,7,8,coat);ellipse(14,-15,7,8,coat);ellipse(-14,-15,3.5,4,light);ellipse(14,-15,3.5,4,light);
+ ellipse(0,0,22,21,coat);ellipse(-5,-4,12,15,light);
+ const lookX=Math.cos(m.facing||0)*7,lookY=Math.sin(m.facing||0)*3,bite=a?.kind==='bite'?Math.sin(clamp((t-a.windup)/a.active,0,1)*Math.PI)*7:0;
+ ellipse(lookX,7+lookY,13,9+bite,light);ellipse(lookX,3+lookY,5,3.5,'#302d30');
+ if(bite>1){ellipse(lookX,12+lookY,6,bite,'#502a2d');line(lookX-5,9+lookY,lookX+5,9+lookY,2,'#f7ead8');}
+ for(const side of [-1,1]){if(death>.5)line(side*8-2,-6,side*8+2,-6,2,'#171f25');else{ellipse(side*8+lookX*.3,-6,2.3,2.7,'#171f25');ellipse(side*8+lookX*.3-.6,-7,1,1,'#fff');}}
+ ctx.restore();
+ for(const f of feet)if(f.front&&a&&(a.kind==='swat'||a.kind==='press'))paw(f);
+ for(const w of m.wounds||[]){const age=now-w.t0,p=bearSpritePoint(m,w.x,w.y,w.x>25?35:25);ctx.save();
+  if(w.x>25){const dx=p.x-head.x,dy=p.y-head.y,d=Math.max(1,Math.hypot(dx,dy)/17);ctx.translate(head.x,head.y);ctx.rotate(headTurn);ctx.translate(dx/d,dy/d);}else ctx.translate(p.x,p.y);
+  ctx.rotate(w.a+(m.facing||0));ctx.globalAlpha*=clamp(1-age/30,.2,1);line(-w.size,-2,w.size,2,3,'#782d39');line(-w.size+1,-1,w.size-1,1,1,'#dc6c70');if(age<3)ellipse(w.size*.5,3+Math.min(5,age*2),2,3,'#a23746');ctx.restore();
+ }
+ ctx.restore();
+ // Crown is an upright overlay, outside heading, head recoil and body deformation.
+ if((m.boss||m.titan)&&death===0){ctx.save();ctx.translate(head.x,head.y+24);drawCrown();ctx.restore();}
+ ctx.restore();
+ if(m.hp<m.maxHp){const width=m.boss?68:48,y=m.y+Math.min(-60,head.y-32)-(m.boss||m.titan?28:0);roundRect(m.x-width/2,y,width,5,2,'#243a46');roundRect(m.x-width/2,y,width*clamp(m.hp/m.maxHp,0,1),5,2,'#ce797e');}
 }
 function serializeBear(m){return {id:bearKey(m),x:Math.round(m.x*10)/10,y:Math.round(m.y*10)/10,facing:m.facing||0,walk:m.walk||0,hp:m.hp,maxHp:m.maxHp,r:m.r||26,speed:m.speed,damage:m.damage,beast:m.beast,boss:!!m.boss,titan:!!m.titan,elite:!!m.elite,stage:game.stage,attackSerial:m.attackSerial||0,woundSerial:m.woundSerial||0,wounds:(m.wounds||[]).slice(-8).map(w=>({...w,t0:undefined})),hurt:m.hurt&&now-m.hurt.t0<3?{...m.hurt,t0:undefined}:null,attack:m.bearAttack?{...m.bearAttack,t0:undefined,hit:(m.bearAttack.hit||[]).slice(0,64)}:null};}
 function bearMetadata(){const g=game;return {bearActions:(g.bearActions||[]).filter(e=>Date.now()-e.t<6000),...(isLootAuthority()?{bears:g.mobs.filter(isNaturalBear).slice(0,32).map(serializeBear),bearDeaths:(g.bearDeaths||[]).filter(e=>Date.now()-e.t<6000),bearHits:(g.bearHits||[]).filter(e=>Date.now()-e.t<6000)}:{})};}
