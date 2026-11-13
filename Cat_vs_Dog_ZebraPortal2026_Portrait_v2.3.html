@@ -545,13 +545,20 @@ function updateRigMotion(team,dt){
 }
 // Forward-kinematics: the held object, guide and launched projectile use one paw location.
 function throwHandWorld(team){
+ // The approved ZP sprite includes natural front paws; do not add a detached arm.
  const p=rigMotion[team]?.pose||RIG_DEFAULT;
  const cat=team==='cat',x=cat?63:1040,y=435,size=cat?1.08:1.00;
- const sx=cat?137:36,sy=88,ang=cat?p.rightArm:p.leftArm;
- const hx=sx-Math.sin(ang)*59,hy=sy+Math.cos(ang)*59;
- const xx=(hx-85)*(1+p.squash),yy=(hy-88)*(1-p.squash*.58);
- const px=85+p.shake*.3+xx*Math.cos(p.lean)-yy*Math.sin(p.lean);
- const py=88+p.lift+p.squat*18+xx*Math.sin(p.lean)+yy*Math.cos(p.lean);
+ const q=s.throwSeq?.team===team?s.throwSeq:null;
+ const windup=q?.stage==='anticipation'?clamp(q.elapsed/.24,0,1):0;
+ const cast=q?.stage==='release'?clamp(q.elapsed/.33,0,1):0;
+ const dir=cat?1:-1;
+ const hx=(cat?145:25)+dir*(-7*windup+14*cast);
+ const hy=105+4*windup-24*Math.sin(cast*Math.PI*.5);
+ // Follow the body spring, preserving the existing projectile trajectory mechanics.
+ const rotation=p.lean*.60,dx=hx-85,dy=hy-94;
+ const sq=clamp(p.squash*.44,-.13,.15);
+ const px=85+p.shake*.35+(dx*(1+sq))*Math.cos(rotation)-(dy*(1-sq*.65))*Math.sin(rotation);
+ const py=94+p.lift+p.squat*15+(dx*(1+sq))*Math.sin(rotation)+(dy*(1-sq*.65))*Math.cos(rotation);
  return {x:x+px*size,y:y+py*size};
 }
 function drawHeldWeapon(){
@@ -737,18 +744,8 @@ function renderCoverMatchedCharacter(team,x,y,size=1){
  ctx.translate(-85,-94);
  const top=cat?-58:-29, left=cat?-7:-14, w=cat?186:204, h=cat?211:184;
  ctx.drawImage(img,left,top,w,h);
- // An animated foreleg follows the same joint position as the held weapon.
- if((s.turn===team || s.throwSeq?.team===team) && s.screen==='play' && !s.ball && !s.reaction && !s.finish){
-   const sx=cat?137:36, sy=88, ang=cat?p.rightArm:p.leftArm;
-   const hx=sx-Math.sin(ang)*59,hy=sy+Math.cos(ang)*59;
-   ctx.save();
-   ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo((sx+hx)*.5,Math.min(sy,hy)-13,hx,hy);
-   ctx.strokeStyle='#333c51';ctx.lineWidth=26;ctx.lineCap='round';ctx.stroke();
-   ctx.strokeStyle='#f3f5fc';ctx.lineWidth=19;ctx.stroke();
-   ellipse(hx,hy,18,16,'#fafbff');strokeEllipse(hx,hy,18,16,'#333d52',2.4);
-   for(let q=-1;q<=1;q++)ellipse(hx+q*7,hy+9,2.3,2.5,cat?'#52e4f1':'#ffbc63');
-   ctx.restore();
- }
+ // No synthetic foreground limb: character art contains both paws already.
+ // The prop tracks the sprite's natural paw without covering the chest or collar.
  // Character sheet hit reactions appear on top of the official portrait.
  if(s.bumps[team].n>0){
    const n=s.bumps[team].n,f=clamp((s.bumps[team].until-t)/7,0,1);
