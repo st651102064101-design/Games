@@ -87,6 +87,75 @@
 #soundButton[data-muted="true"] .sound-waves{display:none}
 #soundButton[data-muted="true"] .mute-mark{display:block}
 @media(max-width:680px){.controlbar{right:5px;bottom:5px;gap:3px}.controlbar .small-btn{width:44px;height:50px;padding:2px;border-width:2px;border-radius:10px;font-size:9px}.control-icon{width:26px;height:26px}}
+/* Portrait Mode: independent gameplay scene and large, safe touch dock. */
+.portrait-controls{display:none}
+@media (orientation:portrait) and (max-width:760px){
+ :root{--portrait-shelf:clamp(182px,27dvh,234px)}
+ html,body{overflow:hidden;overscroll-behavior:none}
+ .app{padding:0;justify-content:flex-start;background:#121e30}
+ .game-frame{width:100vw;height:100dvh;max-height:none;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}
+ .game-frame canvas{height:100%;width:100%}
+ .game-frame.game-active canvas{height:calc(100% - var(--portrait-shelf));width:100%}
+ .bottom-meta{display:none}
+ .top{top:calc(env(safe-area-inset-top,0px) + 7px);left:7px;right:7px;gap:5px}
+ .life{width:32%;max-width:none;border-radius:10px;padding:7px 8px 8px}
+ .life-title{font-size:10px;letter-spacing:0;margin-bottom:5px}
+ .life-title .tag{font-size:9px}
+ .life .hearts{display:none}
+ .health-track{height:11px}
+ .center-top{min-width:0;flex:1;gap:4px}
+ .round{font-size:9px;padding:5px 7px;letter-spacing:.03em}
+ .turn-pill{white-space:normal;text-align:center;font-size:9px;padding:5px 6px;max-width:100%}
+ .wind-pill{font-size:8px;padding:2px 5px;max-width:100%}
+ .fps-counter{top:calc(env(safe-area-inset-top,0px) + 65px);left:8px;opacity:.78}
+ .aim-panel{bottom:calc(var(--portrait-shelf) + 7px);left:8px;right:8px;max-width:none;width:auto;padding:8px 10px;font-size:11px;z-index:12}
+ .aim-head{gap:12px}
+ .hint{display:none}
+ .portrait-controls{display:flex;flex-direction:column;gap:9px;position:absolute;z-index:14;bottom:0;left:0;right:0;height:var(--portrait-shelf);padding:13px 14px calc(env(safe-area-inset-bottom,0px) + 66px);background:linear-gradient(180deg,#152941,#101c31 50%,#101827);border-top:2px solid #4aa8c988;pointer-events:auto;touch-action:manipulation}
+ .portrait-title{text-align:center;color:#aeeafe;font-weight:800;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .portrait-slider{display:grid;grid-template-columns:32px minmax(0,1fr) 44px;align-items:center;gap:10px;color:#e7f4ff;font-size:13px;font-weight:900;min-height:35px}
+ .portrait-slider output{text-align:right;color:#ffde8c;font-size:13px;font-variant-numeric:tabular-nums}
+ .portrait-slider input{width:100%;height:35px;cursor:pointer;accent-color:#57dcf2;touch-action:pan-x}
+ .portrait-slider input:disabled{opacity:.4}
+ .mobile-fire{display:flex;align-items:center;justify-content:center;left:12px;right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);transform:none;width:calc(100% - 220px);height:48px;min-width:98px;font-size:14px;border-radius:14px;z-index:16}
+ .controlbar{bottom:calc(env(safe-area-inset-bottom,0px) + 12px);right:12px;gap:6px;z-index:16}
+ .small-btn,.controlbar #tauntButton{width:44px;height:48px;font-size:18px;border-radius:12px}
+ .toast{top:25%;max-width:93%;white-space:normal;font-size:13px;padding:10px 12px}
+ .overlay{padding:calc(env(safe-area-inset-top,0px) + 14px) 12px calc(env(safe-area-inset-bottom,0px) + 14px)}
+ .panel{width:100%;max-height:100%;border-radius:20px;padding:20px 14px;overflow:auto}
+ .panel h1{font-size:clamp(31px,8vw,48px)}
+ .panel .sub{font-size:12px}
+ .cover-faces{gap:8px!important}
+ .cover-faces img{width:clamp(93px,28vw,140px);height:clamp(114px,32vw,148px)}
+ .mode{min-height:44px;font-size:11px}
+}
+@media (orientation:portrait) and (max-width:760px) and (max-height:660px){
+ :root{--portrait-shelf:180px}
+ .portrait-controls{gap:4px;padding-top:7px}
+ .portrait-slider{min-height:30px}
+ .portrait-slider input{height:30px}
+ .portrait-title{font-size:10px}
+ .mobile-fire{height:44px}
+ .small-btn,.controlbar #tauntButton{height:44px;width:40px}
+ .mobile-fire{width:calc(100% - 201px)}
+}
+
+
+@media(orientation:portrait) and (max-width:760px){
+ :root{--portrait-shelf:clamp(252px,34dvh,312px)}
+ .game-frame,.game-frame.in-match{height:100dvh;max-height:100dvh;margin:0;overflow:hidden}
+ .portrait-controls{padding-bottom:76px}
+ .skill-bar{left:50%;bottom:70px;transform:translateX(-50%);z-index:19;width:calc(100% - 16px);max-width:430px;gap:3px;padding:3px;overflow-x:auto}
+ .skill{flex:1;min-width:52px;min-height:53px}.skill-info{bottom:calc(var(--portrait-shelf) + 56px);z-index:17}
+ .mobile-fire{bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:calc(100% - 207px);min-width:99px;height:54px;font-size:17px;z-index:20}
+ .controlbar{bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:20}
+ .controlbar .small-btn{width:53px;height:54px;padding:2px 3px;border-width:2px}
+ .control-icon{width:27px;height:27px}.portrait-slider input{touch-action:pan-x}.wind-pill{top:30%}
+}
+@media(orientation:portrait) and (max-width:760px) and (max-height:660px){
+ :root{--portrait-shelf:252px}.skill-bar{bottom:60px}.skill{min-height:45px}
+ .mobile-fire,.controlbar .small-btn{height:46px}
+}
 </style>
 </head>
 <body>
@@ -100,6 +169,11 @@
  </div>
  <div class="wind-pill" id="windText" aria-label="ลมสงบ">ลม 0</div>
  <div id="skillInfo" class="skill-info" aria-live="polite"></div><div id="skillBar" class="skill-bar" aria-label="ไอเทมสกิล"></div><div class="aim-panel"><div class="aim-head"><span class="aim-item" id="aimText" aria-label="มุมเล็ง 48 องศา">↗ 48°</span><span class="power aim-item" id="powerText" aria-label="พลัง 65 เปอร์เซ็นต์">⚡ 65%</span></div><div class="meter"><div id="powerFill"></div></div><div class="hint">ลากเมาส์ / แตะลากเพื่อขว้าง · ← → ปรับมุม · ↑ ↓ ปรับแรง · SPACE ขว้าง</div></div>
+ <div class="portrait-controls" id="portraitControls" aria-label="ควบคุมเกมมือถือแนวตั้ง">
+  <div class="portrait-title">🎮 เล็งแล้วขว้าง · ลากนิ้วบนสนามได้</div>
+  <label class="portrait-slider"><span>มุม</span><input id="portraitAngle" type="range" min="14" max="79" step="1" value="48" aria-label="ปรับมุมการขว้าง"><output id="portraitAngleValue" for="portraitAngle">48°</output></label>
+  <label class="portrait-slider"><span>แรง</span><input id="portraitPower" type="range" min="350" max="1010" step="10" value="750" aria-label="ปรับแรงการขว้าง"><output id="portraitPowerValue" for="portraitPower">64%</output></label>
+ </div>
  <button class="mobile-fire" id="fireButton" type="button" aria-label="ขว้างเลย" title="ขว้างเลย">🎯</button>
  <div class="controlbar">
  <button class="small-btn" id="soundButton" type="button" title="ปิดเสียง" aria-label="ปิดเสียง" aria-pressed="true" data-muted="false"><svg class="control-icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M6 18h8l10-8v28l-10-8H6z" fill="#fff"/><g class="sound-waves"><path d="M29 17q7 7 0 14M34 11q13 13 0 26"/></g><path class="mute-mark" d="M30 18l11 12M41 18 30 30"/></svg><span>เสียง</span></button>
@@ -116,10 +190,11 @@
 (()=>{'use strict';
 const W=1280,H=720,WORLD_W=1580,CAT_X=63,DOG_X=1340,GROUND=588,WALL={x:(WORLD_W-50)/2,y:348,w:50,h:240},G=660,MAX_HP=6;
 // Blind aiming: limit each player's view to their own side; follow each projectile in flight.
-const VIEW_ZOOM=1.10,VIEW_MAX_X=WORLD_W-W/VIEW_ZOOM,VIEW_MAX_Y=H-H/VIEW_ZOOM;
-// Keep the active character prominent, with the ground low in the frame.
-const AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-(H/VIEW_ZOOM)*.80));
-const AIM_CAM_X=team=>team==='cat'?0:VIEW_MAX_X;
+const VIEW_ZOOM=1.10;
+let portraitMode=false,VIEW_WORLD_H=H/VIEW_ZOOM,VIEW_WORLD_W=W/VIEW_ZOOM;
+let VIEW_MAX_X=WORLD_W-VIEW_WORLD_W,VIEW_MAX_Y=H-VIEW_WORLD_H;
+let AIM_CAM_Y=Math.max(0,Math.min(VIEW_MAX_Y,GROUND-VIEW_WORLD_H*.80));
+const AIM_CAM_X=team=>portraitMode?clamp((team==='cat'?CAT_X+95:DOG_X+95)-VIEW_WORLD_W*.5,0,VIEW_MAX_X):team==='cat'?0:VIEW_MAX_X;
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
 const hud=$('hud'),startOverlay=$('startOverlay'),pauseOverlay=$('pauseOverlay'),endOverlay=$('endOverlay');
 // Single-file offline build: all backgrounds, expressive characters and projectiles render in Canvas.
@@ -141,7 +216,7 @@ function setSoundEnabled(enabled){s.sound=!!enabled;const button=$('soundButton'
 function burst(x,y,type,count=18){const colors=type==='hit'?['#fff2ab','#ffa466','#ff6f77','#ffe5de']:type==='wall'?['#d7e4fb','#9ba8b9','#657791']:['#ffffff','#f9d89b','#addcf9'];for(let i=0;i<count;i++){const a=Math.PI*2*Math.random(),v=70+Math.random()*270;s.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,life:.35+Math.random()*.45,max:.8,r:3+Math.random()*6,color:colors[Math.random()*colors.length|0]})}}
 function toast(msg,seconds=1.55){const el=$('toast'),icon=Array.from(msg.trim())[0]||'✨';el.classList.remove('on');void el.offsetWidth;el.textContent=icon;el.setAttribute('aria-label',msg);el.title=msg;el.classList.add('on');s.toastTimer=seconds}
 function hideToast(){$('toast').classList.remove('on');s.toastTimer=0}
-function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';$('skillBar').hidden=screen!=='play';$('frame').classList.toggle('in-match',screen==='play');if(screen!=='play')s.drag=null;updateHud()}
+function showScreen(screen){s.screen=screen;startOverlay.hidden=screen!=='menu';pauseOverlay.hidden=screen!=='pause';endOverlay.hidden=screen!=='end';hud.hidden=screen==='menu';$('skillBar').hidden=screen!=='play';$('frame').classList.toggle('in-match',screen==='play');$('frame').classList.toggle('game-active',screen!=='menu');if(screen!=='play')s.drag=null;resize();updateHud()}
 function spawnFor(team){return team==='cat'?{x:245,y:472}:{x:DOG_X-3,y:472}}
 
 function reset(newScreen='play'){
@@ -200,7 +275,11 @@ function updateHud(){
  $('powerFill').style.width=Math.min(100,Math.max(0,(s.power-280)/730*100))+'%';
  const aimLabel=`มุมเล็ง ${Math.round(s.angle)} องศา`;$('aimText').innerHTML=HUD_ICONS.aim+'<strong>'+Math.round(s.angle)+'°</strong>';$('aimText').setAttribute('aria-label',aimLabel);$('aimText').title=aimLabel;
  const disabled=s.screen!=='play'||!s.turnReady||!!s.ball||!!s.reaction||!!s.throwSeq||!!s.finish||activeBot();
- $('fireButton').disabled=disabled;renderSkills();
+ $('fireButton').disabled=disabled;
+ $('portraitAngle').value=String(Math.round(s.angle));$('portraitAngle').disabled=disabled;
+ $('portraitAngleValue').textContent=Math.round(s.angle)+'°';
+ $('portraitPower').value=String(Math.round(s.power));$('portraitPower').disabled=disabled;
+ $('portraitPowerValue').textContent=power+'%';renderSkills();
  const strength=s.noWind?0:Math.round(Math.abs(s.wind)),direction=strength===0?'none':s.wind>0?'right':'left';
  const windLabel=s.noWind?'ลูกถัดไปไม่มีลม':direction==='none'?'ลมสงบ':`ลมไปทาง${direction==='right'?'ขวา':'ซ้าย'} ${strength}`;
  const windArrow=direction==='none'?'':HUD_ICONS.arrow.replace('wind-arrow','wind-arrow '+direction);
@@ -376,8 +455,8 @@ function updateCamera(dt){
  if(s.ball){
   const b=s.ball,start=spawnFor(s.turn),travel=Math.abs(b.x-start.x);
   if(travel>110){const lead=s.turn==='cat'?35:-35;
-   x=clamp(b.x+lead-W/(VIEW_ZOOM*2),0,VIEW_MAX_X);
-   y=clamp(b.y-(H/VIEW_ZOOM)*.49,0,VIEW_MAX_Y)}
+   x=clamp(b.x+lead-VIEW_WORLD_W*.5,0,VIEW_MAX_X);
+   y=clamp(b.y-VIEW_WORLD_H*.49,0,VIEW_MAX_Y)}
  }
  const easing=1-Math.exp(-Math.max(0,dt)*(s.ball?7.5:s.reaction?5.6:9.5));
  s.camX+=(x-s.camX)*easing;s.camY+=(y-s.camY)*easing;
@@ -831,8 +910,10 @@ function updateDragAim(dt){
  const target=dragAimTarget(),current=s.aimMotion||0;
  s.aimMotion=current+(target-current)*(1-Math.exp(-Math.max(0,dt)*13));
 }
-function point(e){const r=canvas.getBoundingClientRect();const zoom=s.screen==='play'||s.screen==='pause'?VIEW_ZOOM:1;
- return {x:clamp(s.camX+(e.clientX-r.left)*W/r.width/zoom,0,WORLD_W),y:clamp(s.camY+(e.clientY-r.top)*H/r.height/zoom,0,H)};
+function point(e){const r=canvas.getBoundingClientRect();
+ if(s.screen==='play'||s.screen==='pause'||s.screen==='end')
+ return {x:clamp(s.camX+(e.clientX-r.left)*VIEW_WORLD_W/r.width,0,WORLD_W),y:clamp(s.camY+(e.clientY-r.top)*VIEW_WORLD_H/r.height,0,H)};
+ return {x:clamp((e.clientX-r.left)*W/r.width,0,WORLD_W),y:clamp((e.clientY-r.top)*H/r.height,0,H)};
 }
 function aimingFromDrag(a,b){let dx=b.x-a.x,dy=b.y-a.y;let d=Math.hypot(dx,dy);if(d<15)return;const direction=s.turn==='cat'?1:-1;dx=Math.abs(dx)*direction;const ang=clamp(Math.atan2(Math.max(25,-dy),Math.max(5,Math.abs(dx)))*180/Math.PI,14,79);s.angle=ang;s.power=clamp(280+d*2.75,350,1010);updateHud()}
 canvas.addEventListener('pointerdown',e=>{if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;if(e.button!==undefined&&e.button!==0)return;e.preventDefault();audioOn();try{canvas.setPointerCapture(e.pointerId)}catch(_){ } const p=point(e);s.drag={start:p,end:p};});
@@ -840,12 +921,47 @@ canvas.addEventListener('pointermove',e=>{if(!s.drag||s.screen!=='play')return;c
 canvas.addEventListener('pointerup',e=>{if(!s.drag)return;const d=s.drag,pt=point(e);s.drag=null;if(Math.hypot(pt.x-d.start.x,pt.y-d.start.y)>12){aimingFromDrag(d.start,pt);shoot()}});
 canvas.addEventListener('pointercancel',()=>{s.drag=null});canvas.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',e=>{if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();if(s.screen==='menu'&&['Enter','s','S'].includes(e.key)){reset();return}if(s.screen==='end'&&['Enter','n','N'].includes(e.key)){reset();return}if(['Escape','p','P'].includes(e.key)){if(s.screen==='play')showScreen('pause');else if(s.screen==='pause')showScreen('play');return}if(s.screen==='play'&&s.turnReady&&!s.ball&&!s.throwSeq&&!s.reaction&&!s.finish&&!activeBot()){if(e.key==='ArrowLeft')s.angle=clamp(s.angle-2,14,79);else if(e.key==='ArrowRight')s.angle=clamp(s.angle+2,14,79);else if(e.key==='ArrowUp')s.power=clamp(s.power+27,350,1010);else if(e.key==='ArrowDown')s.power=clamp(s.power-27,350,1010);else if(e.key===' '||e.key==='Enter')shoot();updateHud()}});
+for(const [id,field] of [['portraitAngle','angle'],['portraitPower','power']]){
+ $(id).addEventListener('input',()=>{
+  if(s.screen!=='play'||!s.turnReady||s.ball||s.throwSeq||s.reaction||s.finish||activeBot())return;
+  s[field]=Number($(id).value);updateHud();
+ });
+}
 $('startButton').onclick=()=>{audioOn();reset()};$('pauseButton').onclick=()=>showScreen('pause');$('resumeButton').onclick=()=>{showScreen('play');s.last=performance.now()};$('resetButton').onclick=()=>reset();$('restartPauseButton').onclick=()=>reset();$('menuPauseButton').onclick=()=>reset('menu');$('menuEndButton').onclick=()=>reset('menu');$('playAgainButton').onclick=()=>reset();$('fireButton').onclick=()=>{audioOn();shoot()};$('soundButton').onclick=()=>setSoundEnabled(!s.sound);document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 // Use an adaptive canvas backing store: game logic always uses W×H and remains frame-rate independent.
-function resize(){const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();const pxW=Math.round(r.width*dpr),pxH=Math.round(r.height*dpr);if(canvas.width!==pxW||canvas.height!==pxH){canvas.width=pxW;canvas.height=pxH}ctx.setTransform(pxW/W,0,0,pxH/H,0,0)}
+function resize(){
+ const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();
+ const pxW=Math.max(1,Math.round(r.width*dpr)),pxH=Math.max(1,Math.round(r.height*dpr));
+ if(canvas.width!==pxW||canvas.height!==pxH){canvas.width=pxW;canvas.height=pxH}
+ const wasPortrait=portraitMode;
+ portraitMode=window.matchMedia('(orientation:portrait) and (max-width:760px)').matches;
+ VIEW_WORLD_H=portraitMode?H:H/VIEW_ZOOM;VIEW_WORLD_W=Math.min(WORLD_W,pxW/pxH*VIEW_WORLD_H);
+ VIEW_MAX_X=Math.max(0,WORLD_W-VIEW_WORLD_W);VIEW_MAX_Y=Math.max(0,H-VIEW_WORLD_H);
+ AIM_CAM_Y=clamp(GROUND-VIEW_WORLD_H*.80,0,VIEW_MAX_Y);
+ if(s&&s.screen){
+ s.camX=clamp(s.camX,0,VIEW_MAX_X);s.camY=clamp(s.camY,0,VIEW_MAX_Y);
+ if(wasPortrait!==portraitMode&&!s.ball&&!s.reaction&&!s.throwSeq&&!s.finish){s.camX=AIM_CAM_X(s.turn);s.camY=AIM_CAM_Y}
+ }
+}
 // draw() sets transform per frame based on actual canvas pixels to preserve consistent scaling.
-draw=function(dt){const xx=canvas.width/W,yy=canvas.height/H;ctx.setTransform(xx,0,0,yy,0,0);ctx.clearRect(0,0,W,H);ctx.save();if(s.screen==='play'||s.screen==='pause'){ctx.translate(-s.camX*VIEW_ZOOM,-s.camY*VIEW_ZOOM);ctx.scale(VIEW_ZOOM,VIEW_ZOOM)}if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}drawParticles();drawGroundFx();drawDrag();ctx.restore();if(s.flash>0){ctx.fillStyle=`rgba(255,252,213,${s.flash*1.6})`;ctx.fillRect(0,0,W,H)}if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,W,H)}};
-new ResizeObserver(resize).observe(canvas);resize();window.__catdogTest=()=>({screen:s.screen,turn:s.turn,round:s.round,hp:{...s.hp},ball:!!s.ball,throwStage:s.throwSeq?.stage||null,finish:!!s.finish,reaction:s.reaction?{kind:s.reaction.kind,time:s.reaction.time,stage:s.reaction.stages[s.reaction.index]?.label,index:s.reaction.index,total:s.reaction.stages.length,focus:s.reaction.focus,waitingForCamera:s.reaction.waitingForCamera}:null,moods:{cat:moodOf('cat'),dog:moodOf('dog')},camera:[Math.round(s.camX),Math.round(s.camY)],bumps:{cat:s.bumps.cat.n,dog:s.bumps.dog.n},fps:fpsStats.last,turnReady:s.turnReady,ballPos:s.ball?{x:s.ball.x,y:s.ball.y,age:s.ball.age}:null,lastShot:s.lastShot||null,hand:{cat:throwHandWorld('cat'),dog:throwHandWorld('dog')},hitStop:s.hitStop,rig:{cat:rigMotion.cat?.pose,dog:rigMotion.dog?.pose},art:{cat:ZP_ART.cat.complete&&ZP_ART.cat.naturalWidth>0,dog:ZP_ART.dog.complete&&ZP_ART.dog.naturalWidth>0}});
+draw=function(dt){
+ const cw=canvas.width,ch=canvas.height;
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cw,ch);ctx.save();
+ if(s.screen==='play'||s.screen==='pause'||s.screen==='end'){
+  const scale=ch/VIEW_WORLD_H;ctx.setTransform(scale,0,0,scale,-s.camX*scale,-s.camY*scale);
+ }else{
+  const scale=Math.max(cw/W,ch/H);ctx.setTransform(scale,0,0,scale,(cw-W*scale)/2,(ch-H*scale)/2);
+ }
+ if(s.shake>0)ctx.translate(rand(-s.shake,s.shake),rand(-s.shake*.6,s.shake*.6));
+ drawBackground();drawWall();drawActor('cat');drawActor('dog');drawTrajectory();drawHeldWeapon();drawMotionLines('cat');drawMotionLines('dog');
+ if(s.ball){s.ball.trail.forEach((p,i)=>{ctx.globalAlpha=.06+.21*i/s.ball.trail.length;ellipse(p.x,p.y,(i+4)*.62,(i+4)*.62,s.ball.from==='cat'?'#ffd289':'#ebf7ff')});ctx.globalAlpha=1;drawProjectile(s.ball)}
+ drawParticles();drawGroundFx();drawDrag();ctx.restore();ctx.setTransform(1,0,0,1,0,0);
+ if(s.flash>0){ctx.fillStyle='rgba(255,252,213,'+(s.flash*1.6)+')';ctx.fillRect(0,0,cw,ch)}
+ if(s.screen==='menu'){ctx.fillStyle='#11213f48';ctx.fillRect(0,0,cw,ch)}
+};
+new ResizeObserver(resize).observe(canvas);window.addEventListener('resize',resize,{passive:true});resize();window.__catdogTest=()=>({screen:s.screen,turn:s.turn,round:s.round,hp:{...s.hp},ball:!!s.ball,throwStage:s.throwSeq?.stage||null,finish:!!s.finish,reaction:s.reaction?{kind:s.reaction.kind,time:s.reaction.time,stage:s.reaction.stages[s.reaction.index]?.label,index:s.reaction.index,total:s.reaction.stages.length,focus:s.reaction.focus,waitingForCamera:s.reaction.waitingForCamera}:null,moods:{cat:moodOf('cat'),dog:moodOf('dog')},camera:[Math.round(s.camX),Math.round(s.camY)],bumps:{cat:s.bumps.cat.n,dog:s.bumps.dog.n},fps:fpsStats.last,turnReady:s.turnReady,ballPos:s.ball?{x:s.ball.x,y:s.ball.y,age:s.ball.age}:null,lastShot:s.lastShot||null,hand:{cat:throwHandWorld('cat'),dog:throwHandWorld('dog')},hitStop:s.hitStop,rig:{cat:rigMotion.cat?.pose,dog:rigMotion.dog?.pose},art:{cat:ZP_ART.cat.complete&&ZP_ART.cat.naturalWidth>0,dog:ZP_ART.dog.complete&&ZP_ART.dog.naturalWidth>0}});
+const previousTest=window.__catdogTest;
+window.__catdogTest=()=>({...previousTest(),viewport:{portrait:portraitMode,width:Math.round(VIEW_WORLD_W),height:Math.round(VIEW_WORLD_H)}});
 window.__catdogDev={forceResult:(kind='miss')=>{if(s.screen!=='play')return; s.ball={x:s.turn==='cat'?DOG_X:240,y:475,vx:0,vy:0,r:18,rotation:0,from:s.turn,trail:[],age:0};if(kind==='hit'||kind==='body'){if(kind==='body')s.ball.y=558;hitPlayer(s.turn==='cat'?'dog':'cat')}else miss(kind==='wall'?'wall':'miss');}};
 // Optional idle art keeps gameplay usable if the image has not loaded.
 const IDLE_ATLAS=new Image();
