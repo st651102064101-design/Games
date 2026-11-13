@@ -10,7 +10,12 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   body.flights=[{id:body.id+'f1',t:now,x:30,y:20,z:100,vx:200,vy:-40,vz:150,a:.3,spin:4,life:3,type:'ars11',rarity:'legendary',scale:1.7,wc:'ice'}];
   body.pose={dash:{x0:0,y0:0,x1:200,y1:50,out:.2,inDur:.25,age:.1},hurt:{age:.1,nx:1,force:150}};
   body.clashes=[{id:'exact-clash',to:'fabcdefgh2',blade:'blade-1',blades:['blade-1','blade-2'],amount:2,wears:[{id:'blade-3',wear:.5}],x:0,y:0,t:now}];
+  body.bears=[{id:body.id+'b1',beast:'bear',x:99999,y:40,hp:900,maxHp:1000,facing:.4,damage:20,attackSerial:5,woundSerial:7,wounds:[{id:'cut1',x:9,y:8,a:.2,at:now,size:5}],attack:{id:'bite1',kind:'bite',hit:[body.id],at:now,windup:.5,active:.28,recovery:.65}}];
+  body.bearActions=[{id:body.id+'u1',bear:body.id+'b1',weapon:'blade1',damage:25,x:40,y:30,t:now}];
+  body.bearHits=[{id:'bite1:hit',to:'fabcdefgh2',t:now,x:40,y:30,r:13,a:0,kind:'bite',damage:20,force:100}];
   await request(body);let saved=data.values().next().value;
+  assert.equal(saved.bears.length,1);assert.equal(saved.bears[0].x,10125);assert.equal(saved.bears[0].wounds[0].id,'cut1');assert.equal(saved.bears[0].attack.kind,'bite');assert.equal(saved.bears[0].attack.hit[0],body.id);assert.equal(saved.bears[0].woundSerial,7);assert.equal(saved.bears[0].attackSerial,5);assert.equal(saved.bearActions[0].damage,25);assert.equal(saved.bearHits[0].to,'fabcdefgh2');
+
   assert.equal(saved.blades.length,60);assert.equal(saved.blades[0].durability,175);assert.equal(saved.blades[0].wear,.5);assert.equal(saved.clashes[0].wears[0].wear,.5);assert.equal(saved.blades[0].fire.recoil,3);assert.equal(saved.flights[0].z,100);assert.equal(saved.flights[0].rarity,'legendary');assert.equal(saved.flights[0].scale,1.7);assert.equal(saved.flights[0].wc,'ice');assert.equal(saved.pose.dash.x1,200);assert.equal(saved.clashes[0].blades[1],'blade-2');
 
   assert.equal(saved.life.phase,'rise');assert.equal(saved.life.serial,2);assert.equal(saved.dog.state,'sacrifice');assert.equal(saved.dog.x,50);assert.equal(saved.growS,1.7);assert.equal(saved.maxHp,250);

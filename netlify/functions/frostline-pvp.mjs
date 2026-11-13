@@ -1,3 +1,12 @@
+function bearFields(body,now){
+ const text=v=>String(v||'').slice(0,100),valid=v=>typeof v==='string'&&/^f[a-z0-9]{8,36}b\d+$/.test(v),coord=v=>num(v,0,-10125,10125);
+ const wound=w=>({id:text(w.id),x:num(w.x,0,-35,50),y:num(w.y,0,-25,25),a:num(w.a,0,-100,100),at:num(w.at,now,now-30000,now+1000),size:num(w.size,3,1,12)});
+ const attack=a=>a&&['swat','bite','charge','press'].includes(a.kind)?{id:text(a.id),hit:Array.isArray(a.hit)?a.hit.slice(0,64).filter(id=>typeof id==='string').map(text):[],kind:a.kind,side:a.side<0?-1:1,at:num(a.at,now,now-6000,now+1000),windup:num(a.windup,.5,.3,1),active:num(a.active,.28,.15,.8),recovery:num(a.recovery,.65,.3,1.5)}:null;
+ return {bears:Array.isArray(body.bears)?body.bears.slice(0,32).filter(m=>m&&valid(m.id)&&['bear','polar'].includes(m.beast)).map(m=>({id:m.id,x:coord(m.x),y:coord(m.y),facing:num(m.facing,0,-1e6,1e6),walk:num(m.walk,0,-1e9,1e9),hp:num(m.hp,1,0,1e6),maxHp:num(m.maxHp,1,1,1e6),r:num(m.r,26,15,60),speed:num(m.speed,65,10,200),damage:num(m.damage,18,1,200),beast:m.beast,boss:!!m.boss,titan:!!m.titan,elite:!!m.elite,stage:num(m.stage,1,1,10000),attackSerial:num(m.attackSerial,0,0,1e12),woundSerial:num(m.woundSerial,0,0,1e12),wounds:Array.isArray(m.wounds)?m.wounds.slice(-8).filter(w=>w&&typeof w.id==='string').map(wound):[],hurt:m.hurt?{at:num(m.hurt.at,now,now-3000,now+1000),nx:num(m.hurt.nx,1,-1,1),ny:num(m.hurt.ny,0,-1,1),force:num(m.hurt.force,0,0,140)}:null,attack:attack(m.attack)})):null,
+ bearActions:Array.isArray(body.bearActions)?body.bearActions.slice(-48).filter(e=>e&&typeof e.id==='string'&&e.id.startsWith(body.id+'u')&&valid(e.bear)).map(e=>({id:text(e.id),bear:e.bear,weapon:text(e.weapon),damage:num(e.damage,0,0,1800),x:coord(e.x),y:coord(e.y),a:num(e.a,0,-100,100),phase:num(e.phase,0,-1e9,1e9),t:num(e.t,now,now-6000,now+1000),bleed:e.bleed===true})):[],
+ bearDeaths:Array.isArray(body.bearDeaths)?body.bearDeaths.slice(-48).filter(e=>e&&valid(e.id)).map(e=>({id:e.id,t:num(e.t,now,now-6000,now+1000),x:coord(e.x),y:coord(e.y),boss:!!e.boss,stage:num(e.stage,1,1,10000)})):[],
+ bearHits:Array.isArray(body.bearHits)?body.bearHits.slice(-32).filter(e=>e&&typeof e.id==='string'&&/^f[a-z0-9]{8,36}$/.test(e.to)).map(e=>({id:text(e.id),to:e.to,t:num(e.t,now,now-6000,now+1000),x:coord(e.x),y:coord(e.y),r:num(e.r,12,8,25),a:num(e.a,0,-100,100),kind:['swat','bite','charge','press'].includes(e.kind)?e.kind:'swat',damage:num(e.damage,18,1,230),force:num(e.force,100,0,300)})):[]};
+}
 function npcFields(body,now){
  const boundedId=v=>typeof v==='string'?v.slice(0,100):'';
  return {npcs:Array.isArray(body.npcs)?body.npcs.slice(0,24).filter(b=>b&&/^bot\d+$/.test(b.id)).map(b=>({id:b.id,name:String(b.name||b.id).slice(0,25),generation:num(b.generation,0,0,1e9),x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),s:num(b.s,0,-1e9,1e9),hp:num(b.hp,240,0,1e6),maxHp:num(b.maxHp,240,1,1e6),blades:num(b.blades,4,0,10000),level:num(b.level,1,1,10000),dead:num(b.dead,0,0,6),dir:b.dir<0?-1:1,walk:num(b.walk,0,-1e9,1e9),mx:num(b.mx,0,-1200,1200),my:num(b.my,0,-1200,1200),hurt:cleanPose({hurt:b.hurt}).hurt,warp:cleanPose({dash:b.warp}).dash})):null,
@@ -67,7 +76,7 @@ export default async function handler(request) {
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
   if (!(request.headers.get('content-type')||'').startsWith('application/json')) return respond({error:'JSON required'},415);
   const raw = await request.text();
-  if (raw.length > 98304) return respond({error:'Payload too large'},413);
+  if (raw.length > 196608) return respond({error:'Payload too large'},413);
   let body;
   try { body = JSON.parse(raw); } catch { return respond({error:'Invalid JSON'},400); }
   if (!body || !ID_RE.test(body.id||'')) return respond({error:'Invalid player ID'},400);
@@ -94,7 +103,7 @@ export default async function handler(request) {
       id:body.id,kind:'state',alive:true,name:cleanText(body.name),
       seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
       life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
-      growS:num(body.growS,1,1,1.7),...npcFields(body,now),
+      growS:num(body.growS,1,1,1.7),...npcFields(body,now),...bearFields(body,now),
       flights:Array.isArray(body.flights)?body.flights.slice(-128).filter(f=>f&&typeof f.id==='string'&&f.id.startsWith(body.id+'f')).map(f=>({id:f.id.slice(0,100),t:num(f.t,now,now-6000,now+1000),x:num(f.x,0,-10125,10125),y:num(f.y,0,-10125,10125),z:num(f.z,0,0,800),vx:num(f.vx,0,-1200,1200),vy:num(f.vy,0,-1200,1200),vz:num(f.vz,0,-1200,1200),a:num(f.a,0,-1e5,1e5),spin:num(f.spin,0,-100,100),life:num(f.life,0,0,3.2),stuck:f.stuck===true,waterDepth:num(f.waterDepth,0,0,15),rarity:['common','rare','epic','legendary'].includes(f.rarity)?f.rarity:'common',scale:num(f.scale,1,1,1.7),wc:['steel','bone','ice','blood'].includes(f.wc)?f.wc:'steel',type:f.type==='main'?'main':/^ars(0[1-9]|[12][0-9]|30)$/.test(f.type)?f.type:'ars11'})):[],
       pose:cleanPose(body.pose),
       dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,samples,blades,

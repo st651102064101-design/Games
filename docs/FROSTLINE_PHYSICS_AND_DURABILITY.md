@@ -51,9 +51,9 @@ These are lightweight **Canvas 2.5D approximations**, not a full 3D rigid-body, 
 
 Flying objects have stable source IDs and bounded motion snapshots. The owner, opponent and spectators receive the same IDs through P2P or HTTP. Duplicate objects are suppressed, and later snapshots correct drift. Warp pose, hurt pose and firearm recoil/reload state are also relayed. Projectiles keep moving visually during the local death sequence.
 
-HTTP payloads are bounded to 96 KiB, up to 128 flight snapshots and 60 weapon descriptors per state. The local debris pool is bounded to 512 objects. These are practical performance limits, not unlimited particle or network capacity. Both players must load the updated HTML and their host must deploy the updated relay.
+HTTP payloads are bounded to 192 KiB, up to 128 flight snapshots and 60 weapon descriptors per state. The local debris pool is bounded to 512 objects. These are practical performance limits, not unlimited particle or network capacity. Both players must load the updated HTML and their host must deploy the updated relay.
 
-The oldest active player now simulates and publishes shared bots. Followers interpolate the same IDs, levels, equipment, warp and death state, and submit generation-tagged damage/weapon-loss actions. Deduplication prevents repeated action rewards. Leadership changes when a player leaves or becomes stale; resuming from pause yields the old lease. This remains a casual client-hosted simulation, not a trusted authoritative server. Survival monsters and wildlife are still local encounters.
+The oldest active player now simulates and publishes shared bots. Followers interpolate the same IDs, levels, equipment, warp and death state, and submit generation-tagged damage/weapon-loss actions. Deduplication prevents repeated action rewards. Leadership changes when a player leaves or becomes stale; resuming from pause yields the old lease. This remains a casual client-hosted simulation, not a trusted authoritative server. Natural brown/polar bears now use shared host-driven encounters; see [bear combat](FROSTLINE_BEAR_COMBAT.md). Other survival species and wildlife remain local encounters.
 
 ## Verification
 
