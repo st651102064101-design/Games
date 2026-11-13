@@ -118,6 +118,10 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  })()`);
  assert.ok(physics.leanDelta<.025&&physics.liftDelta<.5&&physics.lean>0);
  check('damped character motion remains stable at 30 and 120 updates per second');
+ const bot=await run(page,`(()=>{const b={x:0,y:0,blades:4,items:4,level:1,xp:0,nextXP:25,hp:240,maxHp:240,lootThink:0};game.drops=[];game.lootDead=new Set();for(let i=0;i<8;i++){const d={id:'bot-test-'+i,x:0,y:0,age:1,type:'plus',amt:2};game.drops.push(d);b.lootThink=0;botLoot(b,.1);}return {level:b.level,blades:b.blades,remaining:game.drops.length};})()`);
+ assert.ok(bot.level>1&&bot.blades===20&&bot.remaining===0);
+ check('bots collect shared loot once and gain uncapped experience and weapons');
+
  // A second isolated browser context exercises the HTTP relay, not BroadcastChannel.
  const context2=await browser.newContext({viewport:{width:960,height:760}});
  await context2.addInitScript(()=>{Object.defineProperty(navigator,'onLine',{get:()=>false});for(const key of ['frostline_guide_complete','frostline_warp_guide_v2','frostline_howto_illustrated_v2'])localStorage.setItem(key,'1');localStorage.setItem('frostline_name','Observer');localStorage.setItem('frostline_audio_v1','{"master":0,"music":0}');});
