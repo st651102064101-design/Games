@@ -7,6 +7,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   const request=async(body)=>{const req=new Request('https://example.com/api/frostline-pvp',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const response=await c.api(edge?{request:req}:req);assert.equal(response.status,200);return response.json();};
   const now=Date.now(),body={kind:'state',id:'fabcdefgh1',alive:true,seq:2,joinedAt:now,roomEpoch:now,maxHp:250,samples:[{t:now,x:0,y:0,h:125}],life:{phase:'rise',at:now,serial:2},growS:1.7,dog:{x:50,y:25,dir:-1,walk:3,moving:false,state:'sacrifice'}};
   body.blades=Array.from({length:60},(_,i)=>({id:'blade-'+i,type:'ars11',reach:48,durability:175,wear:.5,fire:{recoil:3,flash:.08,reload:1}}));
+  body.blades[0].damage=300;
   body.flights=[{id:body.id+'f1',t:now,x:30,y:20,z:100,vx:200,vy:-40,vz:150,a:.3,spin:4,life:3,type:'ars11',rarity:'legendary',scale:1.7,wc:'ice'}];
   body.pose={dash:{x0:0,y0:0,x1:200,y1:50,out:.2,inDur:.25,age:.1},hurt:{age:.1,nx:1,force:150}};
   body.clashes=[{id:'exact-clash',to:'fabcdefgh2',blade:'blade-1',blades:['blade-1','blade-2'],amount:2,wears:[{id:'blade-3',wear:.5}],x:0,y:0,t:now}];
@@ -16,7 +17,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   await request(body);let saved=data.values().next().value;
   assert.equal(saved.bears.length,1);assert.equal(saved.bears[0].x,10125);assert.equal(saved.bears[0].wounds[0].id,'cut1');assert.equal(saved.bears[0].attack.kind,'bite');assert.equal(saved.bears[0].attack.hit[0],body.id);assert.equal(saved.bears[0].woundSerial,7);assert.equal(saved.bears[0].attackSerial,5);assert.equal(saved.bearActions[0].damage,25);assert.equal(saved.bearHits[0].to,'fabcdefgh2');
 
-  assert.equal(saved.blades.length,60);assert.equal(saved.blades[0].durability,175);assert.equal(saved.blades[0].wear,.5);assert.equal(saved.clashes[0].wears[0].wear,.5);assert.equal(saved.blades[0].fire.recoil,3);assert.equal(saved.flights[0].z,100);assert.equal(saved.flights[0].rarity,'legendary');assert.equal(saved.flights[0].scale,1.7);assert.equal(saved.flights[0].wc,'ice');assert.equal(saved.pose.dash.x1,200);assert.equal(saved.clashes[0].blades[1],'blade-2');
+  assert.equal(saved.blades.length,60);assert.equal(saved.blades[0].damage,300);assert.equal(saved.blades[0].durability,175);assert.equal(saved.blades[0].wear,.5);assert.equal(saved.clashes[0].wears[0].wear,.5);assert.equal(saved.blades[0].fire.recoil,3);assert.equal(saved.flights[0].z,100);assert.equal(saved.flights[0].rarity,'legendary');assert.equal(saved.flights[0].scale,1.7);assert.equal(saved.flights[0].wc,'ice');assert.equal(saved.pose.dash.x1,200);assert.equal(saved.clashes[0].blades[1],'blade-2');
 
   assert.equal(saved.life.phase,'rise');assert.equal(saved.life.serial,2);assert.equal(saved.dog.state,'sacrifice');assert.equal(saved.dog.x,50);assert.equal(saved.growS,1.7);assert.equal(saved.maxHp,250);
   await request({...body,seq:3,dog:null,life:{phase:'dead',at:now,serial:3}});

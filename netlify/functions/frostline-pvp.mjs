@@ -95,7 +95,7 @@ export default async function handler(request) {
       s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,-620,620),h:num(s?.h,100,0,10000),em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
     })).sort((a,b)=>a.t-b.t);
     const blades = Array.isArray(body.blades) ? body.blades.slice(0,60).map(b=>({
-      id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
+      id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,600),
       durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,-620,620),count:num(b?.count,1,1,10000),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
