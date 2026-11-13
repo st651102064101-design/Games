@@ -1765,11 +1765,25 @@ function makeObstacles(){
 // Spatial collision grid for whimsical props.
 function buildObsGrid(){const grid=new Map();for(const o of game.obstacles){const k=Math.floor(o.x/200)+','+Math.floor(o.y/200);let arr=grid.get(k);if(!arr){arr=[];grid.set(k,arr)}arr.push(o)}game.obsGrid=grid}
 function obsNear(x,y){const out=[];if(!game.obsGrid)return game.obstacles||[];const cx=Math.floor(x/200),cy=Math.floor(y/200);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const arr=game.obsGrid.get((cx+i)+','+(cy+j));if(arr)for(const o of arr)out.push(o)}return out}
-function resolveObs(e,r){const obs=obsNear(e.x,e.y);if(!obs)return;const hx=OBS_W*.5,hy=OBS_H*.5;for(const o of obs){if(Math.abs(e.x-o.x)>hx+r+20||Math.abs(e.y-o.y)>hy+r+20)continue;
- const cx=clamp(e.x,o.x-hx,o.x+hx),cy=clamp(e.y,o.y-hy-22,o.y+hy),dx=e.x-cx,dy=e.y-cy,d2v=dx*dx+dy*dy;
- if(d2v>=r*r)continue;
- if(cutePropType(o,game?.stage||1)==='jelly'&&now-(o.bumpAt||-100)>.24)o.bumpAt=now;
- if(d2v>1e-6){const d=Math.sqrt(d2v),k=(r-d)/d;e.x+=dx*k;e.y+=dy*k}else{const ox=hx+r-Math.abs(e.x-o.x),oy=hy+r-Math.abs(e.y-o.y);if(ox<oy)e.x+=(e.x>=o.x?ox:-ox);else e.y+=(e.y>=o.y?oy:-oy)}}}
+function wallResponse(e,nx,ny,x,y){
+ const incoming=Math.max(0,-((e.kvx||0)+(e.vx||0))*nx-((e.kvy||0)+(e.vy||0))*ny);
+ for(const [xkey,ykey] of [['kvx','kvy'],['vx','vy'],['mx','my']]){const vx=e[xkey]||0,vy=e[ykey]||0,normal=vx*nx+vy*ny;if(normal<0){e[xkey]=vx-normal*nx;e[ykey]=vy-normal*ny;}}
+ if(incoming<120||now<(e.wallRecoverUntil||0))return;
+ e.wallRecoverUntil=now+.3;e.impactSerial=(e.impactSerial||0)+1;
+ e.impact={serial:e.impactSerial,kind:'hurt',t0:now,nx:Math.sign(nx)||e.dir||1,force:Math.min(560,incoming),zone:'shoulder',x,y};
+ if(isNaturalBear(e))e.hurt={t0:now,at:Date.now(),nx,ny,force:Math.min(110,incoming*.2),zone:'torso',side:ny<0?-1:1,front:true};
+ if(e===game?.p){game.shake=Math.max(game.shake||0,Math.min(5,incoming/80));playSound('hit',x,y);}
+}
+function resolveObs(e,r){const obs=obsNear(e.x,e.y);if(!obs)return;const hx=OBS_W*.5,hy=OBS_H*.5;
+ for(const o of obs){if(Math.abs(e.x-o.x)>hx+r+22||Math.abs(e.y-o.y)>hy+r+22)continue;
+  const cx=clamp(e.x,o.x-hx,o.x+hx),cy=clamp(e.y,o.y-hy-22,o.y+hy),dx=e.x-cx,dy=e.y-cy,d2v=dx*dx+dy*dy;if(d2v>=r*r)continue;
+  if(cutePropType(o,game?.stage||1)==='jelly'&&now-(o.bumpAt||-100)>.24)o.bumpAt=now;
+  const oldX=e.x,oldY=e.y;
+  if(d2v>1e-6){const d=Math.sqrt(d2v),k=(r-d)/d;e.x+=dx*k;e.y+=dy*k;}
+  else{const edges=[{d:e.x-(o.x-hx-r),x:o.x-hx-r,y:e.y},{d:o.x+hx+r-e.x,x:o.x+hx+r,y:e.y},{d:e.y-(o.y-hy-22-r),x:e.x,y:o.y-hy-22-r},{d:o.y+hy+r-e.y,x:e.x,y:o.y+hy+r}];edges.sort((a,b)=>a.d-b.d);e.x=edges[0].x;e.y=edges[0].y;}
+  const ox=e.x-oldX,oy=e.y-oldY,d=Math.hypot(ox,oy);if(d>.0001)wallResponse(e,ox/d,oy/d,cx,cy);
+ }
+}
 
 function drawCutePropFace(y,blink,eyeColor='#294259'){
  if(!blink){ellipse(-7,y,2.2,3,eyeColor);ellipse(7,y,2.2,3,eyeColor);

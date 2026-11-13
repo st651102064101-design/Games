@@ -101,3 +101,9 @@ Surviving player weapons now retain separate damped angular responses, driven by
 ## NPC weapon identity and recoil
 
 Bot weapons now retain stable generation-scoped IDs and individual orbit slots. Removing a specific clashing blade preserves the positions of its surviving neighbors. New blades fill a large available angular gap instead of renumbering the whole orbit. Surviving host-simulated NPC blades use the same damped recoil as player weapons. NPC snapshots carry bounded per-blade slot/offset/response velocity arrays through both relay adapters, and follower loss requests identify the affected blades. On transfer, the latest snapshot reconstructs the weapon state; a new NPC generation does not reuse the previous generation's weapon IDs.
+
+## Wall impact response
+
+Obstacle resolution now projects inward knockback, actor velocity and movement velocity off the contact normal while preserving tangential sliding. Strong knockback/actor impacts trigger a bounded shoulder recoil with a short visual-recovery cooldown; ordinary walking does not repeatedly trigger impact reactions. The existing hurt metadata carries the pose to remote players, and natural bears reuse their torso response. Wall collisions do not deduct HP or grant invulnerability.
+
+Deep penetration chooses the nearest actual expanded rectangle edge, including the previously asymmetric upper extent. Regression coverage checks normal/tangent momentum, repeated stationary contacts, preserved HP, upper-edge penetration and corner energy reduction. This remains discrete collision resolution; it does not add a complete swept world solver or full ragdoll wall constraints.
