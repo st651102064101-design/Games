@@ -1,3 +1,8 @@
+function cleanPose(p){
+ const d=p?.dash,h=p?.hurt;
+ return {dash:d&&Number.isFinite(d.age)?{x0:num(d.x0,0,-10125,10125),y0:num(d.y0,0,-10125,10125),x1:num(d.x1,0,-10125,10125),y1:num(d.y1,0,-10125,10125),out:num(d.out,.2,.1,1),inDur:num(d.inDur,.25,.1,1),age:num(d.age,0,0,2)}:null,
+ hurt:h&&Number.isFinite(h.age)?{serial:num(h.serial,0,0,1e12),kind:h.kind==='clash'?'clash':'hurt',x:num(h.x,0,-10125,10125),y:num(h.y,0,-10125,10125),age:num(h.age,0,0,2),nx:num(h.nx,1,-1,1),force:num(h.force,0,0,1000)}:null};
+}
 /**
  * Frostline casual PvP presence relay.
  * Netlify Blobs provides cross-device fallback when direct WebRTC discovery fails.
@@ -56,7 +61,7 @@ export default async function handler(request) {
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
   if (!(request.headers.get('content-type')||'').startsWith('application/json')) return respond({error:'JSON required'},415);
   const raw = await request.text();
-  if (raw.length > 32000) return respond({error:'Payload too large'},413);
+  if (raw.length > 65536) return respond({error:'Payload too large'},413);
   let body;
   try { body = JSON.parse(raw); } catch { return respond({error:'Invalid JSON'},400); }
   if (!body || !ID_RE.test(body.id||'')) return respond({error:'Invalid player ID'},400);
@@ -74,9 +79,9 @@ export default async function handler(request) {
       vx:num(s?.vx,0,-1200,1200),vy:num(s?.vy,0,-1200,1200),
       s:num(s?.s,0,-1e9,1e9),w:num(s?.w,6,0,620),h:num(s?.h,100,0,10000),em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
     })).sort((a,b)=>a.t-b.t);
-    const blades = Array.isArray(body.blades) ? body.blades.slice(0,24).map(b=>({
+    const blades = Array.isArray(body.blades) ? body.blades.slice(0,60).map(b=>({
       id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
-      speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
+      durability:num(b?.durability,100,100,275),wear:num(b?.wear,0,0,3),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
     const me = {
@@ -84,6 +89,8 @@ export default async function handler(request) {
       seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
       life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
       growS:num(body.growS,1,1,1.7),
+      flights:Array.isArray(body.flights)?body.flights.slice(-128).filter(f=>f&&typeof f.id==='string'&&f.id.startsWith(body.id+'f')).map(f=>({id:f.id.slice(0,100),t:num(f.t,now,now-6000,now+1000),x:num(f.x,0,-10125,10125),y:num(f.y,0,-10125,10125),z:num(f.z,0,0,800),vx:num(f.vx,0,-1200,1200),vy:num(f.vy,0,-1200,1200),vz:num(f.vz,0,-1200,1200),a:num(f.a,0,-1e5,1e5),spin:num(f.spin,0,-100,100),life:num(f.life,0,0,3.2),stuck:f.stuck===true,waterDepth:num(f.waterDepth,0,0,15),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(f.type)?f.type:'ars11'})):[],
+      pose:cleanPose(body.pose),
       dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,samples,blades,
        weaponTotal:num(body.weaponTotal,0,0,10000),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
        lootEvents:Array.isArray(body.lootEvents)?body.lootEvents.slice(-28).map(e=>cleanLootEvent(e,now)).filter(Boolean):[],
@@ -93,7 +100,7 @@ export default async function handler(request) {
         leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
         weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel',skin:String(body.look?.skin||'scout').slice(0,24)},
       shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
-      clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'main').slice(0,20),x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)})):[],
+      clashes:Array.isArray(body.clashes)?body.clashes.slice(-18).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,60).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,3)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'main').slice(0,20),x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)})):[],
       updatedAt:now
     };
     await store.setJSON(key, me);

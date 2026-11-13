@@ -1,3 +1,8 @@
+function cleanPose(p){
+ const d=p?.dash,h=p?.hurt;
+ return {dash:d&&Number.isFinite(d.age)?{x0:num(d.x0,0,-10125,10125),y0:num(d.y0,0,-10125,10125),x1:num(d.x1,0,-10125,10125),y1:num(d.y1,0,-10125,10125),out:num(d.out,.2,.1,1),inDur:num(d.inDur,.25,.1,1),age:num(d.age,0,0,2)}:null,
+ hurt:h&&Number.isFinite(h.age)?{serial:num(h.serial,0,0,1e12),kind:h.kind==='clash'?'clash':'hurt',x:num(h.x,0,-10125,10125),y:num(h.y,0,-10125,10125),age:num(h.age,0,0,2),nx:num(h.nx,1,-1,1),force:num(h.force,0,0,1000)}:null};
+}
 /**
  * Frostline EdgeOne Makers cross-device PvP fallback.
  * Route /api/frostline-pvp, uses zero-config @edgeone/pages-blob with strong reads.
@@ -51,7 +56,7 @@ export async function onRequest({request}){
    return ok({ok:true,transport:'edgeone-blob',count:vals.filter(v=>v?.alive&&v.life?.phase!=='dead'&&validId(v.id)&&now-v.updatedAt>=0&&now-v.updatedAt<LIVE).length,serverTime:now});
   }
   if(!(request.headers.get('content-type')||'').startsWith('application/json'))return ok({ok:false,error:'JSON required'},415);
-  const raw=await request.text();if(raw.length>32000)return ok({ok:false,error:'Payload too large'},413);
+  const raw=await request.text();if(raw.length>65536)return ok({ok:false,error:'Payload too large'},413);
   let body;try{body=JSON.parse(raw)}catch{return ok({ok:false,error:'Invalid JSON'},400)}
   if(!body||!validId(body.id))return ok({ok:false,error:'Invalid player ID'},400);
   const key=ROOM+body.id;
@@ -65,10 +70,10 @@ export async function onRequest({request}){
    em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
   })).sort((a,b)=>a.t-b.t);
   const weapon=v=>/^ars(0[1-9]|[12][0-9]|30)$/.test(v)?v:'ars01';
-  const blades=Array.isArray(body.blades)?body.blades.slice(0,24).map(b=>({
+  const blades=Array.isArray(body.blades)?body.blades.slice(0,60).map(b=>({
    id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),
    reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,0,600),
-   speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
+   durability:num(b?.durability,100,100,275),wear:num(b?.wear,0,0,3),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
    rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
   })):[];
   const me={
@@ -76,6 +81,8 @@ export async function onRequest({request}){
    seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
       life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
       growS:num(body.growS,1,1,1.7),
+      flights:Array.isArray(body.flights)?body.flights.slice(-128).filter(f=>f&&typeof f.id==='string'&&f.id.startsWith(body.id+'f')).map(f=>({id:f.id.slice(0,100),t:num(f.t,now,now-6000,now+1000),x:num(f.x,0,-10125,10125),y:num(f.y,0,-10125,10125),z:num(f.z,0,0,800),vx:num(f.vx,0,-1200,1200),vy:num(f.vy,0,-1200,1200),vz:num(f.vz,0,-1200,1200),a:num(f.a,0,-1e5,1e5),spin:num(f.spin,0,-100,100),life:num(f.life,0,0,3.2),stuck:f.stuck===true,waterDepth:num(f.waterDepth,0,0,15),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(f.type)?f.type:'ars11'})):[],
+      pose:cleanPose(body.pose),
       dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,
     weaponTotal:num(body.weaponTotal,0,0,10000),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
     lootEvents:Array.isArray(body.lootEvents)?body.lootEvents.slice(-28).map(e=>cleanLootEvent(e,now)).filter(Boolean):[],
@@ -91,8 +98,8 @@ export async function onRequest({request}){
     a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,
     t:num(b.t,now,now-5000,now+1000)
    })):[],
-   clashes:Array.isArray(body.clashes)?body.clashes.slice(-6).filter(c=>c&&typeof c.id==='string'&&validId(c.to)).map(c=>({
-    id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),type:String(c.type||'ars01').slice(0,20),
+   clashes:Array.isArray(body.clashes)?body.clashes.slice(-18).filter(c=>c&&typeof c.id==='string'&&validId(c.to)).map(c=>({
+    id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,60).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,3)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'ars01').slice(0,20),
     x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)
    })):[],updatedAt:now
   };

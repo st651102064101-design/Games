@@ -121,6 +121,31 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  const bot=await run(page,`(()=>{const b={x:0,y:0,blades:4,items:4,level:1,xp:0,nextXP:25,hp:240,maxHp:240,lootThink:0};game.drops=[];game.lootDead=new Set();for(let i=0;i<8;i++){const d={id:'bot-test-'+i,x:0,y:0,age:1,type:'plus',amt:2};game.drops.push(d);b.lootThink=0;botLoot(b,.1);}return {level:b.level,blades:b.blades,remaining:game.drops.length};})()`);
  assert.ok(bot.level>1&&bot.blades===20&&bot.remaining===0);
  check('bots collect shared loot once and gain uncapped experience and weapons');
+ const clashResult=await run(page,`(()=>{
+  peers.clear();game.p.x=0;game.p.y=0;game.swordPhase=0;game.growS=1;game.flyWeapons=[];
+  game.weapons=Array.from({length:60},(_,i)=>({id:'contact-'+i,type:'ars11',rarity:'common',damage:30,slot:i}));game.activeLength=-1;game.ringSize=60;
+  const r={id:'zzzz',x:140,y:0,s:0,init:1,last:performance.now(),growS:1,weaponTotal:60,bl:Array.from({length:60},(_,i)=>({id:'other-'+i,o:i*TAU/60,m:1,reach:48,type:'ars11',speed:275}))};
+  const count=ownBlades().length,hits=sweptBladePairs(game.p,r,.033).length;
+  clashActors(game.p,r,.033,true);const lost=60-game.weapons.length;
+  const result={count,hits,lost,flights:game.flyWeapons.length,otherLost:60-r.weaponTotal,packets:clashes.slice(-3).flatMap(c=>c.blades||[]).length};
+  game.weapons=[];game.activeLength=-1;clashes.length=0;game.p.kvx=game.p.kvy=0;return result;
+ })()`);
+ assert.equal(clashResult.count,60);assert.ok(clashResult.hits>=6&&clashResult.lost>=6);assert.equal(clashResult.flights,clashResult.lost*2);assert.equal(clashResult.otherLost,clashResult.lost);
+ check('sixty visible blades use swept pair contacts and every lost blade produces its own flight');
+ const geometry=await run(page,`({cross:bladeContact([-10,0,10,0],[0,-10,0,10],1),miss:bladeContact([-10,0,10,0],[0,50,0,60],1)})`);
+ assert.equal(geometry.cross.x,0);assert.equal(geometry.cross.y,0);assert.equal(geometry.miss,null);
+ check('contact effects originate at actual blade intersection; separated blades never collide');
+ const debris=await run(page,`(()=>{game.flyWeapons=[];const f={id:'sourcef1',source:'source',t:Date.now(),x:0,y:0,z:50,vx:100,vy:0,vz:-100,a:0,spin:5,life:3.2,type:'ars11'};receivePhysicsState({id:'source',flights:[f]});receivePhysicsState({id:'source',flights:[f]});const size=game.flyWeapons.length;updateFlyingWeaponPhysics(.1);return {size,z:game.flyWeapons[0].z,x:game.flyWeapons[0].x};})()`);
+ assert.equal(debris.size,1);assert.ok(debris.z<50&&debris.z>=0&&debris.x>0);
+ check('remote debris is deduplicated and continues ballistic motion with gravity');
+ const labelPosition=await run(page,`(()=>{labelQ=[];drawYouLabel(game.p);const offset=labelQ[0][2]-game.p.y;labelQ=[];return offset;})()`);
+ assert.equal(labelPosition,18);check('name anchor stays at the feet instead of following the weapon radius');
+ await run(page,`for(const skin of CHARACTER_SKINS)drawHeroPose({...game.p,x:0,y:0,skin:skin.id},{...BOT_LOOK,skin:skin.id},{life:{phase:'dead'},deathT0:now-.5,growS:1});`);
+ check('articulated collapse renders every character skin with bounded body sections');
+ const settling=await run(page,`(()=>{function simulate(hz){game.flyWeapons=[{x:0,y:0,z:70,vx:0,vy:0,vz:0,a:0,spin:1,life:3.2,type:'ars16'}];for(let i=0;i<hz;i++)updateFlyingWeaponPhysics(1/hz);return {...game.flyWeapons[0]};}return {slow:simulate(30),fast:simulate(120)};})()`);
+ assert.ok(settling.slow.z>=0&&settling.fast.z>=0);assert.ok(Math.abs(settling.slow.z-settling.fast.z)<4);
+ check('fixed-substep debris settling remains stable at thirty and one-hundred-twenty Hz');
+
 
  // A second isolated browser context exercises the HTTP relay, not BroadcastChannel.
  const context2=await browser.newContext({viewport:{width:960,height:760}});
@@ -132,6 +157,15 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  await observer.waitForFunction(()=>window.__gameEval("[...peers.values()].some(r=>r.name==='Hero'&&r.dog)"),null,{timeout:8000});
  const heroId=await run(page,'CLIENT_ID');
  check('another browser receives the remote pet via the actual HTTP relay sanitizer');
+ const context3=await browser.newContext({viewport:{width:960,height:760},storageState:await context2.storageState()});
+ await context3.addInitScript(()=>Object.defineProperty(navigator,'onLine',{get:()=>false}));
+ const spectator=await context3.newPage();spectator.on('pageerror',e=>errors.push(e.message));await spectator.goto(url);await spectator.locator('#playBtn').click();await calm(spectator);
+ await run(spectator,'game.p.x=700;game.p.inv=999;paused=false;sendMyState(1);syncCloud();');
+ const flightIDs=await run(page,`(()=>{game.flyWeapons=[];for(let i=0;i<20;i++)spawnClashFlight(80+i,20,80,0,'ars11');lastMetaAt=0;sendMyState(1);syncCloud();return game.flyWeapons.map(f=>f.id);})()`);
+ for(const view of [observer,spectator])await view.waitForFunction(ids=>window.__gameEval('game.flyWeapons')?.filter(f=>ids.includes(f.id)).length===ids.length,flightIDs,{timeout:8000});
+ check('owner, opponent and third-party spectator share all twenty flight IDs through HTTP relay');
+ await context3.close();
+
  await run(page,'game.p.hp=0;endGame();');
  await observer.waitForFunction(id=>window.__gameEval(`peers.get('${id}')?.life?.phase==='rescue'`),heroId,{timeout:5000});
  assert.equal(await run(observer,`!!peers.get('${heroId}').reviveFx`),true);
@@ -165,6 +199,20 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  await observer.waitForFunction(()=>window.frostlineInfo.mode==='playing');
  await run(observer,'cameraTilt=cameraTiltTarget=90;graphicsLow=false;');await observer.screenshot({path:path.join(artifacts,'camera-90.png')});
  await run(observer,'cameraTilt=cameraTiltTarget=0;');await observer.setViewportSize({width:390,height:844});await observer.screenshot({path:path.join(artifacts,'mobile.png')});
+
+ await run(page,`writeMeta({coins:200,durabilityTier:1});game.coins=200;game.durabilityTier=1;showMetaShop('weapons');`);
+ assert.equal(await page.locator('[data-buy]').count(),1);assert.equal(await page.locator('[data-buy="ars30"]').count(),0);
+ await page.locator('[data-buy="durability"]').click();
+ const purchase=await run(page,'({coins:loadSave().coins,tier:loadSave().durabilityTier,canBuyGun:buyItem("ars30")})');
+ assert.equal(purchase.coins,150);assert.equal(purchase.tier,2);assert.equal(purchase.canBuyGun,false);
+ check('shop sells a sequential permanent durability tier instead of firearms and charges exactly once');
+ await page.screenshot({path:path.join(artifacts,'durability-shop.png')});
+ await run(page,'hideMetaShop();newGame();');await calm(page);
+ const upgraded=await run(page,`(()=>{game.weapons=[{id:'upgraded',type:'ars11',rarity:'common'}];game.activeLength=-1;game.p.bladeWear=new Map();const hp=game.p.hp;absorbProjectile(game.p,{damage:80,vx:100,vy:0,owner:'enemy'});const afterFirst=game.weapons.length;absorbProjectile(game.p,{damage:80,vx:100,vy:0,owner:'enemy'});return {tier:game.durabilityTier,max:weaponDurability(game.p,{}),afterFirst,afterSecond:game.weapons.length,hpUnchanged:game.p.hp===hp,ground:ARSENAL.map(w=>weaponDurability({},randWeapon(false,w.id)))};})()`);
+ assert.equal(upgraded.tier,2);assert.equal(upgraded.max,125);assert.equal(upgraded.afterFirst,1);assert.equal(upgraded.afterSecond,0);assert.equal(upgraded.hpUnchanged,true);assert.ok(upgraded.ground.every(x=>x===100));
+ check('all ground weapon types share base durability 100; purchased tier survives a new round and absorbs extra hits');
+ const limits=await run(page,`(()=>{writeMeta({coins:0,durabilityTier:2});const poor=buyDurabilityTier();writeMeta({coins:999999,durabilityTier:8});const full=buyDurabilityTier();writeMeta({coins:150,durabilityTier:2});return {poor,full};})()`);
+ assert.equal(limits.poor,false);assert.equal(limits.full,false);check('insufficient funds and maximum tier cannot create an upgrade');
  assert.deepEqual(errors,[]);check('no JavaScript errors on desktop, mobile, death or all character renderers');
  fs.writeFileSync(path.join(artifacts,'results.json'),JSON.stringify({passed,errors},null,2));
  console.log(`\n${passed.length} browser integration checks passed.`);
