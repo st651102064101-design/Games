@@ -1980,12 +1980,12 @@ function tryBotWarp(b,threat){
 function npcMetadata(){
  const g=game;
  return {npcActions:(g.npcActions||[]).filter(e=>Date.now()-e.t<6000),npcAwards:(g.npcAwards||[]).filter(e=>Date.now()-e.t<6000),
- ...(isLootAuthority()?{npcs:g.bots.map(b=>({id:b.id,name:b.name,generation:b.generation||0,x:b.x,y:b.y,s:b.s,hp:b.hp,maxHp:b.maxHp,blades:b.blades,level:b.level||1,dead:b.dead||0,dir:b.dir||1,walk:b.walk||0,mx:b.mx||0,my:b.my||0,hurt:b.impact?{...b.impact,age:now-b.impact.t0}:null,warp:b.warp?{...b.warp,age:now-b.warp.t0}:null}))}:{})};
+ ...(isLootAuthority()?{npcs:g.bots.map(b=>({id:b.id,name:b.name,generation:b.generation||0,x:b.x,y:b.y,s:b.s,hp:b.hp,maxHp:b.maxHp,blades:b.blades,bladeLayout:botBladeLayout(b),level:b.level||1,dead:b.dead||0,dir:b.dir||1,walk:b.walk||0,mx:b.mx||0,my:b.my||0,hurt:b.impact?{...b.impact,age:now-b.impact.t0}:null,warp:b.warp?{...b.warp,age:now-b.warp.t0}:null}))}:{})};
 }
-function queueNpcAction(b,damage,loss){
+function queueNpcAction(b,damage,loss,bladeId=null){
  const g=game;g.npcActions=g.npcActions||[];const last=g.npcActions[g.npcActions.length-1];
- if(last&&last.frame===frame&&last.bot===b.id&&last.generation===(b.generation||0)){last.damage=Math.min(6000,last.damage+damage);last.loss=Math.min(60,last.loss+loss);}
- else g.npcActions.push({id:CLIENT_ID+'n'+(++combatSeq),bot:b.id,generation:b.generation||0,damage,loss,t:Date.now(),frame});
+ if(last&&last.frame===frame&&last.bot===b.id&&last.generation===(b.generation||0)){last.damage=Math.min(6000,last.damage+damage);last.loss=Math.min(60,last.loss+loss);if(bladeId)(last.bladeIds||(last.bladeIds=[])).push(bladeId);}
+ else g.npcActions.push({id:CLIENT_ID+'n'+(++combatSeq),bot:b.id,generation:b.generation||0,damage,loss,bladeIds:bladeId?[bladeId]:[],t:Date.now(),frame});
  if(g.npcActions.length>48)g.npcActions.splice(0,g.npcActions.length-48);
 }
 function receiveNpcMessages(event){
@@ -1996,7 +1996,7 @@ function receiveNpcMessages(event){
    game.npcSeq=event.seq||0;const old=new Map(game.bots.map(b=>[b.id,b]));
    game.bots=event.npcs.slice(0,24).filter(b=>b&&/^bot\d+$/.test(b.id)&&Number.isFinite(b.x)&&Number.isFinite(b.y)).map(raw=>{
     const prev=old.get(raw.id),same=prev?.generation===raw.generation;
-    return {...(same?prev:{}),id:raw.id,name:String(raw.name||raw.id).slice(0,25),generation:clean(raw.generation,0,0,1e9),x:same?prev.x:clean(raw.x),y:same?prev.y:clean(raw.y),tx:clean(raw.x),ty:clean(raw.y),s:clean(raw.s,0,-1e9,1e9),hp:clean(raw.hp,240,0,1e6),maxHp:clean(raw.maxHp,240,1,1e6),blades:clean(raw.blades,4,0,10000),items:clean(raw.blades,4,0,10000),level:clean(raw.level,1,1,10000),dead:clean(raw.dead,0,0,6),dir:raw.dir<0?-1:1,walk:clean(raw.walk,0,-1e9,1e9),mx:clean(raw.mx,0,-1200,1200),my:clean(raw.my,0,-1200,1200),impact:raw.hurt?{...raw.hurt,t0:now-raw.hurt.age}:null,warp:raw.warp?{...raw.warp,t0:now-raw.warp.age}:null,retarget:1,xp:prev?.xp||0,nextXP:prev?.nextXP||25};
+    return {...(same?prev:{}),id:raw.id,name:String(raw.name||raw.id).slice(0,25),generation:clean(raw.generation,0,0,1e9),x:same?prev.x:clean(raw.x),y:same?prev.y:clean(raw.y),tx:clean(raw.x),ty:clean(raw.y),s:clean(raw.s,0,-1e9,1e9),hp:clean(raw.hp,240,0,1e6),maxHp:clean(raw.maxHp,240,1,1e6),blades:clean(raw.blades,4,0,10000),items:clean(raw.blades,4,0,10000),weaponGeneration:undefined,weaponStates:undefined,bladeLayout:raw.bladeLayout,level:clean(raw.level,1,1,10000),dead:clean(raw.dead,0,0,6),dir:raw.dir<0?-1:1,walk:clean(raw.walk,0,-1e9,1e9),mx:clean(raw.mx,0,-1200,1200),my:clean(raw.my,0,-1200,1200),impact:raw.hurt?{...raw.hurt,t0:now-raw.hurt.age}:null,warp:raw.warp?{...raw.warp,t0:now-raw.warp.age}:null,retarget:1,xp:prev?.xp||0,nextXP:prev?.nextXP||25};
    });game.npcReceivedAt=performance.now();
   }
  }
@@ -2006,7 +2006,7 @@ function receiveNpcMessages(event){
    if(!peer||!e||typeof e.id!=='string'||!e.id.startsWith(event.id+'n')||seenCombat.has(e.id)||Math.abs(Date.now()-e.t)>6000)continue;
    const b=game.bots.find(b=>b.id===e.bot&&b.generation===e.generation&&b.dead<=0);if(!b)continue;
    const maxRange=Math.max(600,...remoteBlades(peer).map(w=>combatSpec(w).range||0));if(d2(peer.x-b.x,peer.y-b.y)>(maxRange+150)**2)continue;
-   seenCombat.set(e.id,Date.now());b.blades=Math.max(0,b.blades-clean(e.loss,0,0,60));b.items=b.blades;if(b.blades===0)b.hp=Math.max(0,b.hp-clean(e.damage,0,0,6000));showEmotion(b,'hurt');
+   seenCombat.set(e.id,Date.now());let acceptedLoss=clean(e.loss,0,0,60);if(e.bladeIds?.length){const list=botWeapons(b),requested=new Set(e.bladeIds),removed=new Set(list.filter(w=>requested.has(w.id)).slice(0,acceptedLoss).map(w=>w.id));acceptedLoss=removed.size;b.weaponStates=list.filter(w=>!removed.has(w.id));}b.blades=Math.max(0,b.blades-acceptedLoss);b.items=b.blades;if(b.blades===0)b.hp=Math.max(0,b.hp-clean(e.damage,0,0,6000));showEmotion(b,'hurt');
    if(b.hp<=0){b.dead=6;game.npcAwards=game.npcAwards||[];game.npcAwards.push({id:CLIENT_ID+'a'+(++combatSeq),to:event.id,t:Date.now()});if(game.npcAwards.length>48)game.npcAwards.shift();}
   }
  }
@@ -2321,7 +2321,7 @@ function drawCelestial(){const g=game;if(!g||!g.celestial)return;const el=now-g.
  else{ctx.fillStyle='#ffd45e';ctx.shadowColor='#ffb347';ctx.shadowBlur=30;ctx.beginPath();ctx.arc(x,y,28,0,TAU);ctx.fill()}
  ctx.restore()}
 function drawBot(b){if(b.dead>0){drawHeroPose(b,BOT_LOOK,{life:{phase:'dead'},deathT0:now-(6-b.dead),growS:1});return;}ctx.save();if(b.warp){const el=now-b.warp.t0,k=el<b.warp.out?1-el/b.warp.out:(el-b.warp.out)/b.warp.inDur;ctx.globalAlpha=clamp(k,.08,1)}drawPlayer(b,BOT_LOOK);if(b.warp)drawPortal(b.warp);ctx.restore();
- const rad=60;for(let k=0;k<Math.min(b.blades,60);k++){const a=b.s+k*TAU/Math.max(1,Math.min(b.blades,60)),x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawWeaponModel(x,y,a,{type:'ars11',rarity:'common'})}
+ const rad=60;for(const blade of botBlades(b)){const a=blade.a,x=b.x+Math.cos(a)*rad,y=b.y+Math.sin(a)*rad;drawWeaponModel(x,y,a,{type:'ars11',rarity:'common'})}
  ctx.save();ctx.textAlign='center';ctx.font='900 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#294658';ctx.fillStyle='#ffffff';labelQ.push([b.name,b.x,b.y+18,'#ffffff','900 11px system-ui']);
  roundRect(b.x-22,b.y-54,44,5,2,'#243e55');roundRect(b.x-22,b.y-54,44*clamp(b.hp/b.maxHp,0,1),5,2,'#ed7785');ctx.restore();drawWeaponCount(b,b.blades)}
 
@@ -2362,7 +2362,7 @@ function bladeSegments(){
  }
  for(const b of game.bots||[]){
   if(b.dead||d2(b.x-game.p.x,b.y-game.p.y)>350**2)continue;
-  for(let k=0;k<Math.min(b.blades,60);k++)segs.push({x:b.x,y:b.y,a:b.s+k*TAU/Math.max(1,Math.min(b.blades,60)),reach:60,speed:clamp(4.58*Math.max(1,b.blades),2,620),type:'ars11',scale:1,damage:14+(b.level-1)*2,owner:null,name:b.name});
+  for(const w of botBlades(b))segs.push({...w,x:b.x,y:b.y,scale:1,damage:14+(b.level-1)*2,owner:null,name:b.name});
  }
  return segs;
 }
@@ -4455,9 +4455,22 @@ function bladeContact(a,b,width=8){
   if(d<dist){dist=d;best={x:(x+qx)/2,y:(y+qy)/2};}
  }return best;
 }
+function botWeapons(b){
+ const count=Math.min(60,Math.max(0,b.blades|0)),gen=b.generation||0;
+ if(b.weaponGeneration!==gen){b.weaponGeneration=gen;b.weaponStates=(b.bladeLayout||[]).map(w=>({id:w.id,type:'ars11',slot:w.base,flex:{t0:now,angle:w.o-w.base,impulse:w.v||0}}));b.weaponSerial=Math.max(0,...b.weaponStates.map(w=>Number(w.id.split(':').at(-1))||0));}
+ const list=b.weaponStates||(b.weaponStates=[]);if(list.length>count)list.length=count;
+ const ring=Math.max(count,b.weaponRing||1);b.weaponRing=ring;
+ while(list.length<count){let slot=0;if(list.length){const angles=list.map(w=>(w.slot+TAU)%TAU).sort((a,b)=>a-b);let gap=-1;for(let k=0;k<angles.length;k++){const next=k+1<angles.length?angles[k+1]:angles[0]+TAU;if(next-angles[k]>gap){gap=next-angles[k];slot=(angles[k]+gap/2)%TAU;}}}list.push({id:b.id+':'+gen+':'+(++b.weaponSerial),type:'ars11',slot});}
+ return list;
+}
+function botBladeLayout(b){return botWeapons(b).map(w=>{const f=weaponFlex(w);return {id:w.id,base:w.slot,o:w.slot+f.angle,v:f.velocity};});}
+function botBlades(b){
+ const layout=!isLootAuthority()&&Array.isArray(b.bladeLayout)?b.bladeLayout:botBladeLayout(b);
+ return layout.slice(0,Math.min(60,b.blades)).map(w=>({id:w.id,a:b.s+w.o,reach:60,type:'ars11',speed:orbitRate(b,clamp(4.58*Math.sqrt(Math.max(1,b.blades)),2,32))+(w.v||0)}));
+}
 function actorBlades(actor){
  if(actor===game.p)return ownBlades().map(b=>({...b,a:game.swordPhase+b.o}));
- if(actor.id?.startsWith('bot')){const n=Math.min(60,actor.blades);return Array.from({length:n},(_,i)=>({id:actor.id+':'+i,a:actor.s+i*TAU/n,reach:60,type:'ars11',speed:orbitRate(actor,clamp(4.58*Math.sqrt(Math.max(1,actor.blades)),2,32))}));}
+ if(actor.id?.startsWith('bot'))return botBlades(actor);
  return remoteBlades(actor);
 }
 function weaponCollisionRadius(w,scale){
@@ -4492,7 +4505,7 @@ function sweptBladePairs(a,b,dt){
 }
 function dislodge(actor,weapon,x,y){
  if(actor===game.p){const i=game.weapons.findIndex(w=>w.id===weapon.id);if(i<0)return false;game.weapons.splice(i,1);game.activeLength=-1;lastMetaAt=0;}
- else if(actor.id?.startsWith('bot')){if(actor.blades<=0)return false;actor.blades--;actor.items=actor.blades;if(!isLootAuthority())queueNpcAction(actor,0,1);}
+ else if(actor.id?.startsWith('bot')){if(actor.blades<=0)return false;const list=botWeapons(actor),i=list.findIndex(w=>w.id===weapon.id);if(i>=0)list.splice(i,1);actor.blades--;actor.items=actor.blades;if(actor.bladeLayout)actor.bladeLayout=actor.bladeLayout.filter(w=>w.id!==weapon.id);if(!isLootAuthority())queueNpcAction(actor,0,1,weapon.id);}
  else{actor.clashHidden=actor.clashHidden||new Map();if(actor.clashHidden.get(weapon.id)>now)return false;actor.clashHidden.set(weapon.id,now+8);actor.weaponTotal=Math.max(0,(actor.weaponTotal??actor.bl?.length??0)-1);}
  spawnClashFlight(x,y,actor.x,actor.y,weapon.type,inheritedFlight(actor,{...weapon,a:weapon.a??Math.atan2(y-actor.y,x-actor.x)}));return true;
 }
@@ -4510,6 +4523,7 @@ function clashActors(a,b,dt,remote=false){
   const loseA=bladeStress(a,h.a,clamp(powerB/powerA,.2,1)),loseB=bladeStress(b,h.b,clamp(powerA/powerB,.2,1));
   h.lostA=loseA&&dislodge(a,h.a,h.x,h.y);h.lostB=loseB&&dislodge(b,h.b,h.x,h.y);
   if(a===game.p&&!h.lostA){const w=game.weapons.find(w=>w.id===h.a.id);if(w)kickWeapon(w,powerB/powerA);}if(b===game.p&&!h.lostB){const w=game.weapons.find(w=>w.id===h.b.id);if(w)kickWeapon(w,powerA/powerB);}
+  for(const [actor,blade,lost,power] of [[a,h.a,h.lostA,powerB/powerA],[b,h.b,h.lostB,powerA/powerB]])if(isLootAuthority()&&actor.id?.startsWith('bot')&&!lost){const w=botWeapons(actor).find(w=>w.id===blade.id);if(w)kickWeapon(w,power);}
   confirmed.push(h);addSlash(h.x,h.y,Math.atan2(b.y-a.y,b.x-a.x));
  }
  if(!confirmed.length)return;

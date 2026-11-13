@@ -97,3 +97,7 @@ The remaining animation proposal is not fully implemented: independent per-blade
 ## Individual surviving-blade recoil
 
 Surviving player weapons now retain separate damped angular responses, driven by clash power and weapon mass. Repeated impulses preserve current displacement rather than snapping back to the base slot. Rendered orbit offsets, contact geometry and outgoing blade descriptors use the same deflected angle; outgoing sweep speed includes the angular response velocity. The remote owner receives recoil when confirmed partial wear advances. Untouched blades retain their slots. This is a bounded angular spring, not flexible metal deformation; NPC per-blade articulated states remain separate work.
+
+## NPC weapon identity and recoil
+
+Bot weapons now retain stable generation-scoped IDs and individual orbit slots. Removing a specific clashing blade preserves the positions of its surviving neighbors. New blades fill a large available angular gap instead of renumbering the whole orbit. Surviving host-simulated NPC blades use the same damped recoil as player weapons. NPC snapshots carry bounded per-blade slot/offset/response velocity arrays through both relay adapters, and follower loss requests identify the affected blades. On transfer, the latest snapshot reconstructs the weapon state; a new NPC generation does not reuse the previous generation's weapon IDs.

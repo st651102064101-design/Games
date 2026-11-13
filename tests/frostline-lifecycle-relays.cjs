@@ -25,9 +25,9 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   assert.equal(response.players[0].life.phase,'dead','final snapshot remains available for collapse animation');assert.equal(response.players[0].dog,null);assert.equal(response.count,1,'dead player is excluded from presence');
   saved=[...data.values()].find(v=>v.id==='fabcdefgh2');assert.equal(saved.dog.x,10125);assert.equal(saved.dog.y,-10125);assert.equal(saved.dog.state,'follow');assert.equal(saved.dog.walk,0);
   const req=new Request('https://example.com/api/frostline-pvp?presence=1'),presence=await (await c.api(edge?{request:req}:req)).json();assert.equal(presence.count,1);
-  await request({...body,seq:10,npcs:[{id:'bot1',generation:2,name:'Shared bot',x:30,y:40,hp:180,maxHp:240,blades:6,level:7,warp:{x0:0,y0:0,x1:100,y1:100,age:.1}}],blades:[{id:'tier8',type:'ars11',durability:800,wear:7}]});
+  await request({...body,seq:10,npcs:[{id:'bot1',generation:2,name:'Shared bot',x:30,y:40,hp:180,maxHp:240,blades:6,level:7,bladeLayout:[{id:'bot1:2:4',base:1,o:.95,v:-2}],warp:{x0:0,y0:0,x1:100,y1:100,age:.1}}],blades:[{id:'tier8',type:'ars11',durability:800,wear:7}]});
   await request({...body,seq:9,dog:null});
-  saved=[...data.values()].find(v=>v.id===body.id);assert.equal(saved.seq,10);assert.equal(saved.npcs[0].generation,2);assert.equal(saved.npcs[0].warp.x1,100);assert.equal(saved.blades[0].durability,800);assert.equal(saved.blades[0].wear,7);
+  saved=[...data.values()].find(v=>v.id===body.id);assert.equal(saved.seq,10);assert.equal(saved.npcs[0].generation,2);assert.equal(saved.npcs[0].bladeLayout[0].id,'bot1:2:4');assert.equal(saved.npcs[0].bladeLayout[0].o,.95);assert.equal(saved.npcs[0].warp.x1,100);assert.equal(saved.blades[0].durability,800);assert.equal(saved.blades[0].wear,7);
   const separate=await request({...body,id:'fbandtest01',matchBand:3});assert.equal(separate.players.length,0,'different upgrade bands must not exchange state');
   const sameBand=await request({...body,id:'fbandtest02',matchBand:3});assert.equal(sameBand.players.length,1);assert.equal(sameBand.players[0].id,'fbandtest01');
   await request({kind:'leave',id:'fbandtest01',matchBand:3});assert.equal([...data.values()].some(v=>v.id==='fbandtest01'),false);
