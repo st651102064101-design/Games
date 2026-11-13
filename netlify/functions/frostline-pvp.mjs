@@ -50,7 +50,7 @@ const cleanLootEvent=(e,now)=>{
 const storage = () => getStore({name:'frostline-public-pvp',consistency:'strong'});
 
 export default async function handler(request) {
-  if (request.method === 'GET') { if(new URL(request.url).searchParams.get('presence')!=='1')return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:3}); try { const store=storage(), listing=await store.list({prefix:ROOM}); if(listing.blobs.length>MAX_LIST||listing.has_more||listing.next_cursor||listing.nextCursor)return respond({ok:false,error:'Presence list incomplete'},503); const now=Date.now(),values=await Promise.all(listing.blobs.map(b=>store.get(b.key,{type:'json'}))); const count=values.filter(v=>v&&ID_RE.test(v.id||'')&&v.alive&&now-Number(v.updatedAt)>=0&&now-Number(v.updatedAt)<VISIBLE_MS).length;return respond({ok:true,count,serverTime:now}); }catch{return respond({ok:false,error:'Presence unavailable'},503)} }
+  if (request.method === 'GET') { if(new URL(request.url).searchParams.get('presence')!=='1')return respond({ok:true,game:'Frostline',service:'cross-device-pvp-relay',version:3}); try { const store=storage(), listing=await store.list({prefix:ROOM}); if(listing.blobs.length>MAX_LIST||listing.has_more||listing.next_cursor||listing.nextCursor)return respond({ok:false,error:'Presence list incomplete'},503); const now=Date.now(),values=await Promise.all(listing.blobs.map(b=>store.get(b.key,{type:'json'}))); const count=values.filter(v=>v&&ID_RE.test(v.id||'')&&v.alive&&v.life?.phase!=='dead'&&now-Number(v.updatedAt)>=0&&now-Number(v.updatedAt)<VISIBLE_MS).length;return respond({ok:true,count,serverTime:now}); }catch{return respond({ok:false,error:'Presence unavailable'},503)} }
   if (request.method !== 'POST') return respond({error:'Method not allowed'},405);
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
@@ -81,7 +81,10 @@ export default async function handler(request) {
     })) : [];
     const me = {
       id:body.id,kind:'state',alive:true,name:cleanText(body.name),
-      seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,125,1,10000),samples,blades,
+      seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
+      life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
+      growS:num(body.growS,1,1,1.7),
+      dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,samples,blades,
        weaponTotal:num(body.weaponTotal,0,0,10000),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
        lootEvents:Array.isArray(body.lootEvents)?body.lootEvents.slice(-28).map(e=>cleanLootEvent(e,now)).filter(Boolean):[],
        lootSnapshot:Array.isArray(body.lootSnapshot)?body.lootSnapshot.slice(0,36).map(cleanLootDrop).filter(Boolean):[],
@@ -109,7 +112,7 @@ export default async function handler(request) {
       else if (age > CLEANUP_MS && stale.length < 3) stale.push(item.key);
     }
     if (stale.length) await Promise.allSettled(stale.map(k=>store.delete(k)));
-    return respond({ok:true,transport:'netlify',players:active.slice(0,MAX_PLAYERS-1),count:active.length+1,serverTime:now});
+    return respond({ok:true,transport:'netlify',players:active.slice(0,MAX_PLAYERS-1),count:active.filter(v=>v.life?.phase!=='dead').length+(me.life.phase==='dead'?0:1),serverTime:now});
   } catch(error) {
     console.error('[Frostline] PvP fallback error:',error);
     return respond({ok:false,error:'Server presence temporarily unavailable'},503);

@@ -7,7 +7,11 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test:frostline": "node tests/frostline-gameplay.cjs && node tests/frostline-lifecycle-relays.cjs && node tests/frostline-relay.cjs && node tests/frostline-audio.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   },
   "dependencies": {
     "@edgeone/pages-blob": "^0.0.19",

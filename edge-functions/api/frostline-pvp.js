@@ -48,7 +48,7 @@ export async function onRequest({request}){
   if(request.method==='GET'){
    const result=await store.list({prefix:ROOM,consistency:'strong'});
    const vals=await Promise.all(result.blobs.slice(0,64).map(x=>getData(store,x.key)));
-   return ok({ok:true,transport:'edgeone-blob',count:vals.filter(v=>v?.alive&&validId(v.id)&&now-v.updatedAt>=0&&now-v.updatedAt<LIVE).length,serverTime:now});
+   return ok({ok:true,transport:'edgeone-blob',count:vals.filter(v=>v?.alive&&v.life?.phase!=='dead'&&validId(v.id)&&now-v.updatedAt>=0&&now-v.updatedAt<LIVE).length,serverTime:now});
   }
   if(!(request.headers.get('content-type')||'').startsWith('application/json'))return ok({ok:false,error:'JSON required'},415);
   const raw=await request.text();if(raw.length>32000)return ok({ok:false,error:'Payload too large'},413);
@@ -73,7 +73,10 @@ export async function onRequest({request}){
   })):[];
   const me={
    kind:'state',id:body.id,alive:true,name:cleanName(body.name),
-   seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,125,1,10000),
+   seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
+      life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
+      growS:num(body.growS,1,1,1.7),
+      dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,
     weaponTotal:num(body.weaponTotal,0,0,10000),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
     lootEvents:Array.isArray(body.lootEvents)?body.lootEvents.slice(-28).map(e=>cleanLootEvent(e,now)).filter(Boolean):[],
     lootSnapshot:Array.isArray(body.lootSnapshot)?body.lootSnapshot.slice(0,36).map(cleanLootDrop).filter(Boolean):[],
@@ -105,7 +108,7 @@ export async function onRequest({request}){
    else if(age>90000&&stale.length<3)stale.push(entries[i].key);
   }
   if(stale.length)await Promise.allSettled(stale.map(key=>store.delete(key)));
-  return ok({ok:true,transport:'edgeone-blob',players:active.slice(0,MAX-1),count:active.length+1,serverTime:now});
+  return ok({ok:true,transport:'edgeone-blob',players:active.slice(0,MAX-1),count:active.filter(v=>v.life?.phase!=='dead').length+(me.life.phase==='dead'?0:1),serverTime:now});
  }catch(err){
   console.warn('[Frostline EdgeOne] relay failed',err);
   return ok({ok:false,error:'Relay temporarily unavailable'},503);
