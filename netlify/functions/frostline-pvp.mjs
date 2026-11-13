@@ -1,3 +1,9 @@
+function npcFields(body,now){
+ const boundedId=v=>typeof v==='string'?v.slice(0,100):'';
+ return {npcs:Array.isArray(body.npcs)?body.npcs.slice(0,24).filter(b=>b&&/^bot\d+$/.test(b.id)).map(b=>({id:b.id,name:String(b.name||b.id).slice(0,25),generation:num(b.generation,0,0,1e9),x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),s:num(b.s,0,-1e9,1e9),hp:num(b.hp,240,0,1e6),maxHp:num(b.maxHp,240,1,1e6),blades:num(b.blades,4,0,10000),level:num(b.level,1,1,10000),dead:num(b.dead,0,0,6),dir:b.dir<0?-1:1,walk:num(b.walk,0,-1e9,1e9),mx:num(b.mx,0,-1200,1200),my:num(b.my,0,-1200,1200),warp:cleanPose({dash:b.warp}).dash})):null,
+ npcActions:Array.isArray(body.npcActions)?body.npcActions.slice(-48).filter(e=>e&&typeof e.id==='string'&&e.id.startsWith(body.id+'n')&&/^bot\d+$/.test(e.bot)).map(e=>({id:boundedId(e.id),bot:e.bot,generation:num(e.generation,0,0,1e9),damage:num(e.damage,0,0,6000),loss:num(e.loss,0,0,60),t:num(e.t,now,now-6000,now+1000)})):[],
+ npcAwards:Array.isArray(body.npcAwards)?body.npcAwards.slice(-48).filter(e=>e&&typeof e.id==='string'&&e.id.startsWith(body.id+'a')).map(e=>({id:boundedId(e.id),to:boundedId(e.to),t:num(e.t,now,now-6000,now+1000)})):[]};
+}
 function cleanPose(p){
  const d=p?.dash,h=p?.hurt;
  return {dash:d&&Number.isFinite(d.age)?{x0:num(d.x0,0,-10125,10125),y0:num(d.y0,0,-10125,10125),x1:num(d.x1,0,-10125,10125),y1:num(d.y1,0,-10125,10125),out:num(d.out,.2,.1,1),inDur:num(d.inDur,.25,.1,1),age:num(d.age,0,0,2)}:null,
@@ -61,11 +67,11 @@ export default async function handler(request) {
   if (origin && origin !== new URL(request.url).origin) return respond({error:'Origin not allowed'},403);
   if (!(request.headers.get('content-type')||'').startsWith('application/json')) return respond({error:'JSON required'},415);
   const raw = await request.text();
-  if (raw.length > 65536) return respond({error:'Payload too large'},413);
+  if (raw.length > 98304) return respond({error:'Payload too large'},413);
   let body;
   try { body = JSON.parse(raw); } catch { return respond({error:'Invalid JSON'},400); }
   if (!body || !ID_RE.test(body.id||'')) return respond({error:'Invalid player ID'},400);
-  const key = ROOM + body.id;
+  const matchBand=num(body.matchBand,0,0,3)|0,roomPrefix=ROOM+'band-'+matchBand+'/';const key=roomPrefix+body.id;
   try {
     const store = storage();
     if (body.kind === 'leave') {
@@ -81,14 +87,14 @@ export default async function handler(request) {
     })).sort((a,b)=>a.t-b.t);
     const blades = Array.isArray(body.blades) ? body.blades.slice(0,60).map(b=>({
       id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,3,120),
-      durability:num(b?.durability,100,100,275),wear:num(b?.wear,0,0,3),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
+      durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,1,620),count:num(b?.count,1,1,10000),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(b?.type)?b.type:['main','sword','axe','spear','dagger','scythe','hammer'].includes(b?.type)?b.type:'main',
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
-    const me = {
+    let me = {matchBand,
       id:body.id,kind:'state',alive:true,name:cleanText(body.name),
       seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
       life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
-      growS:num(body.growS,1,1,1.7),
+      growS:num(body.growS,1,1,1.7),...npcFields(body,now),
       flights:Array.isArray(body.flights)?body.flights.slice(-128).filter(f=>f&&typeof f.id==='string'&&f.id.startsWith(body.id+'f')).map(f=>({id:f.id.slice(0,100),t:num(f.t,now,now-6000,now+1000),x:num(f.x,0,-10125,10125),y:num(f.y,0,-10125,10125),z:num(f.z,0,0,800),vx:num(f.vx,0,-1200,1200),vy:num(f.vy,0,-1200,1200),vz:num(f.vz,0,-1200,1200),a:num(f.a,0,-1e5,1e5),spin:num(f.spin,0,-100,100),life:num(f.life,0,0,3.2),stuck:f.stuck===true,waterDepth:num(f.waterDepth,0,0,15),type:/^ars(0[1-9]|[12][0-9]|30)$/.test(f.type)?f.type:'ars11'})):[],
       pose:cleanPose(body.pose),
       dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,samples,blades,
@@ -100,11 +106,11 @@ export default async function handler(request) {
         leatherPack:body.look?.leatherPack===true,level:num(body.look?.level,1,1,1000),
         weapon:['steel','bone','ice','blood'].includes(body.look?.weapon)?body.look.weapon:'steel',skin:String(body.look?.skin||'scout').slice(0,24)},
       shots:Array.isArray(body.shots)?body.shots.slice(-18).filter(b=>b&&typeof b.id==='string'&&/^ars(2[1-9]|30)$/.test(b.type)).map(b=>({id:b.id.slice(0,100),type:b.type,x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),a:num(b.a,0,-100,100),damage:num(b.damage,10,1,600),rays:b.rays===8?8:1,t:num(b.t,now,now-5000,now+1000)})):[],
-      clashes:Array.isArray(body.clashes)?body.clashes.slice(-18).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,60).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,3)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'main').slice(0,20),x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)})):[],
+      clashes:Array.isArray(body.clashes)?body.clashes.slice(-18).filter(c=>c&&typeof c.id==='string'&&ID_RE.test(c.to||'')).map(c=>({id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,60).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,8)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'main').slice(0,20),x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)})):[],
       updatedAt:now
     };
-    await store.setJSON(key, me);
-    const listing = await store.list({prefix:ROOM});
+    const previous=await store.get(key,{type:'json'}).catch(()=>null);if(previous&&(previous.joinedAt>me.joinedAt||previous.joinedAt===me.joinedAt&&previous.seq>me.seq))me=previous;await store.setJSON(key, me);
+    const listing = await store.list({prefix:roomPrefix});
     // Cap reads to keep server costs bounded for the casual public arena.
     const entries = listing.blobs.filter(b=>b.key !== key).slice(0,MAX_LIST);
     const values = await Promise.all(entries.map(async b=>{

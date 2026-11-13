@@ -20,15 +20,15 @@ The weapon shop now sells a **permanent durability tier** instead of new firearm
 | Current tier | Maximum durability after collecting | Cost of next tier |
 | --- | ---: | ---: |
 | 1 | 100 | 50 |
-| 2 | 125 | 80 |
-| 3 | 150 | 128 |
-| 4 | 175 | 205 |
-| 5 | 200 | 328 |
-| 6 | 225 | 524 |
-| 7 | 250 | 839 |
-| 8 | 275 | Maximum |
+| 2 | 200 | 80 |
+| 3 | 300 | 128 |
+| 4 | 400 | 205 |
+| 5 | 500 | 328 |
+| 6 | 600 | 524 |
+| 7 | 700 | 839 |
+| 8 | 800 | Maximum |
 
-An ordinary equal-strength contact or bullet costs 100 durability. Consequently, a base sword absorbs one bullet; an upgraded sword can absorb additional hits before breaking. HP remains protected while the defending sword absorbs the hit. Increasing maximum durability preserves damage already taken. Purchases are checked against the current saved balance and applied one tier at a time; tiers survive a new round. No gun or extra weapon is awarded by an upgrade.
+An ordinary equal-strength contact or bullet costs 100 durability. Consequently, a base sword absorbs one bullet; an upgraded sword can absorb additional hits before breaking. HP remains protected while the defending sword absorbs the hit. Increasing maximum durability preserves damage already taken. Purchases are checked against the current saved balance and applied one tier at a time; tiers survive a new round. Purchases during play take effect next round; each tier adds one ordinary 100-durability impact. Players are grouped into four adjacent-tier bands (1–2, 3–4, 5–6, 7–8) in both P2P and HTTP. No gun or extra weapon is awarded by an upgrade.
 
 Ground labels show the common base value. The shop shows the permanent effective maximum. A small condition mark appears on damaged orbiting weapons. Network weapon metadata includes maximum durability and wear, and both relay implementations validate them.
 
@@ -47,9 +47,9 @@ These are lightweight **Canvas 2.5D approximations**, not a full 3D rigid-body, 
 
 Flying objects have stable source IDs and bounded motion snapshots. The owner, opponent and spectators receive the same IDs through P2P or HTTP. Duplicate objects are suppressed, and later snapshots correct drift. Warp pose, hurt pose and firearm recoil/reload state are also relayed. Projectiles keep moving visually during the local death sequence.
 
-HTTP payloads are bounded to 64 KiB, up to 128 flight snapshots and 60 weapon descriptors per state. The local debris pool is bounded to 512 objects. These are practical performance limits, not unlimited particle or network capacity. Both players must load the updated HTML and their host must deploy the updated relay.
+HTTP payloads are bounded to 96 KiB, up to 128 flight snapshots and 60 weapon descriptors per state. The local debris pool is bounded to 512 objects. These are practical performance limits, not unlimited particle or network capacity. Both players must load the updated HTML and their host must deploy the updated relay.
 
-Bots still use the existing client-local NPC simulation; this revision does not turn the game into an authoritative shared-NPC server.
+The oldest active player now simulates and publishes shared bots. Followers interpolate the same IDs, levels, equipment, warp and death state, and submit generation-tagged damage/weapon-loss actions. Deduplication prevents repeated action rewards. Leadership changes when a player leaves or becomes stale; resuming from pause yields the old lease. This remains a casual client-hosted simulation, not a trusted authoritative server. Survival monsters and wildlife are still local encounters.
 
 ## Verification
 
