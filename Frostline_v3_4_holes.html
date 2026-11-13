@@ -1354,7 +1354,7 @@ function recordPlayerKill(){
  banner.classList.remove('show');void banner.offsetWidth;banner.classList.add('show');playStreakSound(n);showEmotion(game.p,['first','double','triple','quad','penta'][n-1],true);
 }
 function kill(m){ // Monster and wildlife defeats never contribute to First/Double/Triple/4/5 Kill.
-if(m.rewarded)return;if(isNaturalBear(m))recordBearDeath(m);m.rewarded=true;if(m.speciesId)wildlifeDiscover(m.speciesId);playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;g.missionStats&&(g.missionStats.kills++);if(m.boss){g.bossDefeated=true;showEmotion(g.p,'win',true);}g.corpses.push({...m,life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
+if(m.rewarded)return;if(isNaturalBear(m))recordBearDeath(m);m.rewarded=true;if(m.speciesId)wildlifeDiscover(m.speciesId);playSound('beastDeath',m.x,m.y);const g=game;g.kills++;g.stageKills=(g.stageKills||0)+1;g.missionStats&&(g.missionStats.kills++);if(m.boss){g.bossDefeated=true;showEmotion(g.p,'win',true);}g.corpses.push({...m,life:isNaturalBear(m)?1.6:.68,max:isNaturalBear(m)?1.6:.68});if(g.corpses.length>30)g.corpses.shift();sparks(m.x,m.y,m.elite?'#e5b9a1':'#b2e8ff',15);
  // Direct boss rewards are guaranteed; generated pickups keep the 50% chance.
  spawnDrop(m.x,m.y,'xp',m.elite?29:12);
  if(Math.random()<(m.elite?.55:.16))spawnDrop(m.x,m.y,'ability',1,{id:choose(FIELD_ITEMS).id});
@@ -1530,33 +1530,43 @@ function applyBearWound(m,damage,c,bleed=false){
  const w={id:bearKey(m)+'w'+((m.woundSerial=(m.woundSerial||0)+1)),x:rx,y:ry,a:(c.a||0)-a,t0:now,at:Date.now(),size:clamp(damage/20,3,9)};
  m.wounds=m.wounds||[];m.wounds.push(w);if(m.wounds.length>8)m.wounds.shift();m.hp=Math.max(0,m.hp-damage);m.lastPlayerHit=now;m.flash=.13;
  const force=clamp(35+damage*.45,35,110)/(m.boss||m.titan?2.5:1.6),nx=Math.cos(c.a||0),ny=Math.sin(c.a||0);
- m.kvx=clamp((m.kvx||0)+nx*force,-140,140);m.kvy=clamp((m.kvy||0)+ny*force,-140,140);m.hurt={t0:now,at:Date.now(),nx,ny,force};
+ m.kvx=clamp((m.kvx||0)+nx*force,-140,140);m.kvy=clamp((m.kvy||0)+ny*force,-140,140);m.hurt={t0:now,at:Date.now(),nx,ny,force,zone:rx>25?'head':Math.abs(ry)>14?'legs':'torso',side:ry<0?-1:1,front:rx>0};
  m.stun=Math.max(m.stun||0,damage>m.maxHp*.12?.2:.04);if(bleed){m.bleed=Math.max(m.bleed||0,2.5);m.bleedPower=Math.min(12,damage*.08);}
  bearBlood(m,w);addFloat(m.x,m.y-40,String(Math.round(damage)),'#f6c5be');playSound('hit',c.x,c.y);playSound('beastHurt',m.x,m.y,'bear');
 }
 function bearBlood(m,w){if(!isVisible(m.x,m.y,120))return;const p=bearPoint(m,w.x,w.y);sparks(p.x,p.y,'#ab3948',lowGraphics()?3:7);}
+function bearInjuryPose(m){
+ const h=m.hurt,age=h?Math.max(0,now-h.t0):10,pulse=Math.sin(Math.min(1,age/.42)*Math.PI)*Math.exp(-age*3),strength=h?clamp(h.force/65,.15,1):0,side=h?.side||1;
+ return {head:h?.zone==='head'?pulse*strength*side*.35:0,crouch:h?.zone==='torso'?pulse*strength*.12:0,limp:h?.zone==='legs'?Math.exp(-age*2)*strength:0,side,front:h?.front!==false};
+}
+function bearHeadTransform(pose){ctx.translate(28,0);ctx.rotate(pose.head);ctx.translate(-28,0);}
+function drawBearCorpse(c){
+ const progress=clamp(1-c.life/c.max,0,1);ctx.save();ctx.globalAlpha=clamp(c.life/.5,0,.85);ctx.translate(c.x,c.y);
+ if(isNaturalBear(c)){const fall=clamp(progress/.5,0,1),side=c.hurt?.side||1;ctx.rotate(side*Math.sin(fall*Math.PI/2)*.32);ctx.scale(1+fall*.04,1-fall*.32);ctx.translate(-c.x,-c.y);drawNaturalBear({...c,bearAttack:null,deathProgress:fall,hp:1,maxHp:1,walk:0});}
+ else{ctx.rotate(progress*1.35);ctx.translate(-c.x,-c.y);drawBear({...c,bearAttack:null,flash:0,walk:0,hp:1,maxHp:1});}ctx.restore();
+}
 function drawNaturalBear(m){
- if(m.stale)return;const a=m.bearAttack,t=bearAttackElapsed(m),pose=a?bearAttackPose(m,t):null,active=a&&t>=a.windup&&t<a.windup+a.active;
+ if(m.stale)return;const injury=bearInjuryPose(m),death=m.deathProgress||0;const a=m.bearAttack,t=bearAttackElapsed(m),pose=a?bearAttackPose(m,t):null,active=a&&t>=a.windup&&t<a.windup+a.active;
  ctx.save();ctx.translate(m.x,m.y);uprightCameraSprite();ctx.rotate(m.facing||0);
- const hurt=m.hurt?Math.exp(-Math.max(0,now-m.hurt.t0)*12)*Math.sin(Math.max(0,now-m.hurt.t0)*25)*clamp(m.hurt.force/90,0,1):0;ctx.translate(-hurt*4,0);ctx.rotate(hurt*.1);
+ const hurt=m.hurt?Math.exp(-Math.max(0,now-m.hurt.t0)*12)*Math.sin(Math.max(0,now-m.hurt.t0)*25)*clamp(m.hurt.force/90,0,1):0;ctx.translate(-hurt*4,0);ctx.rotate(hurt*.1);ctx.scale(1,1-injury.crouch);
  const coat=m.beast==='polar'?'#dce7e4':m.elite?'#54443b':'#78614c',light=m.beast==='polar'?'#f6f7ee':'#a18365';
  ellipse(-2,6,37,22,'#16354344');
- for(const side of [-1,1])for(const front of [-1,1]){const phase=(m.walk||0)+(side*front>0?0:Math.PI),step=Math.sin(phase)*4;let x=front*19+step,y=side*18;
+ for(const side of [-1,1])for(const front of [-1,1]){const phase=(m.walk||0)+(side*front>0?0:Math.PI),injured=side===injury.side&&(front===1)===injury.front,step=Math.sin(phase)*4*(injured?1-injury.limp*.8:1);let x=front*19+step-death*front*8,y=side*(18-death*5);if(injured){x-=injury.limp*5;y-=side*injury.limp*4;}
   if((a?.kind==='swat'&&front===1&&side===a.side)||(a?.kind==='press'&&front===1)){x=pose.x;y=pose.y;}
   ellipse(x,y,front>0?12:10,8,coat);for(let k=-1;k<=1;k++)line(x+6,y+k*3,x+11,y+k*3,1.8,'#ddd4bf');}
- ellipse(-5,0,34,23,coat);ellipse(11,-3,22,22,light);ellipse(28,0,21,17,coat);ellipse(23,-14,6,7,light);ellipse(23,14,6,7,light);
+ ellipse(-5,0,34,23,coat);ellipse(11,-3,22,22,light);ctx.save();bearHeadTransform({head:injury.head+death*.18});ellipse(28,0,21,17,coat);ellipse(23,-14,6,7,light);ellipse(23,14,6,7,light);
  const bite=a?.kind==='bite'?Math.sin(clamp((t-a.windup)/a.active,0,1)*Math.PI)*9:0;
- ellipse(43,0,13,9+bite,light);ellipse(51,0,4,5,'#302d30');if(bite>1){line(40,-bite,49,-bite,2,'#f7ead8');line(40,bite,49,bite,2,'#f7ead8');ellipse(43,0,6,bite,'#502a2d');}ellipse(33,-10,2.2,2,'#171f25');ellipse(33,10,2.2,2,'#171f25');
+ ellipse(43,0,13,9+bite,light);ellipse(51,0,4,5,'#302d30');if(bite>1){line(40,-bite,49,-bite,2,'#f7ead8');line(40,bite,49,bite,2,'#f7ead8');ellipse(43,0,6,bite,'#502a2d');}if(death>.5){line(31,-10,35,-10,2,'#171f25');line(31,10,35,10,2,'#171f25');}else{ellipse(33,-10,2.2,2,'#171f25');ellipse(33,10,2.2,2,'#171f25');}ctx.restore();
  if(a&&(a.kind==='swat'||a.kind==='press'))for(const side of a.kind==='press'?[-1,1]:[a.side]){const x=pose.x,y=a.kind==='press'?side*16:pose.y;ellipse(x,y,11,8,coat);for(let k=-1;k<=1;k++)line(x+6,y+k*3,x+12,y+k*3,2,'#e4dac4');}
- for(const w of m.wounds||[]){const age=now-w.t0;ctx.save();ctx.translate(w.x,w.y);ctx.rotate(w.a);ctx.globalAlpha=clamp(1-age/30,.2,1);line(-w.size,-2,w.size,2,3,'#782d39');line(-w.size+1,-1,w.size-1,1,1,'#dc6c70');if(age<3)ellipse(w.size*.5,3+Math.min(5,age*2),2,3,'#a23746');ctx.restore();}
+ for(const w of m.wounds||[]){const age=now-w.t0;ctx.save();if(w.x>25)bearHeadTransform({head:injury.head+death*.18});ctx.translate(w.x,w.y);ctx.rotate(w.a);ctx.globalAlpha=clamp(1-age/30,.2,1);line(-w.size,-2,w.size,2,3,'#782d39');line(-w.size+1,-1,w.size-1,1,1,'#dc6c70');if(age<3)ellipse(w.size*.5,3+Math.min(5,age*2),2,3,'#a23746');ctx.restore();}
  if(a&&t<a.windup){ctx.strokeStyle='#efc78b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(28,0,32,-.8,.8);ctx.stroke();}
  if(active&&a.kind==='swat'){ctx.strokeStyle='#eee3cc99';ctx.lineWidth=2;ctx.beginPath();ctx.arc(22,0,30,-.75,1);ctx.stroke();}
  if(m.boss||m.titan){ctx.save();ctx.translate(-3,-18);drawCrown();ctx.restore();}ctx.restore();
  if(m.hp<m.maxHp){const width=m.boss?68:48;roundRect(m.x-width/2,m.y-47,width,5,2,'#243a46');roundRect(m.x-width/2,m.y-47,width*clamp(m.hp/m.maxHp,0,1),5,2,'#ce797e');}
 }
-function serializeBear(m){return {id:bearKey(m),x:Math.round(m.x*10)/10,y:Math.round(m.y*10)/10,facing:m.facing||0,walk:m.walk||0,hp:m.hp,maxHp:m.maxHp,r:m.r||26,speed:m.speed,damage:m.damage,beast:m.beast,boss:!!m.boss,titan:!!m.titan,elite:!!m.elite,stage:game.stage,attackSerial:m.attackSerial||0,woundSerial:m.woundSerial||0,wounds:(m.wounds||[]).slice(-8).map(w=>({...w,t0:undefined})),hurt:m.hurt?{...m.hurt,t0:undefined}:null,attack:m.bearAttack?{...m.bearAttack,t0:undefined,hit:(m.bearAttack.hit||[]).slice(0,64)}:null};}
+function serializeBear(m){return {id:bearKey(m),x:Math.round(m.x*10)/10,y:Math.round(m.y*10)/10,facing:m.facing||0,walk:m.walk||0,hp:m.hp,maxHp:m.maxHp,r:m.r||26,speed:m.speed,damage:m.damage,beast:m.beast,boss:!!m.boss,titan:!!m.titan,elite:!!m.elite,stage:game.stage,attackSerial:m.attackSerial||0,woundSerial:m.woundSerial||0,wounds:(m.wounds||[]).slice(-8).map(w=>({...w,t0:undefined})),hurt:m.hurt&&now-m.hurt.t0<3?{...m.hurt,t0:undefined}:null,attack:m.bearAttack?{...m.bearAttack,t0:undefined,hit:(m.bearAttack.hit||[]).slice(0,64)}:null};}
 function bearMetadata(){const g=game;return {bearActions:(g.bearActions||[]).filter(e=>Date.now()-e.t<6000),...(isLootAuthority()?{bears:g.mobs.filter(isNaturalBear).slice(0,32).map(serializeBear),bearDeaths:(g.bearDeaths||[]).filter(e=>Date.now()-e.t<6000),bearHits:(g.bearHits||[]).filter(e=>Date.now()-e.t<6000)}:{})};}
-function recordBearDeath(m){if(!isLootAuthority())return;const g=game;g.bearDeaths=g.bearDeaths||[];g.bearDeaths.push({id:bearKey(m),t:Date.now(),x:m.x,y:m.y,boss:!!m.boss,stage:g.stage});if(g.bearDeaths.length>48)g.bearDeaths.shift();}
+function recordBearDeath(m){if(!isLootAuthority())return;const g=game;g.bearDeaths=g.bearDeaths||[];g.bearDeaths.push({id:bearKey(m),t:Date.now(),x:m.x,y:m.y,boss:!!m.boss,beast:m.beast,facing:m.facing||0,stage:g.stage});if(g.bearDeaths.length>48)g.bearDeaths.shift();}
 function receiveBearMessages(event){
  if(!game)return;const g=game,leader=lootAuthorityId();
  if(isLootAuthority())for(const e of (event.bearActions||[]).slice(-48)){
@@ -1585,7 +1595,7 @@ function receiveBearMessages(event){
   const key='death:'+d.id;if(seenCombat.has(key)||Math.abs(Date.now()-d.t)>6000)continue;seenCombat.set(key,Date.now());
   const m=g.mobs.find(m=>m.bearId===d.id)||g.bearHistory?.get(d.id);g.mobs=g.mobs.filter(m=>m.bearId!==d.id);
   if(d2(d.x-g.p.x,d.y-g.p.y)>1600**2)continue;
-  g.corpses.push({...m,x:d.x,y:d.y,beast:m?.beast||'bear',life:.68,max:.68});if(g.corpses.length>30)g.corpses.shift();
+  g.corpses.push({...m,x:d.x,y:d.y,beast:m?.beast||d.beast||'bear',facing:m?.facing??d.facing??0,life:Math.max(0,1.6-(Date.now()-d.t)/1000),max:1.6});if(g.corpses.length>30)g.corpses.shift();
   g.kills++;g.stageKills++;g.missionStats.kills++;
   if(d.boss){g.bossDefeated=true;g.missionStats.bosses++;addCoins(15+d.stage*5);earnXP(15+d.stage*5);} // Loot itself is generated once by the elected host.
  }
@@ -3478,7 +3488,7 @@ function drawGame(){drawGround();if(graphicsMode==='ultra'&&!graphicsLow)drawSun
  // Drops under combatants.
  let vw=w/screenScale,vh=h/(screenScale*cameraPitchScale());for(let d of game.drops){if(Math.abs(d.x-cam.x)<vw*.55&&Math.abs(d.y-cam.y)<vh*.55){if(d.type!=='coin'&&d.type!=='xp'&&Math.hypot(d.x-game.p.x,d.y-game.p.y)<155)d.labelUntil=Math.max(d.labelUntil||0,now+.4);drawDrop(d)}}
  // Bear collapse animation remains beneath the fighting characters.
- for(let c of game.corpses){if(!isVisible(c.x,c.y,100))continue;ctx.save();ctx.globalAlpha=clamp(c.life/c.max,0,.7);ctx.translate(c.x,c.y);ctx.rotate((1-c.life/c.max)*1.35);ctx.translate(-c.x,-c.y);drawBear({...c,bearAttack:null,flash:0,walk:0,hp:1,maxHp:1});ctx.restore()}
+ for(const c of game.corpses)if(isVisible(c.x,c.y,100))drawBearCorpse(c);
  // Characters drawn in camera-relative depth order.
  // Sort by the actual GROUND CONTACT (feet), not sprite origins:
  // the hero/bots draw their shadow ~18 px below origin, Mochi ~1 px.

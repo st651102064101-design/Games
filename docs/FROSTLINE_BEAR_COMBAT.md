@@ -47,3 +47,9 @@ The attack choices, timings, damage values and close-push behavior are authored 
 The Chromium integration suite covers cuts without positional attachment, continuous-overlap rejection, a new crossing, ordinary cuts without automatic bleeding damage, active-window bite damage, one hit per victim, dodging a committed swat, grounded damping at 30/120 Hz, all four attack poses, shared wounds and remote cuts through the real HTTP sanitizer across three isolated browser contexts, shared attack IDs, duplicate death rewards, and ownership-transfer serials/stale-state handling. Both relay adapters test wound/attack/event forwarding and coordinate limits. Existing gameplay, touch, pets, durability, audio and build checks remain in use.
 
 Production deployment, real-device latency and subjective animation quality still need live playtesting. Non-bear wildlife and other survival species are not made globally shared by this update.
+
+## Regional injury and collapse pass
+
+Bear contacts now classify head, torso, or a specific front/rear leg side in bear-local coordinates. Head hits recoil the head group with attached head wounds; torso hits briefly compress the body; leg hits reduce the affected paw's gait and tuck it before recovery. Responses decay, do not add permanent slowdown, and do not change hit damage. Both relays preserve region/side/front metadata. Old transient hurt poses stop being sent after three seconds.
+
+Bear corpses now retain their wounds, fold their paws, lower the body and droop/close the head/eyes over a 1.6-second collapse/fade rather than using the generic fast spinning corpse. Remote corpse age is corrected by the death event timestamp. This is authored 2.5D articulation, not a 3D ragdoll.
