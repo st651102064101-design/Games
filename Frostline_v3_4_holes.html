@@ -560,7 +560,7 @@ let weaponSeq=0;
 const choose=a=>a[Math.floor(Math.random()*a.length)];
 const randWeapon=(elite=false,forcedType=null)=>{let t=ARSENAL.find(w=>w.id===forcedType)||choose(ARSENAL.filter(w=>w.tier<=Math.min(6,1+Math.floor(((game?.stage||1)-1)/2)+(elite?1:0)))),roll=Math.random(),rar=RARITIES[roll<(elite?.10:.04)?3:roll<(elite?.33:.16)?2:roll<(elite?.70:.43)?1:0];return {id:`w${Date.now().toString(36)}_${(++weaponSeq).toString(36)}_${Math.floor(Math.random()*1e5)}`,type:t.id,rarity:rar.id,damage:Math.round(t.base*rar.mult*rand(.85,1.2)),reach:Math.round(t.reach*rand(.90,1.13)),rate:Math.round(t.rate*rand(.91,1.12)*100)/100,crit:Math.round(rand(4,17)+(rar.mult-1)*10),element:Math.random()<(elite?.5:.27)?choose(['ice','fire','bleed']):'normal'};};
 const PLAYER_DAMAGE_MULTIPLIER=3;
-const PLAYER_HEALTH_MULTIPLIER=2, LOOT_SPAWN_CHANCE=.5, DEFAULT_ZOOM=.6;
+const PLAYER_HEALTH_MULTIPLIER=2, LOOT_SPAWN_CHANCE=.5, DEFAULT_ZOOM=.42, WEAPON_SIZE=1.2;
 const safeWeapons=(a)=>Array.isArray(a)?a.map(v=>v&&({...v,type:LEGACY_WEAPON_MIGRATION[v.type]||v.type})).filter(v=>v&&WEAPON_TYPES.some(t=>t.id===v.type)&&RARITIES.some(r=>r.id===v.rarity)).map(v=>({id:String(v.id||'w'+Math.random()).slice(0,80),type:v.type,rarity:v.rarity,damage:clamp(Number(v.damage)||10,1,600),reach:clamp(Number(v.reach)||65,35,180),rate:clamp(Number(v.rate)||1,.3,2.5),crit:clamp(Number(v.crit)||5,0,60),element:['normal','ice','fire','bleed'].includes(v.element)?v.element:'normal'})):[];
 const weaponInfo=w=>{const t=WEAPON_TYPES.find(x=>x.id===w.type)||WEAPON_TYPES[0],r=RARITIES.find(x=>x.id===w.rarity)||RARITIES[0];return {t,r};};
 const MAX_ACTIVE_EXTRA=60;
@@ -833,7 +833,7 @@ function offerWeapon(w){
 }
 function resolveWeaponOffer(accept){
  const g=game,w=g?.lootOffer;if(!w)return false;g.lootOffer=null;lootDecision.hidden=true;
- if(accept){if(g.weapons.length>=60){let i=0;for(let k=1;k<g.weapons.length;k++)if(g.weapons[k].damage<g.weapons[i].damage)i=k;const old=g.weapons.splice(i,1)[0];spawnClashFlight(g.p.x,g.p.y,g.p.x-1,g.p.y,old.type);}g.weapons.push(w);g.activeLength=-1;}
+ if(accept){if(g.weapons.length>=60){let i=0;for(let k=1;k<g.weapons.length;k++)if(g.weapons[k].damage<g.weapons[i].damage)i=k;const old=g.weapons.splice(i,1)[0];spawnClashFlight(g.p.x,g.p.y,g.p.x-1,g.p.y,old.type,{...old,scale:game.growS||1});}g.weapons.push(w);g.activeLength=-1;}
  else earnXP(12);saveProgress();return true;
 }
 
@@ -1444,7 +1444,7 @@ function orbitAngle(index){return game.swordPhase+orbitOffset(index,orbitCount()
 const SWING_PRESET={'ars01': [1700, 0.06, 0.09, 'triangle', 0.05], 'ars02': [2000, 0.05, 0.08, 'square', 0.05], 'ars03': [1300, 0.09, 0.1, 'sawtooth', 0.06], 'ars04': [800, 0.14, 0.13, 'sawtooth', 0.07], 'ars05': [700, 0.16, 0.13, 'sawtooth', 0.07], 'ars06': [240, 0.18, 0.15, 'triangle', 0.08], 'ars07': [520, 0.12, 0.12, 'square', 0.07], 'ars08': [330, 0.2, 0.17, 'sawtooth', 0.08], 'ars09': [1100, 0.1, 0.1, 'triangle', 0.05], 'ars10': [1800, 0.16, 0.09, 'square', 0.06], 'ars11': [1000, 0.12, 0.12, 'sawtooth', 0.06], 'ars12': [1400, 0.15, 0.11, 'sine', 0.06], 'ars13': [640, 0.2, 0.13, 'sawtooth', 0.07], 'ars14': [1600, 0.12, 0.11, 'triangle', 0.06], 'ars15': [300, 0.22, 0.17, 'square', 0.08], 'ars16': [150, 0.26, 0.2, 'sine', 0.1], 'ars17': [210, 0.24, 0.18, 'sawtooth', 0.09], 'ars18': [2600, 0.2, 0.09, 'sine', 0.05], 'ars19': [2200, 0.14, 0.1, 'square', 0.05], 'ars20': [180, 0.3, 0.19, 'sawtooth', 0.1]};
 // Blade length by weapon shape (matches the drawn blade)
 const BLADE_LEN={pistol:31,revolver:44,burst:46,smg:46,shotgun:64,rifle:54,sniper:72,lmg:66,minigun:66,rpg:74,main:72,knife:38,dagger:44,bowie:49,machete:57,shortsword:55,katana:70,longsword:72,frost:66,storm:68,greatsword:82,baton:50,crowbar:58,chain:66,hatchet:62,axe:62,halberd:80,hammer:56,spear:84,karambit:40,twin:48};
-function bladeLen(w){const t=combatSpec(w);return BLADE_LEN[t.shape]||45}
+function bladeLen(w){const t=combatSpec(w);return (BLADE_LEN[t.shape]||45)*WEAPON_SIZE}
 function hitWithExtraWeapon(m, w, n, total){
  if(combatSpec(w).gun)return false;
  const g=game, p=g.p,a=g.swordPhase+slotOffset(w),reach=swordRange(),L=bladeLen(w)*(g.growS||1),sx=p.x+Math.cos(a)*(reach+L),sy=p.y+Math.sin(a)*(reach+L);
@@ -2366,7 +2366,7 @@ function receivePhysicsState(event){
   if(![f.x,f.y,f.z,f.vx,f.vy,f.vz,f.a,f.spin,f.life].every(Number.isFinite))continue;
   const current=flights.find(q=>q.id===f.id);if(current){if(current.source===event.id){current.x=lerp(current.x,f.x,.4);current.y=lerp(current.y,f.y,.4);current.z=lerp(current.z,clamp(f.z,0,800),.4);current.vx=clamp(f.vx,-1200,1200);current.vy=clamp(f.vy,-1200,1200);current.vz=clamp(f.vz,-1200,1200);current.life=Math.min(current.life,f.life);}continue;}if(seenCombat.has(f.id))continue;
   seenCombat.set(f.id,Date.now());
-  const age=clamp((Date.now()-f.t)/1000,0,3.2),v={...f,source:event.id,life:clamp(f.life,.01,3.2),z:clamp(f.z,0,800),vx:clamp(f.vx,-1200,1200),vy:clamp(f.vy,-1200,1200),vz:clamp(f.vz,-1200,1200)};
+  const age=clamp((Date.now()-f.t)/1000,0,3.2),v={...f,rarity:RARITIES.some(r=>r.id===f.rarity)?f.rarity:'common',scale:clamp(Number(f.scale)||1,1,1.7),wc:['steel','bone','ice','blood'].includes(f.wc)?f.wc:'steel',source:event.id,life:clamp(f.life,.01,3.2),z:clamp(f.z,0,800),vx:clamp(f.vx,-1200,1200),vy:clamp(f.vy,-1200,1200),vz:clamp(f.vz,-1200,1200)};
   // Coordinates already represent the sender's current state; do not integrate its full age twice.
   if(age<3.2&&flights.length<512)flights.push(v);
  }
@@ -2526,7 +2526,7 @@ function endGame(killerName=null,killerId=null){
  $('killBanner').classList.remove('show');
  if(mode==='dead'||mode==='dying')return;
  mode='dying';airBtn.hidden=true;airHold=false;airKey=false;
- game.deathT0=now;game.p.deathArt=null;for(const w of ownBlades()){const a=game.swordPhase+w.o;spawnClashFlight(game.p.x+Math.cos(a)*w.reach,game.p.y+Math.sin(a)*w.reach,game.p.x,game.p.y,w.type);}game.p.mx=game.p.my=0;clearInput();
+ game.deathT0=now;game.p.deathArt=null;for(const w of ownBlades()){const a=game.swordPhase+w.o;spawnClashFlight(game.p.x+Math.cos(a)*w.reach,game.p.y+Math.sin(a)*w.reach,game.p.x,game.p.y,w.type,{...w,scale:game.growS||1,wc:game.weapon});}game.p.mx=game.p.my=0;clearInput();
  playSound(killerId?'pvpDeath':'death');
  sparks(game.p.x,game.p.y,'#e8f6ff',12);game.shake=6;
  const fallenGame=game;
@@ -3177,7 +3177,7 @@ function drawPlayer(p,look=null){p={...p,walk:p.motion?.gait??p.walk};const sele
 }
 // Main and remote players share the same blade artwork; no simplified PvP avatar.
 let bladeScale=1;
-function drawSwordModel(x,y,a,wc='steel'){if(bladeScale===1)return drawSwordModelBase(x,y,a,wc);ctx.save();ctx.translate(x,y);ctx.scale(bladeScale,bladeScale);ctx.translate(-x,-y);drawSwordModelBase(x,y,a,wc);ctx.restore()}
+function drawSwordModel(x,y,a,wc='steel'){const size=bladeScale*WEAPON_SIZE;if(size===1)return drawSwordModelBase(x,y,a,wc);ctx.save();ctx.translate(x,y);ctx.scale(size,size);ctx.translate(-x,-y);drawSwordModelBase(x,y,a,wc);ctx.restore()}
 function drawSwordModelBase(x,y,a,wc='steel'){
  ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);
  ellipse(0,0,7,8,'#1e4c62a0');roundRect(-3,-7,6,19,3,'#654c4c');line(-12,-11,12,-11,5,'#2b5168');
@@ -3187,7 +3187,8 @@ function drawSwordModelBase(x,y,a,wc='steel'){
  ctx.shadowBlur=0;ctx.restore();
 }
 function drawSwords(p){for(let k=0;k<swordCount();k++){const a=orbitAngle(k),rad=swordRange();drawSwordModel(p.x+Math.cos(a)*(rad-45),p.y+Math.sin(a)*(rad-45),a,game.weapon)}}
-function drawWeaponModel(x,y,a,weapon){if(bladeScale===1)return drawWeaponModelBase(x,y,a,weapon);ctx.save();ctx.translate(x,y);ctx.scale(bladeScale,bladeScale);ctx.translate(-x,-y);drawWeaponModelBase(x,y,a,weapon);ctx.restore()}
+function drawWeaponModel(x,y,a,weapon){const size=bladeScale*WEAPON_SIZE;if(size===1)return drawWeaponModelBase(x,y,a,weapon);ctx.save();ctx.translate(x,y);ctx.scale(size,size);ctx.translate(-x,-y);drawWeaponModelBase(x,y,a,weapon);ctx.restore()}
+function drawLooseWeapon(x,y,a,weapon,scale=1){const saved=bladeScale;bladeScale=scale;try{if(weapon.type==='main')drawSwordModel(x,y,a,weapon.wc||'steel');else drawWeaponModel(x,y,a,weapon);}finally{bladeScale=saved;}}
 function drawWeaponModelBase(x,y,a,weapon){
  const {t,r}=weaponInfo(weapon);if(t.id.startsWith('ars')){drawArsenalModel(x,y,a,weapon,t,r);return}
  ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.shadowBlur=lowGraphics()?0:9;ctx.shadowColor=r.color;
@@ -3204,7 +3205,7 @@ function drawExtraWeapons(p){const extra=allActiveWeapons();for(let k=0;k<extra.
  drawWeaponModel(p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,a,weapon);const damage=game.p.bladeWear?.get(weapon.id)||0;if(damage>0){const ratio=clamp(1-damage*100/weaponDurability(p,weapon),0,1);roundRect(p.x+Math.cos(a)*reach-8,p.y+Math.sin(a)*reach+10,16,3,1,'#263e55');roundRect(p.x+Math.cos(a)*reach-8,p.y+Math.sin(a)*reach+10,16*ratio,3,1,'#82eccb');}
 }}
 function dropLabel(d){if(lang==='en'){if(d.type==='ability'){const k=d.weapon?.id;return ({radar:'Radar',sword:'Weapon upgrade',boots:'Boots',bag:'Magnet',armor:'Armor',furArmor:'Fur armor',leatherPack:'Leather pack',ration:'Food','perk:twin':'Twin blades','perk:sharp':'Sharp blade','perk:range':'Long reach','perk:haste':'Fast spin','perk:swift':'Speed','perk:magnet':'Magnet','perk:guard':'Guard','perk:regen':'Regeneration','perk:vamp':'Lifesteal','perk:wave':'Blade wave'})[k]||'Power-up'}if(d.type==='weapon')return (WEAPON_TYPES.find(x=>x.id===d.weapon?.type)?.name||'Weapon')+' · 🛡100';return ({coin:'Coin',plus:'Extra weapon',speed:'Speed boost',xp:'Experience',meat:'Meat',hide:'Hide',bone:'Bone',claw:'Claw',frost:'Ice crystal'})[d.type]||'Item'}if(d.type==='ability')return FIELD_ITEMS.find(x=>x.id===d.weapon?.id)?.name||'ความสามารถ';if(d.type==='weapon'){const spec=WEAPON_TYPES.find(x=>x.id===d.weapon?.type);return (weaponDisplayName(spec)||'อาวุธ')+' · 🛡100'}if(d.type==='coin')return 'เหรียญ';if(d.type==='plus')return 'เพิ่มอาวุธ';if(d.type==='speed')return 'วิ่งเร็ว';if(d.type==='xp')return 'ประสบการณ์';if(d.type==='meat')return 'เนื้อหมี';return ITEM_META[d.type]?.name||d.type}
-function drawDrop(d){let bob=['ability','xp','speed','plus'].includes(d.type)?Math.sin(d.t*4.7+d.glow)*3:0,r=d.type;ctx.save();const dz=d.z||0;ctx.translate(d.x,d.y+bob-dz);ctx.scale(1.2,1.2);let rare=r==='claw'||r==='frost';
+function drawDrop(d){let bob=['ability','xp','speed','plus'].includes(d.type)?Math.sin(d.t*4.7+d.glow)*3:0,r=d.type;ctx.save();const dz=d.z||0;ctx.translate(d.x,d.y+bob-dz);if(r!=='weapon')ctx.scale(1.2,1.2);let rare=r==='claw'||r==='frost';
  ellipse(0,11+dz/1.2,Math.max(5,12-dz/14),4,'#2e7d9c36');
  if(!lowGraphics()){const BR={coin:[0,13],xp:[-2,17],meat:[0,15],hide:[0,16],bone:[0,16],claw:[-2,18],frost:[-2,19],ability:[-3,25],weapon:[-3,24]}[r]||[0,16],by=BR[0],br=BR[1]+Math.sin(now*2.4+d.glow)*.6;
  ctx.fillStyle='rgba(205,242,255,.22)';ctx.beginPath();ctx.arc(0,by,br,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.6;ctx.stroke();
@@ -3219,7 +3220,7 @@ function drawDrop(d){let bob=['ability','xp','speed','plus'].includes(d.type)?Ma
  else if(r==='hide'){poly([[-12,-7],[-4,-11],[5,-11],[13,-5],[10,3],[13,9],[2,12],[-6,9],[-13,6]],'#a06e4d');ellipse(0,0,8,5,'#c3946d');ellipse(-7,6,3,3,'#d6ac83')}
  else if(r==='bone'){ctx.rotate(-.45);line(-8,7,7,-7,6,'#f1e8d0');ellipse(-9,8,4,4,'#fff5dd');ellipse(8,-8,4,4,'#f5e3be');ellipse(-5,10,3,3,'#fff5dd');ellipse(10,-5,3,3,'#fff5dd')}
  else if(r==='claw'){ctx.shadowBlur=lowGraphics()?0:12;ctx.shadowColor='#ffe193';for(let i=-1;i<=1;i++){ctx.save();ctx.translate(i*6,0);ctx.rotate(i*.18);poly([[-3,8],[-4,-4],[0,-14],[4,-3],[3,8]],'#e9cfb2');poly([[0,-14],[4,-3],[2,-1]],'#ffe9b9');ctx.restore()}}
- else if(r==='weapon'&&d.weapon){const {r:rarity}=weaponInfo(d.weapon);ctx.shadowBlur=lowGraphics()?0:10;ctx.shadowColor=rarity.color;ellipse(0,-3,20,20,'rgba(255,255,255,.14)');ctx.shadowBlur=0;ctx.strokeStyle=rarity.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-3,20,0,TAU);ctx.stroke();ctx.save();ctx.translate(0,9);ctx.scale(.47,.47);drawWeaponModel(0,0,-Math.PI/2,d.weapon);ctx.restore();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 9px system-ui';ctx.fillStyle='#1c3b50';}
+ else if(r==='weapon'&&d.weapon){const {r:rarity}=weaponInfo(d.weapon);ctx.shadowBlur=lowGraphics()?0:10;ctx.shadowColor=rarity.color;ellipse(0,-3,20,20,'rgba(255,255,255,.14)');ctx.shadowBlur=0;ctx.strokeStyle=rarity.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-3,20,0,TAU);ctx.stroke();drawLooseWeapon(0,0,-Math.PI/2,d.weapon,1);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 9px system-ui';ctx.fillStyle='#1c3b50';}
   else if(r==='frost'){ctx.shadowBlur=lowGraphics()?0:16;ctx.shadowColor='#54dfff';poly([[0,-16],[12,-5],[7,11],[-7,11],[-12,-5]],'#83dbf5');poly([[0,-16],[0,11],[12,-5]],'#c2ffff');poly([[0,-16],[-12,-5],[0,0]],'#ecffff')}
  ctx.shadowBlur=0;ctx.restore();if(!lowGraphics()&&d.labelUntil>now&&isVisible(d.x,d.y,70)){const label=dropLabel(d);ctx.font='900 15px system-ui';const width=Math.max(58,ctx.measureText(label).width+20),lx=d.x,ly=d.y+bob-34;ctx.save();ctx.globalAlpha=clamp((d.labelUntil-now)/.25,0,1);roundRect(lx-width/2,ly-10,width,20,8,'#173b50e8');ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 15px system-ui';ctx.fillStyle='#fff';ctx.fillText(label,lx,ly);ctx.restore()}}
 // Revive overlay uses world coordinates and is drawn above hero/dog but below labels.
@@ -4170,23 +4171,23 @@ function dropOwnBlade(id,x,y){
  if(i<0)return;
  const [lost]=game.weapons.splice(i,1);
  game.activeLength=-1;lastMetaAt=0;
- spawnClashFlight(x,y,game.p.x,game.p.y,lost.type);
+ spawnClashFlight(x,y,game.p.x,game.p.y,lost.type,{...lost,scale:game.growS||1});
  playSound('break',x,y);sparks(x,y,'#c8f5ff',5);
  note('⚔️ อาวุธถูกทำลาย · เหลือ '+game.weapons.length+' ชิ้น');
  updateHud();
 }
 function bladeSeg(cx,cy,ang,reach,type,gs){const L=bladeLen({type})*gs;return [cx+Math.cos(ang)*reach,cy+Math.sin(ang)*reach,cx+Math.cos(ang)*(reach+L),cy+Math.sin(ang)*(reach+L)]}
 function segSegDistS(a,b){return segSegDist2(a[0],a[1],a[2],a[3],b[0],b[1],b[2],b[3])}
-function spawnClashFlight(x,y,ownerX,ownerY,type){
+function spawnClashFlight(x,y,ownerX,ownerY,type,appearance={}){
  if(!game)return;const a=Math.atan2(y-ownerY,x-ownerX),speed=390;
  game.flyWeapons=game.flyWeapons||[];
- if(game.flyWeapons.length<512)game.flyWeapons.push({x,y,a:rand(0,TAU),vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,z:24,vz:320,spin:rand(-14,14),life:3.2,type,px:x,py:y,id:CLIENT_ID+'f'+(++combatSeq),t:Date.now(),source:CLIENT_ID});
+ if(game.flyWeapons.length<512)game.flyWeapons.push({x,y,a:rand(0,TAU),vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,z:24,vz:320,spin:rand(-14,14),life:3.2,type,rarity:appearance.rarity||'common',scale:appearance.scale||1,wc:appearance.wc||'steel',px:x,py:y,id:CLIENT_ID+'f'+(++combatSeq),t:Date.now(),source:CLIENT_ID});
 }
 function throwLastWeaponDrop(x,y,ownerX,ownerY,before){
  if(game.drops.length<=before)return;
  const drop=game.drops[game.drops.length-1],a=Math.atan2(y-ownerY,x-ownerX);drop.vx=Math.cos(a)*570;drop.vy=Math.sin(a)*570-175;drop.age=-.5;drop.z=22;drop.vz=310;drop.hopDone=true;
 }
-function breakBlade(id,x,y,type,permanent=false){if(!game)return false;if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0)return false;const dropped=game.weapons[i];game.weapons.splice(i,1);if(!permanent){const before=game.drops.length;spawnDrop(x,y,'weapon',1,dropped);throwLastWeaponDrop(x,y,game.p.x,game.p.y,before)}}playClang(x,y);playSound('break',x,y);spawnSparkBurst(x,y);spawnClashFlight(x,y,game.p.x,game.p.y,type);sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
+function breakBlade(id,x,y,type,permanent=false){if(!game)return false;const appearance={...game.weapons.find(w=>w.id===id),scale:game.growS||1,wc:game.weapon};if(id.startsWith(CLIENT_ID+':main')){const expected=CLIENT_ID+':main'+(game.mainBroken||0);if(id!==expected)return false;game.mainBroken=(game.mainBroken||0)+1}else{const i=game.weapons.findIndex(w=>w.id===id);if(i<0)return false;const dropped=game.weapons[i];game.weapons.splice(i,1);if(!permanent){const before=game.drops.length;spawnDrop(x,y,'weapon',1,dropped);throwLastWeaponDrop(x,y,game.p.x,game.p.y,before)}}playClang(x,y);playSound('break',x,y);spawnSparkBurst(x,y);spawnClashFlight(x,y,game.p.x,game.p.y,type,appearance);sparks(x,y,'#c8f5ff',6);lastMetaAt=0;return true}
 function receiveClashes(event){
  if(!Array.isArray(event.clashes)||!game)return;
  for(const c of event.clashes.slice(-18)){
@@ -4221,7 +4222,7 @@ function breakBladeBatch(amount,x,y,preferredId=''){
 }
 // Closest point on the actual two blade segments; effects start at this point.
 function weaponCollisionParts(cx,cy,a,reach,type,scale=1){
- const shape=combatSpec({type}).shape,L=bladeLen({type}),c=Math.cos(a),sn=Math.sin(a);
+ scale*=WEAPON_SIZE;const shape=combatSpec({type}).shape,L=bladeLen({type})/WEAPON_SIZE,c=Math.cos(a),sn=Math.sin(a);
  // Artwork is rotated a + pi/2; local -Y points away from the owner.
  const point=(x,y)=>[cx+c*reach+(-sn*x-c*y)*scale,cy+sn*reach+(c*x-sn*y)*scale];
  const segment=(x1,y1,x2,y2)=>[...point(x1,y1),...point(x2,y2)];
@@ -4256,7 +4257,7 @@ function actorBlades(actor){
  return remoteBlades(actor);
 }
 function weaponCollisionRadius(w,scale){
- const shape=combatSpec(w).shape;
+ scale*=WEAPON_SIZE;const shape=combatSpec(w).shape;
  return (shape==='greatsword'?12:shape==='hammer'?9:shape==='karambit'||shape==='chain'?4:5)*scale;
 }
 function sweptBladePairs(a,b,dt){
@@ -4289,7 +4290,7 @@ function dislodge(actor,weapon,x,y){
  if(actor===game.p){const i=game.weapons.findIndex(w=>w.id===weapon.id);if(i<0)return false;game.weapons.splice(i,1);game.activeLength=-1;lastMetaAt=0;}
  else if(actor.id?.startsWith('bot')){if(actor.blades<=0)return false;actor.blades--;actor.items=actor.blades;if(!isLootAuthority())queueNpcAction(actor,0,1);}
  else{actor.clashHidden=actor.clashHidden||new Map();if(actor.clashHidden.get(weapon.id)>now)return false;actor.clashHidden.set(weapon.id,now+8);actor.weaponTotal=Math.max(0,(actor.weaponTotal??actor.bl?.length??0)-1);}
- spawnClashFlight(x,y,actor.x,actor.y,weapon.type);return true;
+ spawnClashFlight(x,y,actor.x,actor.y,weapon.type,{rarity:weapon.rarity,scale:actor===game.p?(game.growS||1):(actor.growS||1),wc:actor===game.p?game.weapon:actor.look?.weapon});return true;
 }
 function bladeStress(actor,w,amount){
  const wear=actor.bladeWear||(actor.bladeWear=new Map());
@@ -4361,7 +4362,7 @@ function updateFlyingWeaponPhysics(dt){
 }
 function drawFlyingWeapons(){for(const f of game.flyWeapons||[]){if(!isVisible(f.x,f.y,180))continue;ctx.save();ctx.globalAlpha=clamp(f.life/.65,0,1);ellipse(f.x+f.z*.22,f.y+5+f.z*.08,Math.max(5,13-f.z*.025),4,'#173b5088');
  ctx.lineCap='round';ctx.strokeStyle='#dffcffcc';ctx.lineWidth=clamp(4/Math.max(.1,screenScale),4,12);ctx.beginPath();ctx.moveTo(f.px??f.x,f.py??f.y);ctx.lineTo(f.x,f.y-f.z);ctx.stroke();
- ctx.translate(f.x,f.y-f.z+(f.waterDepth||0));const size=Math.max(1,Math.min(2.5,.9/Math.max(.1,screenScale)));ctx.scale(size,size);drawWeaponModel(-Math.cos(f.a)*bladeLen(f)*.35,-Math.sin(f.a)*bladeLen(f)*.35,f.a,{type:f.type,rarity:'rare'});ctx.restore()}}
+ ctx.translate(f.x,f.y-f.z+(f.waterDepth||0));drawLooseWeapon(0,0,f.a,f,f.scale||1);ctx.restore()}}
 
 // --- Online P2P (public room, Trystero over Nostr signaling, no account) ---
 // Other clients are not authoritative: this is friendly-casual PvP, not anti-cheat esports.
@@ -4465,7 +4466,7 @@ function handleNet(event){if(!event||typeof event!=='object'||event.id===CLIENT_
 }
 function ownBlades(){const n=swordCount(),list=[];for(let k=0;k<n;k++)list.push({id:CLIENT_ID+':main'+(k+(game.mainBroken||0)),o:Math.round(orbitOffset(k,orbitCount())*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(swingDamage()),type:'main',speed:spinSpeed(),count:Math.max(1,orbitCount())});
  allActiveWeapons().forEach((w,k)=>list.push({id:w.id,o:Math.round(slotOffset(w)*1e4)/1e4,m:1,reach:Math.round(swordRange()),damage:Math.round(w.damage*PLAYER_DAMAGE_MULTIPLIER),type:w.type,rarity:w.rarity,durability:weaponDurability(game.p,w),wear:game.p.bladeWear?.get(w.id)||0,fire:w.fire?{recoil:w.fire.recoil||0,flash:w.fire.flash||0,reload:w.fire.reload||0}:null,speed:spinSpeed(),count:Math.max(1,orbitCount())}));return list.slice(0,60)}
-function ownMeta(){const d=game.dog;return {matchBand:game.matchBand||0,...npcMetadata(),flights:(game.flyWeapons||[]).filter(f=>f.source===CLIENT_ID).slice(-128).map(f=>({id:f.id,t:f.t,x:f.x,y:f.y,z:f.z,vx:f.vx,vy:f.vy,vz:f.vz,a:f.a,spin:f.spin,life:f.life,type:f.type,stuck:!!f.stuck,waterDepth:f.waterDepth||0})),pose:{dash:game.dash?{...game.dash,age:now-game.dash.t0}:null,hurt:game.p.impact?{...game.p.impact,age:now-game.p.impact.t0}:null},life:game.life,growS:game.growS||1,dog:d?{x:Math.round(d.x),y:Math.round(d.y),dir:d.dir,walk:d.walk,moving:d.moving,state:d.state||'follow'}:null,name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),weaponTotal:game.weapons.length,roomEpoch:game.roomEpoch,joinedAt:game.joinedAt,...(isLootAuthority()?{lootSnapshot:lootSnapshot()}:{}),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon,skin:safeSkinId(game.p.skin)},blades:ownBlades()}}
+function ownMeta(){const d=game.dog;return {matchBand:game.matchBand||0,...npcMetadata(),flights:(game.flyWeapons||[]).filter(f=>f.source===CLIENT_ID).slice(-128).map(f=>({id:f.id,t:f.t,x:f.x,y:f.y,z:f.z,vx:f.vx,vy:f.vy,vz:f.vz,a:f.a,spin:f.spin,life:f.life,type:f.type,rarity:f.rarity||'common',scale:f.scale||1,wc:f.wc||'steel',stuck:!!f.stuck,waterDepth:f.waterDepth||0})),pose:{dash:game.dash?{...game.dash,age:now-game.dash.t0}:null,hurt:game.p.impact?{...game.p.impact,age:now-game.p.impact.t0}:null},life:game.life,growS:game.growS||1,dog:d?{x:Math.round(d.x),y:Math.round(d.y),dir:d.dir,walk:d.walk,moving:d.moving,state:d.state||'follow'}:null,name:PLAYER_NAME,maxHp:Math.round(game.p.maxHp),weaponTotal:game.weapons.length,roomEpoch:game.roomEpoch,joinedAt:game.joinedAt,...(isLootAuthority()?{lootSnapshot:lootSnapshot()}:{}),look:{boots:game.upd.boots,bag:game.upd.bag,armor:game.upd.armor,furArmor:!!game.craft.furArmor,leatherPack:!!game.craft.leatherPack,level:game.level,weapon:game.weapon,skin:safeSkinId(game.p.skin)},blades:ownBlades()}}
 function ownSample(){const p=game.p;return {t:nowMs(),x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,vx:Math.round(p.mx),vy:Math.round(p.my),s:Math.round(game.swordPhase*1000)/1000,w:Math.round(spinSpeed()*1000)/1000,h:Math.round(p.hp),em:p.emotion&&p.emotion.until>game.elapsed?p.emotion.key:'',es:p.emoSerial||0}}
 function sendMyState(dt){if(!game||!['playing','dying'].includes(mode))return;lastNetworkSend-=dt;if(lastNetworkSend>0)return;lastNetworkSend=SEND_INTERVAL;
  const sample=ownSample();mySamples.push(sample);if(mySamples.length>40)mySamples.shift();

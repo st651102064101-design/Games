@@ -41,9 +41,9 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await page.waitForFunction(()=>!!window.__gameEval);
  await page.locator('#playBtn').click();await calm(page);
- assert.equal(await run(page,'game.p.maxHp'),250);assert.equal(await run(page,'userZoom'),.6);
+ assert.equal(await run(page,'game.p.maxHp'),250);assert.equal(await run(page,'userZoom'),.42);
  await run(page,"applyFieldItem('armor')");assert.equal(await run(page,'game.p.maxHp'),266);
- check('250 starting HP, doubled armor health, default zoom 0.6');
+ check('250 starting HP, doubled armor health, default zoom 0.42');
  // Five physical projectiles cross the player in a single update.
  const bullets=await run(page,`(()=>{
   peers.clear();game.weapons=Array.from({length:5},(_,i)=>({id:'shield'+i,type:'ars11',rarity:'common',damage:30}));game.activeLength=-1;shots.length=0;
@@ -60,7 +60,7 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
   peers.clear();game.weapons=[];game.activeLength=-1;game.p.x=125;game.p.y=0;game.p.inv=0;game.p.bladeCd=0;game.p.hp=250;
   peers.set('enemy',{id:'enemy',x:0,y:0,s:0,w:0,init:1,last:performance.now(),life:{phase:'alive'},bl:[{id:'blade',o:0,m:1,reach:48,damage:40,type:'ars11',speed:0}]});
   pushFromBlades(game.p,.016);const tipHp=game.p.hp;
-  const far=bladeBodyContact(0,0,0,48,'ars11',1,145,0,24,0);
+  const far=bladeBodyContact(0,0,0,48,'ars11',1,165,0,24,0);
   const swept=bladeBodyContact(0,0,Math.PI,48,'ars11',1,0,100,24,Math.PI);
   peers.clear();game.p.inv=0;game.p.bladeCd=0;game.p.hp=250;game.p.x=0;game.p.y=0;
   return {tipHp,far:!!far,swept:!!swept};
@@ -83,13 +83,13 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  await run(page,'clearInput();cameraTiltTarget=0;game.dash=null;');
  await pointer(page,'pointerdown',10,300,550,true);await pointer(page,'pointerdown',11,500,550);
  for(let y=530;y>=330;y-=20){await pointer(page,'pointermove',10,300,y,true);await pointer(page,'pointermove',11,500,y);}
- assert.equal(await run(page,'cameraTiltTarget'),90);assert.equal(await run(page,'userZoom'),.6);
+ assert.equal(await run(page,'cameraTiltTarget'),90);assert.equal(await run(page,'userZoom'),.42);
  for(let y=350;y<=570;y+=20){await pointer(page,'pointermove',10,300,y,true);await pointer(page,'pointermove',11,500,y);}
  assert.equal(await run(page,'cameraTiltTarget'),0);
  await pointer(page,'pointerup',10,300,570,true);await pointer(page,'pointerup',11,500,570);
  await pointer(page,'pointerdown',12,300,500,true);await pointer(page,'pointerdown',13,500,500);
  await pointer(page,'pointermove',12,240,500,true);await pointer(page,'pointermove',13,560,500);
- assert.ok(await run(page,'userZoom')>.6);await pointer(page,'pointercancel',12,240,500,true);await pointer(page,'pointercancel',13,560,500);
+ assert.ok(await run(page,'userZoom')>.42);await pointer(page,'pointercancel',12,240,500,true);await pointer(page,'pointercancel',13,560,500);
  assert.equal(await run(page,'game.life.phase'),'alive');
  check('two-finger tilt reaches 90° and returns to 0°; pinch and cancellation do not kill or warp');
  // A real multi-touch stream also keeps the joystick captured during the warp.
@@ -138,6 +138,9 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  const debris=await run(page,`(()=>{game.flyWeapons=[];const f={id:'sourcef1',source:'source',t:Date.now(),x:0,y:0,z:50,vx:100,vy:0,vz:-100,a:0,spin:5,life:3.2,type:'ars11'};receivePhysicsState({id:'source',flights:[f]});receivePhysicsState({id:'source',flights:[f]});const size=game.flyWeapons.length;updateFlyingWeaponPhysics(.1);return {size,z:game.flyWeapons[0].z,x:game.flyWeapons[0].x};})()`);
  assert.equal(debris.size,1);assert.ok(debris.z<50&&debris.z>=0&&debris.x>0);
  check('remote debris is deduplicated and continues ballistic motion with gravity');
+ const appearance=await run(page,`(()=>{const savedCtx=ctx,savedScale=bladeScale;let identical=true;try{for(const spec of ARSENAL)for(const rarity of RARITIES){const w={type:spec.id,rarity:rarity.id};const render=loose=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=320;ctx=canvas.getContext('2d');ctx.translate(160,160);bladeScale=1.7;if(loose)drawLooseWeapon(0,0,.3,w,1.7);else drawWeaponModel(0,0,.3,w);return canvas.toDataURL();};if(render(false)!==render(true))identical=false;}}finally{ctx=savedCtx;bladeScale=savedScale;}game.flyWeapons=[];game.growS=1.7;game.weapons=[{id:'visual-drop',type:'ars11',rarity:'legendary',damage:30}];game.activeLength=-1;dropOwnBlade('visual-drop',0,0);const f=game.flyWeapons[0],wire=ownMeta().flights[0];return {identical,scale:WEAPON_SIZE,length:bladeLen({type:'ars11'}),base:BLADE_LEN[combatSpec({type:'ars11'}).shape],rarity:f.rarity,grow:f.scale,wire};})()`);
+ assert.equal(appearance.identical,true);assert.equal(appearance.scale,1.2);assert.equal(appearance.length,appearance.base*1.2);assert.equal(appearance.rarity,'legendary');assert.equal(appearance.grow,1.7);assert.equal(appearance.wire.rarity,'legendary');assert.equal(appearance.wire.scale,1.7);
+ check('all weapon types and rarities render pixel-identically loose or orbiting; destroyed blades preserve rarity and source growth with 20% geometry enlargement');
  const labelPosition=await run(page,`(()=>{labelQ=[];drawYouLabel(game.p);const offset=labelQ[0][2]-game.p.y;labelQ=[];return offset;})()`);
  assert.equal(labelPosition,18);check('name anchor stays at the feet instead of following the weapon radius');
  await run(page,`for(const skin of CHARACTER_SKINS)drawHeroPose({...game.p,x:0,y:0,skin:skin.id},{...BOT_LOOK,skin:skin.id},{life:{phase:'dead'},deathT0:now-.5,growS:1});`);
@@ -152,7 +155,7 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  await context2.addInitScript(()=>{Object.defineProperty(navigator,'onLine',{get:()=>false});for(const key of ['frostline_guide_complete','frostline_warp_guide_v2','frostline_howto_illustrated_v2'])localStorage.setItem(key,'1');localStorage.setItem('frostline_name','Observer');localStorage.setItem('frostline_audio_v1','{"master":0,"music":0}');});
  const observer=await context2.newPage();observer.on('pageerror',e=>errors.push(e.message));await observer.goto(url);await observer.locator('#playBtn').click();await calm(observer);
  await run(page,'newGame();');await calm(page);
- await run(page,"PLAYER_NAME='Hero';game.p.x=80;game.p.y=0;game.dog.x=120;game.dog.y=20;cameraTilt=cameraTiltTarget=0;userZoom=.6;paused=false;game.p.inv=999;sendMyState(1);syncCloud();");
+ await run(page,"PLAYER_NAME='Hero';game.p.x=80;game.p.y=0;game.dog.x=120;game.dog.y=20;cameraTilt=cameraTiltTarget=0;userZoom=DEFAULT_ZOOM;paused=false;game.p.inv=999;sendMyState(1);syncCloud();");
  await run(observer,'paused=false;game.p.inv=999;sendMyState(1);syncCloud();');
  await observer.waitForFunction(()=>window.__gameEval("[...peers.values()].some(r=>r.name==='Hero'&&r.dog)"),null,{timeout:8000});
  const heroId=await run(page,'CLIENT_ID');

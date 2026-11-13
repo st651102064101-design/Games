@@ -4,6 +4,10 @@ This revision fixes the underlying causes of invisible weapon clashes and distan
 
 ## Combat and dropped weapons
 
+Weapon artwork now uses a shared global size multiplier of **1.2**. Collision length, shape segments and width use the same enlargement. Ground pickups use the full orbit model instead of a 47% miniature. Flying weapons retain the source rarity and growth scale rather than forcing rare coloring or screen-dependent sizing; both HTTP adapters forward this appearance. The loose-model renderer is pixel-compared with the orbit renderer for every arsenal type and rarity.
+
+Default camera zoom is **0.42**, reduced by 30% from 0.6. Starting a new round restores this wider view; manual zoom remains available.
+
 - The visible orbit, network metadata and collision system all support 60 active weapons. Bot swords now use the same `ars11` artwork as their collision shape.
 - Blade shafts, axe/hammer heads, twin blades, curved hooks and firearm barrels have separate collision segments derived from the rendered models. All pairs use common time samples between frames. A cell grid eliminates distant candidates.
 - Each confirmed destroyed weapon creates one flying object. The old two-object visual shortcut is removed. Impact effects originate at the segment intersection/closest contact.
