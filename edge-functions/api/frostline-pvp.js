@@ -48,7 +48,7 @@ const cleanLootCoords=d=>({
 const cleanLootDrop=d=>{
  if(!d||typeof d.id!=='string'||!/^[a-zA-Z0-9_:-]{3,100}$/.test(d.id)||!LOOT_TYPES.has(d.type))return null;
  return {id:d.id,...cleanLootCoords(d),glow:num(d.glow,0,0,7),vx:num(d.vx,0,-1200,1200),
-  vy:num(d.vy,0,-1200,1200),age:num(d.age,0,-1,160),bounce:num(d.bounce,.35,.1,.8)};
+  z:num(d.z,0,0,800),vz:num(d.vz,0,-1200,1200),vy:num(d.vy,0,-1200,1200),age:num(d.age,0,-1,160),bounce:num(d.bounce,.35,.1,.8)};
 };
 const cleanLootEvent=(e,now)=>{
  if(!e||typeof e.id!=='string'||!/^[a-zA-Z0-9_:-]{3,100}$/.test(e.id)||!['add','del','req'].includes(e.op))return null;
@@ -88,7 +88,7 @@ export async function onRequest({request}){
   const blades=Array.isArray(body.blades)?body.blades.slice(0,160).map(b=>({
    id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),
    reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,0,600),
-   durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,-620,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
+   durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,-620,620),count:num(b?.count,1,1,1e9),type:weapon(b?.type),
    rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
   })):[];
   let me={matchBand,
@@ -99,7 +99,7 @@ export async function onRequest({request}){
       flights:Array.isArray(body.flights)?body.flights.slice(-128).filter(f=>f&&typeof f.id==='string'&&f.id.startsWith(body.id+'f')).map(f=>({id:f.id.slice(0,100),t:num(f.t,now,now-6000,now+1000),x:num(f.x,0,-10125,10125),y:num(f.y,0,-10125,10125),z:num(f.z,0,0,800),vx:num(f.vx,0,-1200,1200),vy:num(f.vy,0,-1200,1200),vz:num(f.vz,0,-1200,1200),a:num(f.a,0,-1e5,1e5),spin:num(f.spin,0,-100,100),life:num(f.life,0,0,3.2),stuck:f.stuck===true,waterDepth:num(f.waterDepth,0,0,15),rarity:['common','rare','epic','legendary'].includes(f.rarity)?f.rarity:'common',scale:num(f.scale,1,1,1.7),wc:['steel','bone','ice','blood'].includes(f.wc)?f.wc:'steel',type:f.type==='main'?'main':/^ars(0[1-9]|[12][0-9]|30)$/.test(f.type)?f.type:'ars11'})):[],
       pose:cleanPose(body.pose),
       dog:body.dog&&Number.isFinite(body.dog.x)&&Number.isFinite(body.dog.y)?{x:num(body.dog.x,0,-10125,10125),y:num(body.dog.y,0,-10125,10125),dir:body.dog.dir<0?-1:1,walk:num(body.dog.walk,0,-1e9,1e9),moving:body.dog.moving===true,state:body.dog.state==='sacrifice'?'sacrifice':'follow'}:null,
-    weaponTotal:num(body.weaponTotal,0,0,10000),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
+    weaponTotal:num(body.weaponTotal,0,0,1e9),joinedAt:num(body.joinedAt,now,now-28800000,now+60000),roomEpoch:num(body.roomEpoch,now,now-28800000,now+60000),
     lootEvents:Array.isArray(body.lootEvents)?body.lootEvents.slice(-28).map(e=>cleanLootEvent(e,now)).filter(Boolean):[],
     lootSnapshot:Array.isArray(body.lootSnapshot)?body.lootSnapshot.slice(0,36).map(cleanLootDrop).filter(Boolean):[],
    samples,blades,look:{
