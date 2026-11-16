@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 (async()=>{
  for(const [file,edge] of [['netlify/functions/frostline-pvp.mjs',false],['edge-functions/api/frostline-pvp.js',true]]){
-  let source=fs.readFileSync(file,'utf8').replace(/^import .*;$/m,'').replace('export default async function handler','async function handler').replace('export async function onRequest','async function onRequest').replace('export const config','const config');
+  let source=fs.readFileSync(file,'utf8').replace(/^import .*;$/m,'').replace('export default async function handler','async function handler').replace('export async function onRequest','async function onRequest').replace('export const config','const config').replace('export default onRequest;','');
   const data=new Map(),store={setJSON:async(k,v)=>data.set(k,v),get:async k=>data.get(k),list:async({prefix=''}={})=>({blobs:[...data.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))}),delete:async k=>data.delete(k)};
   const c={getStore:()=>store,Response,URL,Date,console};vm.runInNewContext(source+';this.api='+(edge?'onRequest':'handler')+';',c);
   const request=async(body)=>{const req=new Request('https://example.com/api/frostline-pvp',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const response=await c.api(edge?{request:req}:req);assert.equal(response.status,200);return response.json();};

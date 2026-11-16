@@ -85,7 +85,7 @@ export async function onRequest({request}){
    em:typeof s?.em==='string'&&s.em.length<=24?s.em:'',es:num(s?.es,0,0,1e8)
   })).sort((a,b)=>a.t-b.t);
   const weapon=v=>/^ars(0[1-9]|[12][0-9]|30)$/.test(v)?v:'ars01';
-  const blades=Array.isArray(body.blades)?body.blades.slice(0,60).map(b=>({
+  const blades=Array.isArray(body.blades)?body.blades.slice(0,160).map(b=>({
    id:String(b?.id||'').slice(0,100),o:num(b?.o,0,-1e4,1e4),m:num(b?.m,1,.1,5),
    reach:num(b?.reach,80,35,220),damage:num(b?.damage,12,0,600),
    durability:num(b?.durability,100,100,800),wear:num(b?.wear,0,0,8),fire:b?.fire?{recoil:num(b.fire.recoil,0,-2,8),flash:num(b.fire.flash,0,0,.15),reload:num(b.fire.reload,0,0,5)}:null,speed:num(b?.speed,6,-620,620),count:num(b?.count,1,1,10000),type:weapon(b?.type),
@@ -114,7 +114,7 @@ export async function onRequest({request}){
     t:num(b.t,now,now-5000,now+1000)
    })):[],
    clashes:Array.isArray(body.clashes)?body.clashes.slice(-18).filter(c=>c&&typeof c.id==='string'&&validId(c.to)).map(c=>({
-    id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,60).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,8)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'ars01').slice(0,20),
+    id:c.id.slice(0,100),to:c.to,blade:String(c.blade||'').slice(0,100),wears:Array.isArray(c.wears)?c.wears.slice(0,160).filter(w=>w&&typeof w.id==='string').map(w=>({id:w.id.slice(0,100),wear:num(w.wear,0,0,8)})):[],...(Array.isArray(c.blades)?{blades:c.blades.slice(0,24).filter(v=>typeof v==='string').map(v=>v.slice(0,100))}:{}),type:String(c.type||'ars01').slice(0,20),
     x:num(c.x,0,-10125,10125),y:num(c.y,0,-10125,10125),amount:num(c.amount,1,1,24),t:num(c.t,now,now-5000,now+1000)
    })):[],updatedAt:now
   };
@@ -136,3 +136,5 @@ export async function onRequest({request}){
   return ok({ok:false,error:'Relay temporarily unavailable'},503);
  }
 }
+
+export default onRequest;

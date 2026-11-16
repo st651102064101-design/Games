@@ -8,9 +8,11 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test:frostline": "node tests/frostline-gameplay.cjs && node tests/frostline-lifecycle-relays.cjs && node tests/frostline-relay.cjs && node tests/frostline-audio.cjs"
+    "test:frostline": "node tests/frostline-gameplay.cjs && node tests/frostline-lifecycle-relays.cjs && node tests/frostline-relay.cjs && node tests/frostline-audio.cjs",
+    "build:edgeone": "node scripts/build-edgeone.mjs"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "playwright": "1.62.1"
   },
   "dependencies": {

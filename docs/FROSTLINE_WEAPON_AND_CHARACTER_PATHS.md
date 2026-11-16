@@ -1,3 +1,5 @@
+> Equipment progression below is historical and superseded by [map-only loot](FROSTLINE_MAP_LOOT_UPDATE.md). Character skill paths remain active.
+
 # Weapon progression and character skills
 
 The shop now lists eight sequential permanent weapon tiers alongside durability upgrades. The path ends at RPG (`ars30`); each purchase unlocks the next step, rather than buying one gun or increasing everyone else's loot tier. Prices start at 40 coins and rise by 1.7 per tier. Purchases apply next round, preserving a consistent active loadout/match band.
