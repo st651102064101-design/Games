@@ -296,6 +296,8 @@ async function calm(page){await run(page,`game.intro=null;game.mobs=[];game.bots
  await page.locator('#runBoostBtn').dispatchEvent('pointerdown',{pointerId:988,pointerType:'touch',button:0,bubbles:true});
  const runButton=await run(page,`(()=>{const out={speed:game.sprint,cd:game.runBoostCd,warp:game.sprintCd,held:input.pointerId,dx:input.dx,repeat:tryRunBoost(),shorter:RUN_BOOST_COOLDOWN<HERO_WARP_COOLDOWN};paused=true;paintRunBoost();out.hidden=runBoostBtn.hidden;return out;})()`);
  assert.ok(runButton.speed>0);assert.ok(runButton.cd>0);assert.ok(runButton.warp>44&&runButton.warp<=45);assert.equal(runButton.held,987);assert.equal(runButton.dx,.8);assert.equal(runButton.repeat,false);assert.equal(runButton.shorter,true);assert.equal(runButton.hidden,true);check('lower-left sprint button activates while movement touch stays held, has independent shorter cooldown, rejects repeats and hides when paused');
+ const sizeReadability=await run(page,`(()=>{const rows=[1,73,5000].map(n=>({n,size:hunterGrowth(n),view:orbitViewGrowth(n),oldSize:clamp(1+(n-1)*.035,1,1.7),oldView:clamp(1+Math.log2(1+Math.max(0,n-37))*.12,1,2.2)}));return rows;})()`);
+ assert.ok(sizeReadability.every(r=>r.size/r.view>=1.39*r.oldSize/r.oldView));assert.ok(sizeReadability.every(r=>r.view<=1.6&&r.size<=2.5));check('character and matching weapon growth are 40 percent larger and slower automatic zoom-out preserves readability from one to 5000 weapons');
  assert.deepEqual(errors,[]);check('no JavaScript errors on desktop, mobile, death or all character renderers');
  fs.writeFileSync(path.join(artifacts,'results.json'),JSON.stringify({passed,errors},null,2));
  console.log(`\n${passed.length} browser integration checks passed.`);

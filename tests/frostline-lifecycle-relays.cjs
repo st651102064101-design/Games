@@ -32,6 +32,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   const separate=await request({...body,id:'fbandtest01',matchBand:3});assert.ok(separate.players.some(p=>p.id==='fabcdefgh2'),'different upgrade tiers share the public room');
   const sameBand=await request({...body,id:'fbandtest02',matchBand:3});assert.ok(sameBand.players.some(p=>p.id==='fbandtest01'));assert.ok(sameBand.players.every(p=>p.matchBand===0));
   await request({kind:'leave',id:'fbandtest01',matchBand:3});assert.equal([...data.values()].some(v=>v.id==='fbandtest01'),false);
+  await request({...body,seq:30,growS:2.38,flights:body.flights.map(f=>({...f,scale:2.38}))});saved=[...data.values()].find(v=>v.id===body.id);assert.equal(saved.growS,2.38);assert.equal(saved.flights[0].scale,2.38);
   console.log('PASS:',file,'pet/lifecycle/scale forwarding, validation, death retention and presence');
  }
 })().catch(e=>{console.error(e);process.exitCode=1;});
