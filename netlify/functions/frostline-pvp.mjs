@@ -59,6 +59,7 @@ const cleanLootDrop=d=>{
  return {id:d.id,...cleanLootCoords(d),glow:num(d.glow,0,0,7),vx:num(d.vx,0,-1200,1200),
   z:num(d.z,0,0,800),vz:num(d.vz,0,-1200,1200),vy:num(d.vy,0,-1200,1200),age:num(d.age,0,-1,160),bounce:num(d.bounce,.35,.1,.8)};
 };
+const cleanAirWorld=boxes=>Array.isArray(boxes)?boxes.slice(-8).filter(b=>b&&typeof b.id==='string').map(b=>({id:b.id.slice(0,100),x:num(b.x,0,-10125,10125),y:num(b.y,0,-10125,10125),t:num(b.t,0,-2,200),drift:b.drift<0?-1:1,opened:b.opened===true,owner:String(b.owner||'').slice(0,100),reward:b.reward?{weapon:cleanLootWeapon(b.reward.weapon),amount:num(b.reward.amount,1,1,100),coins:num(b.reward.coins,0,0,1000),item:['armor','boots','bag','ration','radar'].includes(b.reward.item)?b.reward.item:'ration'}:null})):[];
 const cleanLootEvent=(e,now)=>{
  if(!e||typeof e.id!=='string'||!/^[a-zA-Z0-9_:-]{3,100}$/.test(e.id)||!['add','del','req'].includes(e.op))return null;
  const drop=e.op==='del'?(typeof e.drop?.id==='string'?{id:e.drop.id.slice(0,100)}:null)
@@ -100,7 +101,7 @@ export default async function handler(request) {
       rarity:['common','rare','epic','legendary'].includes(b?.rarity)?b.rarity:'common'
     })) : [];
     let me = {matchBand,
-      id:body.id,kind:'state',alive:true,name:cleanText(body.name),
+      id:body.id,kind:'state',airWorld:cleanAirWorld(body.airWorld),alive:true,name:cleanText(body.name),
       seq:num(body.seq,0,0,1e12),maxHp:num(body.maxHp,250,1,10000),
       life:{phase:['alive','rescue','down','rise','dead'].includes(body.life?.phase)?body.life.phase:'alive',at:num(body.life?.at,now,0,4e12),serial:num(body.life?.serial,0,0,1e9)},
       growS:num(body.growS,1,1,2.5),...npcFields(body,now),...bearFields(body,now),
