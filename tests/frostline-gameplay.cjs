@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const assert=require('node:assert/strict'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'Frostline_v3_4_holes.html'),'utf8');
-const testHTML=html.replace('})()\n</script>','window.__gameEval=code=>eval(code);\n})()\n</script>');
+const testHTML=html.replace(/\}\)\(\)\r?\n<\/script>/,'window.__gameEval=code=>eval(code);\n})()\n</script>');
 assert.notEqual(testHTML,html);
 const records=new Map(),store={setJSON:async(k,v)=>records.set(k,v),get:async k=>records.get(k),delete:async k=>records.delete(k),list:async({prefix='' }={})=>({blobs:[...records.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))})};
 const relaySource=fs.readFileSync(path.join(root,'netlify/functions/frostline-pvp.mjs'),'utf8').replace("import {getStore} from '@netlify/blobs';",'').replace('export default async function handler','async function handler').replace('export const config','const config');
