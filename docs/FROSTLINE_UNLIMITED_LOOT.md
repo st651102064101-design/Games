@@ -6,7 +6,7 @@ Above 160 weapons, combat scheduling groups matching type/rarity and sums their 
 
 Airdrops are shared by the elected world leader. The first living player observed inside a landed crate's 105-unit circle receives Rare-or-better weapons, a field item and coins immediately; there is no hold or opening timer. The leader assigns one owner, and repeated reward snapshots are deduplicated by crate ID. Simultaneous observations use distance and player ID as a stable tie-break. This follows the host's observed positions rather than reconstructing exact arrival times over delayed networks. Reward snapshots remain with the crate for its 90-second world lifetime.
 
-Bots scan loot every 120ms, prioritize valuable stacks, collect within 60 units and receive regular shared weapon supplies nearby (real ground loot that anyone can collect). Healthy, well-armed bots pursue weaker players up to 1,500 units away at running speed; weak or badly hurt bots prioritize escape or collecting.
+Bots scan loot every 120ms, prioritize valuable stacks, collect within 60 units and receive regular shared weapon supplies nearby (real ground loot that anyone can collect). Healthy, armed bots pursue players over a viewport-aware range of 2,200–6,000 units at running speed, and tolerate a larger weapon disadvantage; weak or badly hurt bots prioritize escape or collecting.
 
 Mission HUD now shows three icon cards and progress bars, with short labels and the uncapped inventory total. Explosion visuals combine a bright fire core, irregular fire lobes, dirt spikes, ballistic fragments, expanding smoke and a pressure ring, with bounded effect pools. They are procedural effects matching the game's illustrated style, not photorealistic sprites.
 

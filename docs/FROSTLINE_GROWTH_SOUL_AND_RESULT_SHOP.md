@@ -1,0 +1,13 @@
+# Hunter growth, pursuit, death and result purchases
+
+Bots now use the player's `hunterGrowth` formula for their body, orbit models and collision reach. Their live draw path goes through the same posed character renderer. Other players derive their displayed growth from the actual transmitted weapon total; detached weapon rendering keeps the shared scale. Dead bots retain their pre-death scale, forwarded by both relay adapters. Names and health bars move with the enlarged body. Inventory count remains uncapped, while bot model simulation retains its existing representative budget.
+
+Bot detection now covers a viewport-aware distance of 2,200–6,000 world units, including the screen edge. Healthy bots can attack with 65 percent of the target's weapon count, instead of requiring a 15 percent advantage. They still retreat when badly injured and prioritize the safe circle when outside it.
+
+The final result screen automatically lists all paid, unowned characters affordable at the current saved balance, sorted by ascending price. Each row includes the existing character illustration, skills, price and direct purchase button. The list scrolls on mobile. Buying rechecks affordability and ownership, deducts once, equips the character and recomputes the full remaining list. The initial pet revival remains an in-game sequence, not a shopping interruption; recommendations appear when the run actually ends.
+
+Natural bear corpses use original vector side-lying artwork with folded paws, crossed eyes and a small tongue, preserving brown/polar/elite colors. Corpse visibility lasts 3.2 seconds with fade, with a bounded corpse pool. Reference images are not embedded.
+
+Player death retains the articulated falling body and adds a separate glowing spirit. A spirit rises from the fallen body during rescue. On revival it descends into the body over 0.65 seconds, followed by a 0.55-second stand-up. The animation derives from the existing shared lifecycle timestamps, so remote players and bots use the same drawing logic; no independent random animation state is needed. Final death has an outgoing spirit without a return. This remains illustrated 2.5D animation.
+
+Validation includes body/orbit growth at 4, 20 and 1,000 bot weapons, matching rendered/collision orbit radii, distant pursuit, spirit outgoing/return trajectories, brown/polar corpse renderers, the complete affordable result list at a 1,000-coin budget, direct purchase/ownership/equipping and duplicate purchase rejection. Mobile/desktop result screenshots are captured by the browser integration suite. Live physical cross-device verification still requires deployment of the full build with its API.
